@@ -36,10 +36,10 @@
                 this.isHoldingOnHotspot = false;
 
                 // Verb coin sizes (set in create based on device)
+                // Uses 4x4 pixel minimum standard
                 this.isMobile = false;
-                this.verbCoinRadius = 100;
-                this.verbActionRadius = 32;
-                this.verbActionHoverRadius = 38;
+                this.verbCoinSize = 96; // 24 * 4px
+                this.verbActionSize = 32; // 8 * 4px
                 this.verbCoinScale = 1;
 
                 // Inventory verb coin
@@ -145,16 +145,15 @@
                 this.isWalking = false;
 
                 // Detect mobile/touch device and set verb coin sizes
+                // Uses 4x4 pixel minimum standard
                 this.isMobile = this.sys.game.device.input.touch;
                 if (this.isMobile) {
-                    this.verbCoinRadius = 200;
-                    this.verbActionRadius = 64;
-                    this.verbActionHoverRadius = 76;
+                    this.verbCoinSize = 192; // 48 * 4px
+                    this.verbActionSize = 64; // 16 * 4px
                     this.verbCoinScale = 2;
                 } else {
-                    this.verbCoinRadius = 100;
-                    this.verbActionRadius = 32;
-                    this.verbActionHoverRadius = 38;
+                    this.verbCoinSize = 96; // 24 * 4px
+                    this.verbActionSize = 32; // 8 * 4px
                     this.verbCoinScale = 1;
                 }
 
@@ -717,36 +716,67 @@
                 this.verbCoin.setVisible(false);
                 this.verbCoin.setDepth(5000);
 
-                const scale = this.verbCoinScale;
-                const coinRadius = this.verbCoinRadius;
-                const actionRadius = this.verbActionRadius;
+                const p = 4; // Pixel size minimum
+                const s = this.verbCoinScale;
+                const coinSize = this.verbCoinSize;
+                const actionSize = this.verbActionSize;
+                const halfCoin = coinSize / 2;
 
-                // Gold coin background
+                // Gold coin background - octagonal pixel-art style
                 const coinBg = this.add.graphics();
+
+                // Main coin body
                 coinBg.fillStyle(0x8b6914, 1);
-                coinBg.fillCircle(0, 0, coinRadius);
-                coinBg.lineStyle(5 * scale, 0xd4a84b, 1);
-                coinBg.strokeCircle(0, 0, coinRadius);
-                coinBg.lineStyle(3 * scale, 0x5c4a0f, 0.6);
-                coinBg.strokeCircle(0, 0, coinRadius - 10 * scale);
+                // Draw octagon using rectangles
+                coinBg.fillRect(-halfCoin + p*2*s, -halfCoin, coinSize - p*4*s, coinSize);
+                coinBg.fillRect(-halfCoin, -halfCoin + p*2*s, coinSize, coinSize - p*4*s);
+                // Corner fills for octagon shape
+                coinBg.fillRect(-halfCoin + p*s, -halfCoin + p*s, p*s, p*s);
+                coinBg.fillRect(halfCoin - p*2*s, -halfCoin + p*s, p*s, p*s);
+                coinBg.fillRect(-halfCoin + p*s, halfCoin - p*2*s, p*s, p*s);
+                coinBg.fillRect(halfCoin - p*2*s, halfCoin - p*2*s, p*s, p*s);
+
+                // Outer border (gold highlight)
+                coinBg.fillStyle(0xd4a84b, 1);
+                coinBg.fillRect(-halfCoin + p*2*s, -halfCoin, coinSize - p*4*s, p*s);
+                coinBg.fillRect(-halfCoin + p*2*s, halfCoin - p*s, coinSize - p*4*s, p*s);
+                coinBg.fillRect(-halfCoin, -halfCoin + p*2*s, p*s, coinSize - p*4*s);
+                coinBg.fillRect(halfCoin - p*s, -halfCoin + p*2*s, p*s, coinSize - p*4*s);
+
+                // Inner border (darker inset)
+                coinBg.fillStyle(0x5c4a0f, 0.6);
+                const inset = p*3*s;
+                coinBg.fillRect(-halfCoin + inset + p*s, -halfCoin + inset, coinSize - inset*2 - p*2*s, p*s);
+                coinBg.fillRect(-halfCoin + inset + p*s, halfCoin - inset - p*s, coinSize - inset*2 - p*2*s, p*s);
+                coinBg.fillRect(-halfCoin + inset, -halfCoin + inset + p*s, p*s, coinSize - inset*2 - p*2*s);
+                coinBg.fillRect(halfCoin - inset - p*s, -halfCoin + inset + p*s, p*s, coinSize - inset*2 - p*2*s);
+
                 this.verbCoin.add(coinBg);
 
-                // Action buttons - positioned around top of coin so finger doesn't block them
-                // Spread out enough to prevent overlap (actionRadius is 32 on desktop, 64 on mobile)
+                // Action buttons - positioned around coin
+                const actionOffset = p*15*s; // 60px on desktop, 120px on mobile
+                const halfAction = actionSize / 2;
                 const actions = [
-                    { name: 'Use', icon: 'hand', color: 0x4CAF50, x: -62 * scale, y: 0 },
-                    { name: 'Look At', icon: 'eye', color: 0x2196F3, x: 0, y: -62 * scale },
-                    { name: 'Talk To', icon: 'mouth', color: 0xFFC107, x: 62 * scale, y: 0 }
+                    { name: 'Use', icon: 'hand', color: 0x4CAF50, x: -actionOffset, y: 0 },
+                    { name: 'Look At', icon: 'eye', color: 0x2196F3, x: 0, y: -actionOffset },
+                    { name: 'Talk To', icon: 'mouth', color: 0xFFC107, x: actionOffset, y: 0 }
                 ];
 
                 this.verbCoinActions = [];
                 actions.forEach(action => {
                     const container = this.add.container(action.x, action.y);
                     const bg = this.add.graphics();
+
+                    // Square button with pixel-art border
                     bg.fillStyle(0x3d2817, 0.9);
-                    bg.fillCircle(0, 0, actionRadius);
-                    bg.lineStyle(3 * scale, action.color, 0.8);
-                    bg.strokeCircle(0, 0, actionRadius);
+                    bg.fillRect(-halfAction, -halfAction, actionSize, actionSize);
+                    // Border
+                    bg.fillStyle(action.color, 0.8);
+                    bg.fillRect(-halfAction, -halfAction, actionSize, p*s);
+                    bg.fillRect(-halfAction, halfAction - p*s, actionSize, p*s);
+                    bg.fillRect(-halfAction, -halfAction, p*s, actionSize);
+                    bg.fillRect(halfAction - p*s, -halfAction, p*s, actionSize);
+
                     container.add(bg);
 
                     const icon = this.add.graphics();
@@ -760,7 +790,7 @@
                         color: action.color,
                         x: action.x,
                         y: action.y,
-                        radius: actionRadius
+                        size: actionSize
                     });
                     this.verbCoin.add(container);
                 });
@@ -768,34 +798,48 @@
 
             drawVerbIcon(graphics, type, color) {
                 graphics.clear();
+                const p = 4; // Pixel size minimum
                 const s = this.verbCoinScale;
-                graphics.lineStyle(3 * s, color, 1);
                 graphics.fillStyle(color, 1);
 
-                // Icons scaled based on device
+                // Icons using 4x4 pixel grid
                 switch (type) {
                     case 'hand':
-                        graphics.fillRoundedRect(-12 * s, -9 * s, 24 * s, 21 * s, 4 * s);
-                        graphics.fillCircle(-9 * s, -15 * s, 4.5 * s);
-                        graphics.fillCircle(-3 * s, -18 * s, 4.5 * s);
-                        graphics.fillCircle(3 * s, -18 * s, 4.5 * s);
-                        graphics.fillCircle(9 * s, -15 * s, 4.5 * s);
+                        // Palm
+                        graphics.fillRect(-p*2*s, -p*s, p*4*s, p*4*s);
+                        // Fingers (4 rectangular fingers)
+                        graphics.fillRect(-p*3*s, -p*3*s, p*s, p*3*s);
+                        graphics.fillRect(-p*s, -p*4*s, p*s, p*4*s);
+                        graphics.fillRect(p*s, -p*4*s, p*s, p*4*s);
+                        graphics.fillRect(p*3*s, -p*3*s, p*s, p*3*s);
+                        // Thumb
+                        graphics.fillRect(-p*3*s, p*s, p*s, p*2*s);
                         break;
                     case 'eye':
-                        graphics.fillEllipse(0, 0, 27 * s, 15 * s);
+                        // Eye shape (horizontal diamond/hexagon)
+                        graphics.fillRect(-p*2*s, -p*s, p*4*s, p*2*s);
+                        graphics.fillRect(-p*3*s, 0, p*s, p*s);
+                        graphics.fillRect(p*2*s, 0, p*s, p*s);
+                        graphics.fillRect(-p*s, -p*2*s, p*2*s, p*s);
+                        graphics.fillRect(-p*s, p*s, p*2*s, p*s);
+                        // Pupil (dark center)
                         graphics.fillStyle(0x000000, 1);
-                        graphics.fillCircle(0, 0, 6 * s);
+                        graphics.fillRect(-p*s, -p*s, p*2*s, p*2*s);
+                        // Highlight
                         graphics.fillStyle(0xffffff, 1);
-                        graphics.fillCircle(-1.5 * s, -1.5 * s, 2 * s);
+                        graphics.fillRect(-p*s, -p*s, p*s, p*s);
                         break;
                     case 'mouth':
-                        graphics.fillRoundedRect(-13 * s, -9 * s, 26 * s, 18 * s, 6 * s);
+                        // Speech bubble shape
+                        graphics.fillRect(-p*2*s, -p*2*s, p*5*s, p*3*s);
+                        graphics.fillRect(-p*3*s, -p*s, p*s, p*s);
+                        // Speech bubble tail
+                        graphics.fillRect(-p*2*s, p*s, p*s, p*s);
+                        graphics.fillRect(-p*3*s, p*2*s, p*s, p*s);
+                        // Lines inside (speech lines)
                         graphics.fillStyle(0x000000, 1);
-                        graphics.fillRect(-8 * s, -3 * s, 5 * s, 3 * s);
-                        graphics.fillRect(-1 * s, -3 * s, 5 * s, 3 * s);
-                        graphics.fillRect(5 * s, -3 * s, 5 * s, 3 * s);
-                        graphics.fillStyle(color, 1);
-                        graphics.fillTriangle(-13 * s, 6 * s, -7 * s, 6 * s, -18 * s, 15 * s);
+                        graphics.fillRect(-p*s, -p*s, p*3*s, p*s);
+                        graphics.fillRect(0, 0, p*2*s, p*s);
                         break;
                 }
             }
@@ -812,24 +856,31 @@
                 this.verbCoinVisible = true;
                 this.hoveredAction = null;
 
-                const coinRadius = this.verbCoinRadius;
+                const p = 4; // Pixel size minimum
+                const s = this.verbCoinScale;
+                const halfCoin = this.verbCoinSize / 2;
                 // Don't let verb coin overlap the hotspot label text at bottom
-                const textBuffer = this.isMobile ? 80 : 50;
-                const maxY = (this.hotspotLabelY || (height - 25)) - textBuffer - coinRadius;
-                let coinX = Phaser.Math.Clamp(x, coinRadius + 10, width - coinRadius - 10) + scrollX;
-                let coinY = Phaser.Math.Clamp(y, coinRadius + 10, maxY) + scrollY;
+                const textBuffer = this.isMobile ? p*20 : p*12;
+                const maxY = (this.hotspotLabelY || (height - p*6)) - textBuffer - halfCoin;
+                let coinX = Phaser.Math.Clamp(x, halfCoin + p*2, width - halfCoin - p*2) + scrollX;
+                let coinY = Phaser.Math.Clamp(y, halfCoin + p*2, maxY) + scrollY;
 
                 this.verbCoin.setPosition(coinX, coinY);
                 this.hotspotLabel.setText(hotspot.name);
 
-                const actionRadius = this.verbActionRadius;
-                const scale = this.verbCoinScale;
+                const actionSize = this.verbActionSize;
+                const halfAction = actionSize / 2;
                 this.verbCoinActions.forEach(action => {
                     action.bg.clear();
+                    // Square button with pixel-art border
                     action.bg.fillStyle(0x3d2817, 0.9);
-                    action.bg.fillCircle(0, 0, actionRadius);
-                    action.bg.lineStyle(3 * scale, action.color, 0.8);
-                    action.bg.strokeCircle(0, 0, actionRadius);
+                    action.bg.fillRect(-halfAction, -halfAction, actionSize, actionSize);
+                    // Border
+                    action.bg.fillStyle(action.color, 0.8);
+                    action.bg.fillRect(-halfAction, -halfAction, actionSize, p*s);
+                    action.bg.fillRect(-halfAction, halfAction - p*s, actionSize, p*s);
+                    action.bg.fillRect(-halfAction, -halfAction, p*s, actionSize);
+                    action.bg.fillRect(halfAction - p*s, -halfAction, p*s, actionSize);
                 });
 
                 this.verbCoin.setVisible(true);
@@ -874,29 +925,48 @@
                 const pointerX = pointer.x + scrollX;
                 const pointerY = pointer.y + scrollY;
 
+                const p = 4; // Pixel size minimum
+                const s = this.verbCoinScale;
+                const actionSize = this.verbActionSize;
+                const halfAction = actionSize / 2;
+                const hoverSize = actionSize + p*2*s; // Slightly larger on hover
+                const halfHover = hoverSize / 2;
+
                 let foundHover = null;
 
                 this.verbCoinActions.forEach(action => {
                     const actionX = coinX + action.x;
                     const actionY = coinY + action.y;
-                    const dist = Phaser.Math.Distance.Between(pointerX, pointerY, actionX, actionY);
 
-                    const actionRadius = this.verbActionRadius;
-                    const hoverRadius = this.verbActionHoverRadius;
-                    const scale = this.verbCoinScale;
-                    if (dist <= action.radius + 5) {
+                    // Check if pointer is within square bounds
+                    const inBounds = pointerX >= actionX - halfAction - p*s &&
+                                     pointerX <= actionX + halfAction + p*s &&
+                                     pointerY >= actionY - halfAction - p*s &&
+                                     pointerY <= actionY + halfAction + p*s;
+
+                    if (inBounds) {
                         foundHover = action.name;
                         action.bg.clear();
+                        // Highlighted square button
                         action.bg.fillStyle(action.color, 0.4);
-                        action.bg.fillCircle(0, 0, hoverRadius);
-                        action.bg.lineStyle(3 * scale, action.color, 1);
-                        action.bg.strokeCircle(0, 0, hoverRadius);
+                        action.bg.fillRect(-halfHover, -halfHover, hoverSize, hoverSize);
+                        // Border (brighter on hover)
+                        action.bg.fillStyle(action.color, 1);
+                        action.bg.fillRect(-halfHover, -halfHover, hoverSize, p*s);
+                        action.bg.fillRect(-halfHover, halfHover - p*s, hoverSize, p*s);
+                        action.bg.fillRect(-halfHover, -halfHover, p*s, hoverSize);
+                        action.bg.fillRect(halfHover - p*s, -halfHover, p*s, hoverSize);
                     } else {
                         action.bg.clear();
+                        // Normal square button
                         action.bg.fillStyle(0x3d2817, 0.9);
-                        action.bg.fillCircle(0, 0, actionRadius);
-                        action.bg.lineStyle(3 * scale, action.color, 0.8);
-                        action.bg.strokeCircle(0, 0, actionRadius);
+                        action.bg.fillRect(-halfAction, -halfAction, actionSize, actionSize);
+                        // Border
+                        action.bg.fillStyle(action.color, 0.8);
+                        action.bg.fillRect(-halfAction, -halfAction, actionSize, p*s);
+                        action.bg.fillRect(-halfAction, halfAction - p*s, actionSize, p*s);
+                        action.bg.fillRect(-halfAction, -halfAction, p*s, actionSize);
+                        action.bg.fillRect(halfAction - p*s, -halfAction, p*s, actionSize);
                     }
                 });
 
@@ -947,24 +1017,31 @@
 
                 this.verbCoin.setDepth(5000);
 
-                const coinRadius = this.verbCoinRadius;
+                const p = 4; // Pixel size minimum
+                const s = this.verbCoinScale;
+                const halfCoin = this.verbCoinSize / 2;
                 // Don't let verb coin overlap the hotspot label text at bottom
-                const textBuffer = this.isMobile ? 80 : 50;
-                const maxY = (this.hotspotLabelY || (height - 25)) - textBuffer - coinRadius;
-                let coinX = Phaser.Math.Clamp(x, coinRadius + 10, width - coinRadius - 10) + scrollX;
-                let coinY = Phaser.Math.Clamp(y, coinRadius + 10, maxY) + scrollY;
+                const textBuffer = this.isMobile ? p*20 : p*12;
+                const maxY = (this.hotspotLabelY || (height - p*6)) - textBuffer - halfCoin;
+                let coinX = Phaser.Math.Clamp(x, halfCoin + p*2, width - halfCoin - p*2) + scrollX;
+                let coinY = Phaser.Math.Clamp(y, halfCoin + p*2, maxY) + scrollY;
 
                 this.verbCoin.setPosition(coinX, coinY);
                 this.hotspotLabel.setText(item.name);
 
-                const actionRadius = this.verbActionRadius;
-                const scale = this.verbCoinScale;
+                const actionSize = this.verbActionSize;
+                const halfAction = actionSize / 2;
                 this.verbCoinActions.forEach(action => {
                     action.bg.clear();
+                    // Square button with pixel-art border
                     action.bg.fillStyle(0x3d2817, 0.9);
-                    action.bg.fillCircle(0, 0, actionRadius);
-                    action.bg.lineStyle(3 * scale, action.color, 0.8);
-                    action.bg.strokeCircle(0, 0, actionRadius);
+                    action.bg.fillRect(-halfAction, -halfAction, actionSize, actionSize);
+                    // Border
+                    action.bg.fillStyle(action.color, 0.8);
+                    action.bg.fillRect(-halfAction, -halfAction, actionSize, p*s);
+                    action.bg.fillRect(-halfAction, halfAction - p*s, actionSize, p*s);
+                    action.bg.fillRect(-halfAction, -halfAction, p*s, actionSize);
+                    action.bg.fillRect(halfAction - p*s, -halfAction, p*s, actionSize);
                 });
 
                 this.verbCoin.setVisible(true);
@@ -1915,12 +1992,13 @@
                 // Update hotspot label position - follows cursor/verb coin/item cursor
                 if (this.hotspotLabel) {
                     let labelX, labelY;
-                    const labelOffset = this.isMobile ? 80 : 50;
+                    const p = 4; // Pixel size minimum
+                    const labelOffset = this.isMobile ? p*20 : p*12;
 
                     if (this.verbCoinVisible && this.verbCoin) {
                         // Position above verb coin
                         labelX = this.verbCoin.x;
-                        labelY = this.verbCoin.y - this.verbCoinRadius - labelOffset;
+                        labelY = this.verbCoin.y - (this.verbCoinSize / 2) - labelOffset;
                     } else if (selectedItem && this.itemCursor && this.itemCursor.visible) {
                         // Position above item cursor
                         labelX = pointer.x + scrollX + 20;
