@@ -493,11 +493,15 @@
                     return;
                 }
 
-                // Check inventory button (use hover state set in update loop)
-                if (this.inventoryButtonHovered) {
-                    this.clickedUI = true;
-                    this.toggleInventory();
-                    return;
+                // Check inventory button (check coordinates directly for quick taps)
+                if (this.inventoryButtonArea) {
+                    const btn = this.inventoryButtonArea;
+                    if (pointer.x >= btn.x - btn.size/2 && pointer.x <= btn.x + btn.size/2 &&
+                        pointer.y >= btn.y - btn.size/2 && pointer.y <= btn.y + btn.size/2) {
+                        this.clickedUI = true;
+                        this.toggleInventory();
+                        return;
+                    }
                 }
 
                 // Check if touching an inventory item (for long-press pickup)
