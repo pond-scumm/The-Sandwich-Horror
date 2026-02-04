@@ -29,7 +29,10 @@ window.TSH = {
     
     // Save system (initialized in SaveSystem.js)
     Save: null,
-    
+
+    // Audio manager (initialized in AudioManager.js, requires game reference)
+    Audio: null,
+
     // Debug mode flag - set to true to enable debug overlay
     debug: false
 };

@@ -18,5 +18,10 @@ const config = {
 
 // Wait for the custom font to load before starting the game
 document.fonts.load('16px "Press Start 2P"').then(() => {
-    new Phaser.Game(config);
+    const game = new Phaser.Game(config);
+
+    // Initialize audio manager once game is ready
+    game.events.once('ready', () => {
+        TSH.Audio.init(game);
+    });
 });

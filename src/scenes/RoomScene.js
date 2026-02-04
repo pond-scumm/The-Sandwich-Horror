@@ -56,21 +56,93 @@ class RoomScene extends BaseScene {
         }
     }
 
-    // Preload image-based layers
+    // Preload image-based layers and audio
     preload() {
         if (this.shouldRedirect) return;
 
         const room = this.roomData;
-        if (!room.layers) return;
 
         // Load any image-based layers
-        room.layers.forEach((layerDef, index) => {
-            if (layerDef.type === 'image' && layerDef.src) {
-                const key = layerDef.src;
-                if (!this.textures.exists(key)) {
-                    console.log('[RoomScene] Preloading layer image:', key);
-                    this.load.image(key, key);
+        if (room.layers) {
+            room.layers.forEach((layerDef, index) => {
+                if (layerDef.type === 'image' && layerDef.src) {
+                    const key = layerDef.src;
+                    if (!this.textures.exists(key)) {
+                        console.log('[RoomScene] Preloading layer image:', key);
+                        this.load.image(key, key);
+                    }
                 }
+            });
+        }
+
+        // Preload room audio
+        this.preloadRoomAudio(room);
+
+        // Preload common SFX
+        this.preloadCommonSFX();
+    }
+
+    // Preload common sound effects used across all scenes
+    preloadCommonSFX() {
+        // Skip if running via file:// protocol
+        if (window.location.protocol === 'file:') return;
+
+        // Get all SFX from registry
+        if (!TSH.SFX || !TSH.SFX.getAllForPreload) return;
+
+        const sfxList = TSH.SFX.getAllForPreload();
+
+        sfxList.forEach(sfx => {
+            if (!this.cache.audio.exists(sfx.key)) {
+                this.load.audio(sfx.key, sfx.path);
+            }
+        });
+    }
+
+    // Preload audio assets defined in room data
+    preloadRoomAudio(room) {
+        if (!room.audio) return;
+
+        // Skip audio preload if running via file:// protocol (CORS issues)
+        if (window.location.protocol === 'file:') {
+            if (TSH.debug) {
+                console.log('[RoomScene] Skipping audio preload (file:// protocol - use a local server for audio)');
+            }
+            return;
+        }
+
+        const audioToLoad = [];
+
+        // Main music track
+        if (room.audio.music?.key) {
+            audioToLoad.push(room.audio.music.key);
+        }
+
+        // Additional audio layers (ambient, etc.)
+        if (room.audio.layers && Array.isArray(room.audio.layers)) {
+            room.audio.layers.forEach(layer => {
+                if (layer.key) {
+                    audioToLoad.push(layer.key);
+                }
+            });
+        }
+
+        // Load each audio file if not already cached
+        audioToLoad.forEach(key => {
+            if (!this.cache.audio.exists(key)) {
+                const musicPath = `assets/audio/music/${key}.mp3`;
+
+                if (TSH.debug) {
+                    console.log('[RoomScene] Preloading audio:', key);
+                }
+
+                // Add error handler to prevent console spam
+                this.load.audio(key, musicPath);
+                this.load.on('loaderror', (file) => {
+                    if (file.key === key && TSH.debug) {
+                        console.log(`[Audio] Could not load "${key}" - file may not exist yet`);
+                    }
+                });
             }
         });
     }
@@ -120,6 +192,12 @@ class RoomScene extends BaseScene {
 
         // Handle first visit
         this.handleFirstVisit();
+
+        // Handle room audio (music, ambient)
+        this.handleRoomAudio();
+
+        // Set footstep surface from room data
+        this.setFootstepSurface(this.roomData.footstepSurface || null);
 
         // Setup debug overlay (toggle with ` key)
         this.setupDebugOverlay();
@@ -597,6 +675,93 @@ class RoomScene extends BaseScene {
                     this.showDialog(room.firstVisit.dialogue);
                 });
             }
+        }
+    }
+
+    // ========== ROOM AUDIO ==========
+
+    handleRoomAudio() {
+        const room = this.roomData;
+        if (!room.audio || !TSH.Audio?.isReady()) return;
+
+        const previousRoom = TSH.State.getPreviousRoom();
+        const continueFrom = room.audio.continueFrom || [];
+
+        // Check if we should continue current music (same track already playing from allowed room)
+        const shouldContinueMusic = previousRoom &&
+            continueFrom.includes(previousRoom) &&
+            room.audio.music?.key &&
+            TSH.Audio.isPlaying(room.audio.music.key);
+
+        // Handle main music track
+        if (room.audio.music) {
+            const { key, volume = 0.7, fade = 1000 } = room.audio.music;
+
+            if (shouldContinueMusic) {
+                // Music continues - just adjust volume if needed
+                if (TSH.debug) {
+                    console.log(`[RoomScene] Music "${key}" continues from ${previousRoom}`);
+                }
+                TSH.Audio.setChannelVolume('main', volume);
+            } else {
+                // Start new music (or switch tracks)
+                TSH.Audio.playMusic(key, {
+                    channel: 'main',
+                    volume: volume,
+                    fade: fade
+                });
+            }
+        } else {
+            // No music defined for this room - stop main channel
+            TSH.Audio.stopMusic('main', { fade: 1000 });
+        }
+
+        // Handle additional audio layers (ambient sounds)
+        if (room.audio.layers && Array.isArray(room.audio.layers)) {
+            // Track which channels are used by this room
+            const usedChannels = new Set(['main']);
+
+            room.audio.layers.forEach(layer => {
+                const {
+                    key,
+                    channel = 'ambient',
+                    volume = 0.5,
+                    fade = 500
+                } = layer;
+
+                usedChannels.add(channel);
+
+                // Check if this layer should continue
+                const layerContinues = previousRoom &&
+                    continueFrom.includes(previousRoom) &&
+                    TSH.Audio.isPlaying(key);
+
+                if (layerContinues) {
+                    TSH.Audio.setChannelVolume(channel, volume);
+                } else {
+                    TSH.Audio.playMusic(key, {
+                        channel: channel,
+                        volume: volume,
+                        fade: fade
+                    });
+                }
+            });
+
+            // Stop any ambient channels not used by this room
+            ['ambient', 'ambient2'].forEach(ch => {
+                if (!usedChannels.has(ch) && TSH.Audio.channels[ch]) {
+                    TSH.Audio.stopMusic(ch, { fade: 500 });
+                }
+            });
+        } else {
+            // No layers defined - stop ambient channels
+            TSH.Audio.stopMusic('ambient', { fade: 500 });
+            TSH.Audio.stopMusic('ambient2', { fade: 500 });
+        }
+
+        if (TSH.debug) {
+            console.log(`[RoomScene] Audio setup complete for ${this.roomId}`);
+            TSH.Audio.dump();
         }
     }
 

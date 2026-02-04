@@ -23,6 +23,11 @@
                 this.runningHoldStartTime = 0;
                 this.interactionRange = 80;
 
+                // Footsteps
+                this.footstepTimer = null;
+                this.footstepIsLeft = true;  // Alternates left/right
+                this.footstepSurface = null; // Set by room data (null = default)
+
                 // Input tracking
                 this.pointerDownPos = null;
 
@@ -681,6 +686,9 @@
                 const animDuration = isRunning ? 100 : 200;
                 const legSwing = isRunning ? 8 : 5;
 
+                // Start footstep sounds
+                this.startFootsteps(isRunning);
+
                 this.bobTween = this.tweens.add({
                     targets: { progress: 0 },
                     progress: 1,
@@ -699,6 +707,7 @@
                 if (this.bobTween) this.bobTween.stop();
                 if (this.leftLeg) this.leftLeg.x = 0;
                 if (this.rightLeg) this.rightLeg.x = 0;
+                this.stopFootsteps();
             }
 
             // Stop character movement when UI opens (verb coin, inventory)
@@ -709,6 +718,55 @@
                 }
                 this.isWalking = false;
                 this.stopWalkAnimation();
+                this.stopFootsteps();
+            }
+
+            // ========== FOOTSTEPS ==========
+
+            startFootsteps(isRunning = false) {
+                this.stopFootsteps(); // Clear any existing timer
+
+                // Interval: walking ~400ms, running ~250ms
+                const interval = isRunning ? 250 : 400;
+
+                // Play first footstep immediately
+                this.playFootstep();
+
+                // Set up repeating timer
+                this.footstepTimer = this.time.addEvent({
+                    delay: interval,
+                    callback: () => this.playFootstep(),
+                    loop: true
+                });
+            }
+
+            stopFootsteps() {
+                if (this.footstepTimer) {
+                    this.footstepTimer.remove();
+                    this.footstepTimer = null;
+                }
+            }
+
+            playFootstep() {
+                // Determine which sound to play based on surface and foot
+                const foot = this.footstepIsLeft ? 'left' : 'right';
+                this.footstepIsLeft = !this.footstepIsLeft; // Alternate
+
+                let sfxName;
+                if (this.footstepSurface) {
+                    // Surface-specific footstep (e.g., 'wood' -> 'footstep_wood_left')
+                    sfxName = `footstep_${this.footstepSurface}_${foot}`;
+                } else {
+                    // Default footstep
+                    sfxName = `footstep_${foot}`;
+                }
+
+                TSH.Audio.playSFX(sfxName);
+            }
+
+            // Set footstep surface type (called by room data or scene)
+            setFootstepSurface(surface) {
+                this.footstepSurface = surface; // null, 'wood', 'stone', etc.
             }
 
             isPlayerNearHotspot(hotspot) {
@@ -821,6 +879,7 @@
             createCrosshairCursor(width, height) {
                 this.crosshairCursor = this.add.container(width / 2, height / 2);
                 this.crosshairCursor.setDepth(9000);
+                this.crosshairCursor.setScrollFactor(0);  // Fix to screen, not world
                 this.crosshairGraphics = this.add.graphics();
                 this.drawCrosshair(0xffffff);
                 this.crosshairCursor.add(this.crosshairGraphics);
@@ -828,6 +887,7 @@
                 // Create arrow cursor (for edge zone transitions)
                 this.arrowCursor = this.add.container(width / 2, height / 2);
                 this.arrowCursor.setDepth(6000);
+                this.arrowCursor.setScrollFactor(0);  // Fix to screen, not world
                 this.arrowCursor.setVisible(false);
                 this.arrowGraphics = this.add.graphics();
                 this.arrowCursor.add(this.arrowGraphics);
@@ -845,7 +905,7 @@
                     stroke: '#000000',
                     strokeThickness: strokeThickness,
                     align: 'center'
-                }).setOrigin(0.5).setDepth(6000);
+                }).setOrigin(0.5).setDepth(6000).setScrollFactor(0);  // Fix to screen
             }
 
             drawCrosshair(color) {
@@ -959,6 +1019,7 @@
             createItemCursor() {
                 this.itemCursor = this.add.container(0, 0);
                 this.itemCursor.setDepth(5000);
+                this.itemCursor.setScrollFactor(0);  // Fix to screen, not world
                 this.itemCursor.setVisible(false);
             }
 
@@ -1063,13 +1124,16 @@
                 this.inventoryButton.add(icon);
             }
 
-            toggleInventory() {
+            toggleInventory(silent = false) {
                 this.inventoryOpen = !this.inventoryOpen;
 
                 if (this.inventoryOpen) {
                     // Stop character movement when inventory opens
                     this.stopCharacterMovement();
                     this.setCrosshairHover(null);
+
+                    // Play inventory open sound
+                    if (!silent) TSH.Audio.playSFX('inventory_open');
 
                     const { width, height } = this.scale;
                     const scrollX = this.cameras.main.scrollX || 0;
@@ -1087,6 +1151,8 @@
                         ease: 'Back.out'
                     });
                 } else {
+                    // Play inventory close sound (unless silent close, e.g. dragging item out)
+                    if (!silent) TSH.Audio.playSFX('inventory_close');
                     this.selectedSlotHighlight.setVisible(false);
                     if (this.inventoryItemPressTimer) {
                         this.inventoryItemPressTimer.remove();
@@ -1128,7 +1194,8 @@
                 if (isOutside) {
                     if (!this.itemOutsideInventoryTimer) {
                         this.itemOutsideInventoryTimer = this.time.delayedCall(100, () => {
-                            if (this.inventoryOpen && this.selectedItem) this.toggleInventory();
+                            // Close silently (no sound) when dragging item out
+                            if (this.inventoryOpen && this.selectedItem) this.toggleInventory(true);
                             this.itemOutsideInventoryTimer = null;
                         });
                     }
@@ -1154,9 +1221,8 @@
 
                 this.addItemToSlot(item);
 
-                if (this.cache.audio.exists('pickupSound')) {
-                    this.sound.play('pickupSound', { volume: 0.7 });
-                }
+                // Note: No sound here - pickup sounds can be added to specific hotspots
+                // The 'item_select' SFX plays when clicking items in inventory
 
                 return true;
             }
@@ -1188,15 +1254,20 @@
 
                 if (!result) {
                     // No combination exists - keep cursor, just show message
+                    TSH.Audio.playSFX('item_fail');
                     this.showDialog(`I can't combine the ${itemA.name} with the ${itemB.name}.`);
                     return;
                 }
 
                 if (!result.success) {
                     // Combination exists but condition not met - keep cursor
+                    TSH.Audio.playSFX('item_fail');
                     this.showDialog(result.dialogue || "Something's missing...");
                     return;
                 }
+
+                // Successful combination!
+                TSH.Audio.playSFX('item_combine');
 
                 // Find slots containing both items
                 const slotA = this.inventorySlots.find(s => s.item && s.item.id === itemA.id);
@@ -1440,6 +1511,9 @@
                     this.deselectItem();
                     return;
                 }
+
+                // Play item select sound
+                TSH.Audio.playSFX('item_select');
 
                 this.selectedItem = item;
 
@@ -1962,23 +2036,23 @@
                 const scrollX = this.cameras.main.scrollX || 0;
                 const scrollY = this.cameras.main.scrollY || 0;
 
-                // Update crosshair position
+                // Update crosshair position (screen coordinates - scrollFactor 0)
                 if (this.crosshairCursor && this.crosshairCursor.visible) {
-                    this.crosshairCursor.setPosition(pointer.x + scrollX, pointer.y + scrollY);
+                    this.crosshairCursor.setPosition(pointer.x, pointer.y);
                 }
 
-                // Update arrow cursor position
+                // Update arrow cursor position (screen coordinates - scrollFactor 0)
                 if (this.arrowCursor && this.arrowCursor.visible) {
-                    this.arrowCursor.setPosition(pointer.x + scrollX, pointer.y + scrollY);
+                    this.arrowCursor.setPosition(pointer.x, pointer.y);
                 }
 
-                // Update item cursor position
+                // Update item cursor position (screen coordinates - scrollFactor 0)
                 const selectedItem = this.selectedItem;
                 if (selectedItem && this.itemCursor && this.itemCursor.visible) {
-                    this.itemCursor.setPosition(pointer.x + scrollX + 20, pointer.y + scrollY + 20);
+                    this.itemCursor.setPosition(pointer.x + 20, pointer.y + 20);
                 }
 
-                // Update hotspot label position - follows cursor/item cursor
+                // Update hotspot label position (screen coordinates - scrollFactor 0)
                 if (this.hotspotLabel) {
                     let labelX, labelY;
                     const p = 4; // Pixel size minimum
@@ -1986,18 +2060,18 @@
 
                     if (selectedItem && this.itemCursor && this.itemCursor.visible) {
                         // Position above item cursor
-                        labelX = pointer.x + scrollX + 20;
-                        labelY = pointer.y + scrollY - labelOffset;
+                        labelX = pointer.x + 20;
+                        labelY = pointer.y - labelOffset;
                     } else {
                         // Position above crosshair cursor
-                        labelX = pointer.x + scrollX;
-                        labelY = pointer.y + scrollY - labelOffset;
+                        labelX = pointer.x;
+                        labelY = pointer.y - labelOffset;
                     }
 
                     // Keep label on screen
                     const halfWidth = this.hotspotLabel.width / 2 || 100;
-                    labelX = Phaser.Math.Clamp(labelX, scrollX + halfWidth + 10, scrollX + width - halfWidth - 10);
-                    labelY = Math.max(labelY, scrollY + 30);
+                    labelX = Phaser.Math.Clamp(labelX, halfWidth + 10, width - halfWidth - 10);
+                    labelY = Math.max(labelY, 30);
 
                     this.hotspotLabel.setPosition(labelX, labelY);
                 }

@@ -1,7 +1,7 @@
 # The Sandwich Horror — Architecture Guide
 ## For Claude Code Implementation
 
-Last Updated: February 2026
+Last Updated: February 4, 2026
 
 ---
 
@@ -32,6 +32,10 @@ This document captures all architecture decisions made during planning. Claude C
 - [x] 2-action interaction system (left-click Use/Talk, right-click Examine)
 - [x] Interior room data file with 18 hotspots and draft dialogue (`src/data/rooms/interior.js`)
 - [x] NPC conversation system (`enterConversation`, `showDialogueOptions`, `exitConversation`, `showConversationLine` in BaseScene.js)
+- [x] Audio manager with channel-based music, SFX, volume categories (`src/AudioManager.js`)
+- [x] Room music integration with auto-preload and smart continuity (`RoomScene.js`)
+- [x] SFX registry with action hooks for inventory, items, UI (`src/data/audio/sfx.js`)
+- [x] Footstep system with left/right alternation, walking/running tempo, surface support
 
 ### TODO (Not Yet Implemented)
 - [x] **Item-on-item combinations** — Click item B while item A is selected to combine (`tryCombineItems` in BaseScene.js)
@@ -60,13 +64,14 @@ Everything lives under `window.TSH` to avoid global scope pollution.
 ```javascript
 window.TSH = {
     Rooms: {},        // Room definitions
-    NPCs: {},         // NPC definitions  
+    NPCs: {},         // NPC definitions
     Dialogue: {},     // Dialogue trees
     Items: {},        // Item definitions
     Actions: {},      // Puzzle action functions
     Combinations: {}, // Item crafting recipes
     State: null,      // GameState manager
     Save: null,       // Save system
+    Audio: null,      // Audio manager (initialized after game created)
     debug: false      // Debug mode toggle
 }
 ```
@@ -240,7 +245,169 @@ Version field enables future migration of old saves.
 
 ---
 
-## 7. NPC States
+## 7. Audio System
+
+Channel-based audio with volume categories. Initialized after Phaser game creates.
+
+### Volume Categories
+| Category | Controls |
+|----------|----------|
+| master | Everything (global multiplier) |
+| music | Background music + ambient loops |
+| sfx | Sound effects (pickup, doors, footsteps) |
+| voice | Dialogue/speech |
+
+### Music Channels
+Multiple tracks can play simultaneously on different channels:
+- `main` — Primary background music
+- `ambient` — Secondary environmental loops (generator hum, TV audio)
+- `ambient2` — Third channel for layered ambience
+
+### API
+```javascript
+// Music
+TSH.Audio.playMusic('lab_theme', { channel: 'main', volume: 0.7, fade: 1000 })
+TSH.Audio.playMusic('tv_audio', { channel: 'ambient', volume: 0.4 })
+TSH.Audio.stopMusic('main', { fade: 500 })
+TSH.Audio.stopAllMusic({ fade: 1000 })
+TSH.Audio.isPlaying('lab_theme')           // → true/false
+
+// SFX
+TSH.Audio.playSFX('pickup', { volume: 0.8 })
+
+// Voice
+TSH.Audio.playVoice('nate_greeting')
+
+// Volume control
+TSH.Audio.setVolume('master', 0.8)
+TSH.Audio.setVolume('music', 0.6)
+TSH.Audio.getVolume('sfx')                 // → 0.8
+
+// Utility
+TSH.Audio.duckMusic(2000)                  // Lower music for dialogue
+TSH.Audio.pauseAll()
+TSH.Audio.resumeAll()
+TSH.Audio.dump()                           // Debug: log audio state
+```
+
+### Asset Folder Structure
+```
+assets/audio/
+├── music/          # Background music loops
+├── ambient/        # Environmental sounds
+├── sfx/            # Sound effects
+└── voice/          # Dialogue lines
+```
+
+### Preloading Audio (in scene preload)
+```javascript
+preload() {
+    this.load.audio('lab_theme', 'assets/audio/music/lab_theme.mp3');
+    this.load.audio('pickup', 'assets/audio/sfx/pickup.mp3');
+}
+```
+
+### Room Audio Config
+RoomScene automatically handles audio based on room data. Audio is preloaded and transitions are managed.
+
+```javascript
+TSH.Rooms.alien_room = {
+    // ...other properties
+    audio: {
+        // Main music track (plays on 'main' channel)
+        music: {
+            key: 'alien_theme',     // assets/audio/music/alien_theme.mp3
+            volume: 0.7,            // Base volume 0-1 (default: 0.7)
+            fade: 1000              // Fade in duration ms (default: 1000)
+        },
+        // Additional ambient layers
+        layers: [
+            {
+                key: 'tv_soap_opera',   // assets/audio/music/tv_soap_opera.mp3
+                channel: 'ambient',      // 'ambient' or 'ambient2'
+                volume: 0.5,
+                fade: 500
+            }
+        ],
+        // Don't restart music if coming from these rooms
+        continueFrom: ['franks_room', 'hallway']
+    }
+}
+```
+
+**Behavior:**
+- Music auto-loops
+- If same track already playing from a `continueFrom` room, it continues seamlessly
+- Unused ambient channels are automatically stopped when entering a room
+- Audio files are preloaded during scene preload phase
+
+### Sound Effects (SFX)
+SFX are defined in `src/data/audio/sfx.js` and auto-preloaded by RoomScene.
+
+```javascript
+// Play by name (looks up in TSH.SFX registry)
+TSH.Audio.playSFX('pickup');
+TSH.Audio.playSFX('door_open', { volume: 0.5 });
+
+// Registry defines: key, path, default volume
+TSH.SFX.pickup = {
+    key: 'sfx_pickup',
+    path: 'assets/audio/sfx/pickup.wav',  // WAV for SFX (no decode delay)
+    volume: 0.7
+};
+```
+
+**Built-in action hooks** (already wired up in BaseScene):
+| Action | SFX |
+|--------|-----|
+| Pick up item | `pickup` |
+| Open inventory | `inventory_open` |
+| Close inventory | `inventory_close` |
+| Select item | `item_select` |
+| Combine items (success) | `item_combine` |
+| Combine items (fail) | `item_fail` |
+
+**To add a new SFX:**
+1. Add WAV file to `assets/audio/sfx/` (WAV preferred for SFX - no decode delay)
+2. Add entry to `src/data/audio/sfx.js`
+3. Call `TSH.Audio.playSFX('name')` where needed
+
+### Footsteps
+Footsteps play automatically when Nate walks or runs, alternating left/right.
+
+**Files needed:**
+```
+assets/audio/sfx/footstep_left.wav
+assets/audio/sfx/footstep_right.wav
+```
+
+**Timing:**
+- Walking: ~400ms between steps
+- Running: ~250ms between steps
+
+**Surface types (optional):**
+Rooms can specify a footstep surface in their data:
+```javascript
+TSH.Rooms.woods = {
+    // ...other properties
+    footstepSurface: 'stone'  // Uses footstep_stone_left.wav, footstep_stone_right.wav
+}
+```
+
+If `footstepSurface` is not set, uses default `footstep_left.wav` / `footstep_right.wav`.
+
+### Legacy Scene Audio
+For non-data-driven scenes, call TSH.Audio directly:
+```javascript
+create() {
+    super.create();
+    TSH.Audio.playMusic('scene_theme', { channel: 'main', volume: 0.6 });
+}
+```
+
+---
+
+## 8. NPC States
 
 Tracked as string enums in `TSH.State`:
 
@@ -257,13 +424,14 @@ Tracked as string enums in `TSH.State`:
 
 ---
 
-## 8. File Structure
+## 9. File Structure
 
 ```
 src/
 ├── TSH.js                          # Global namespace (load first)
 ├── GameState.js                    # State manager
 ├── SaveSystem.js                   # Save/load
+├── AudioManager.js                 # Audio system
 ├── BaseScene.js                    # Parent scene class
 ├── config.js                       # Phaser config (load last)
 ├── data/
@@ -277,6 +445,8 @@ src/
 │   ├── items/                      # Item & combination data
 │   │   ├── items.js
 │   │   └── combinations.js
+│   ├── audio/                      # Audio definitions
+│   │   └── sfx.js                  # SFX registry
 │   ├── dialogue/                   # Dialogue trees
 │   │   ├── hector.js
 │   │   └── ...
@@ -289,11 +459,11 @@ src/
 
 ---
 
-## 9. Script Loading Order (index.html)
+## 10. Script Loading Order (index.html)
 
 1. Phaser CDN
 2. `TSH.js` (namespace)
-3. `GameState.js`, `SaveSystem.js` (core systems)
+3. `GameState.js`, `SaveSystem.js`, `AudioManager.js` (core systems)
 4. `data/**/*.js` (all game data)
 5. `BaseScene.js` (scene base class)
 6. `scenes/*.js` (scene classes)
@@ -301,7 +471,7 @@ src/
 
 ---
 
-## 10. Technical Specs
+## 11. Technical Specs
 
 - **Engine:** Phaser 3.60 via CDN
 - **No build tools.** No npm, no bundler. Script tags only.
@@ -314,7 +484,7 @@ src/
 
 ---
 
-## 11. Room List (18 rooms, 5-6 cuttable)
+## 12. Room List (18 rooms, 5-6 cuttable)
 
 1. Bus Stop (cutscene only, cuttable)
 2. Woods (intro only, cuttable)
@@ -337,7 +507,7 @@ src/
 
 ---
 
-## 12. What NOT to Do
+## 13. What NOT to Do
 
 - Don't use Phaser registry for game state (use TSH.State)
 - Don't write monolithic scene classes with inline drawing code
@@ -348,7 +518,7 @@ src/
 
 ---
 
-## 13. Interaction Systems
+## 14. Interaction Systems
 
 ### 2-Action System
 - **Left-click on background**: Walk to location
@@ -390,7 +560,7 @@ src/
 
 ---
 
-## 14. Conversation Mode
+## 15. Conversation Mode
 
 When player left-clicks on an NPC, the game enters conversation mode:
 
@@ -415,7 +585,7 @@ When player left-clicks on an NPC, the game enters conversation mode:
 
 ---
 
-## 15. Mobile Optimization
+## 16. Mobile Optimization
 
 ### Touch Targets
 - Verb coin actions: Minimum 60px, recommended 70px
@@ -439,7 +609,7 @@ When player left-clicks on an NPC, the game enters conversation mode:
 
 ---
 
-## 16. Testing Checklist
+## 17. Testing Checklist
 
 ### Core Functionality
 - [ ] Character walks correctly within walkable area

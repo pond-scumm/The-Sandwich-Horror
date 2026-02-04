@@ -1140,6 +1140,22 @@
             ]
         },
 
+        // ========== AUDIO ==========
+        // music: Main background track (plays on 'main' channel)
+        // layers: Additional ambient sounds (each on its own channel)
+        // continueFrom: Don't restart music if coming from these rooms
+        audio: {
+            music: {
+                key: 'interior_theme',      // assets/audio/music/interior_theme.mp3
+                volume: 0.6,
+                fade: 1000
+            },
+            // layers: [
+            //     { key: 'fire_crackle', channel: 'ambient', volume: 0.3 }
+            // ],
+            continueFrom: ['laboratory']    // Music continues when returning from lab
+        },
+
         // Single layer - original art preserved exactly
         // Can be split into multiple parallax layers later
         layers: [
