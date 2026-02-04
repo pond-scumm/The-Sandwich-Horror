@@ -1848,11 +1848,11 @@
                 this.settingsReturnBtnBg = returnBtnBg;
                 this.settingsReturnBtnHovered = false;
 
-                // Version number at bottom of panel
-                const versionText = this.add.text(0, panelHeight/2 - 15, 'v0.1.7', {
+                // Version number above Return button
+                const versionText = this.add.text(0, btnY - 45, 'v0.1.8', {
                     fontFamily: '"Press Start 2P", cursive',
-                    fontSize: '8px',
-                    color: '#666688'
+                    fontSize: '14px',
+                    color: '#ffffff'
                 }).setOrigin(0.5);
                 this.settingsPanel.add(versionText);
 
