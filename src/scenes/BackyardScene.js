@@ -1,6 +1,7 @@
-﻿        class BackyardScene extends BaseScene {
+﻿        // Room ID: 'backyard'
+        class BackyardScene extends BaseScene {
             constructor() {
-                super({ key: 'BackyardScene' });
+                super({ key: 'backyard' });
                 this.worldWidth = 1920; // 1.5x screen width
                 this.screenWidth = 1280;
                 this.walkableArea = { minY: 0.68, maxY: 0.92 };
@@ -180,7 +181,7 @@
                 }
 
                 // Create player at spawn position
-                const spawnPoint = this.registry.get('spawnPoint') || 'default';
+                const spawnPoint = this.getSpawnPoint();
                 let spawnX = 300;
                 if (spawnPoint === 'from_house') spawnX = 250;
                 else if (spawnPoint === 'right') spawnX = this.worldWidth - 200;
@@ -197,10 +198,8 @@
                 );
 
                 // Mark room as visited
-                const state = this.getGameState();
-                if (!state.visitedRooms.includes('backyard')) {
-                    state.visitedRooms.push('backyard');
-                    this.setGameState(state);
+                if (!TSH.State.hasVisitedRoom('backyard')) {
+                    TSH.State.markRoomVisited('backyard');
                     this.showDialog("Ah, the backyard. Nice to get some fresh air. And those lights over the fence look inviting...");
                 }
             }
@@ -521,7 +520,7 @@
 
                 if (action === 'Use') {
                     if (hotspot.name === 'Back Door') {
-                        this.transitionToScene('GameScene', 'from_backyard');
+                        this.transitionToScene('interior', 'from_backyard');
                     } else if (hotspot.name === 'Gate') {
                         this.showDialog(hotspot.useResponse);
                     } else {
@@ -713,11 +712,11 @@
                     if (isDoubleClick) {
                         // Immediate transition
                         this.hideArrowCursor();
-                        this.transitionToScene('NeighborYardScene', 'from_backyard');
+                        this.transitionToScene('earls_yard', 'from_backyard');
                     } else {
                         // Walk to gate then transition
                         this.hideArrowCursor();
-                        this.walkToEdgeAndTransition(gateX, height * 0.80, 'NeighborYardScene', 'from_backyard');
+                        this.walkToEdgeAndTransition(gateX, height * 0.80, 'earls_yard', 'from_backyard');
                     }
                 });
             }

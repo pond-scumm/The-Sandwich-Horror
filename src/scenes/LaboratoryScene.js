@@ -1,6 +1,7 @@
-﻿        class LaboratoryScene extends BaseScene {
+﻿        // Room ID: 'laboratory'
+        class LaboratoryScene extends BaseScene {
             constructor() {
-                super({ key: 'LaboratoryScene' });
+                super({ key: 'laboratory' });
                 this.worldWidth = 2560; // 2x screen width
                 this.screenWidth = 1280;
                 this.walkableArea = { minY: 0.68, maxY: 0.90 };
@@ -289,7 +290,7 @@
                 this.createHotspots(this.getHotspotData(height));
 
                 // Create player at spawn position
-                const spawnPoint = this.registry.get('spawnPoint') || 'default';
+                const spawnPoint = this.getSpawnPoint();
                 let spawnX = 300;
                 if (spawnPoint === 'from_house') spawnX = 250;
                 else if (spawnPoint === 'right') spawnX = this.worldWidth - 200;
@@ -305,10 +306,8 @@
                 );
 
                 // Mark room as visited
-                const state = this.getGameState();
-                if (!state.visitedRooms.includes('laboratory')) {
-                    state.visitedRooms.push('laboratory');
-                    this.setGameState(state);
+                if (!TSH.State.hasVisitedRoom('laboratory')) {
+                    TSH.State.markRoomVisited('laboratory');
                     this.showDialog("Well. This explains the electricity bill.");
                 }
             }
@@ -638,7 +637,7 @@
                 console.log('[Lab] executeAction:', action, hotspot.name);
                 if (action === 'Use') {
                     if (hotspot.name === 'Door to House') {
-                        this.transitionToScene('GameScene', 'from_lab');
+                        this.transitionToScene('interior', 'from_lab');
                     } else {
                         this.showDialog(hotspot.useResponse);
                     }

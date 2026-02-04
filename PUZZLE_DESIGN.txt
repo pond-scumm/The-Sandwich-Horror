@@ -1,0 +1,479 @@
+﻿The Sandwich Horror                Puzzle Document
+The Sandwich Horror
+ C:\Users\cmallon\Pictures\Personal\Game\tumblr_nuqgx97UnS1trynmyo1_500.jpg 
+
+PUZZLE DOCUMENT
+Chris Mallon
+Part One
+ C:\Users\cmallon\Pictures\Personal\Game\JustImagineLab.jpg 
+
+Characters
+NATHANIEL BARNSWALLOW…….A hapless wannabe scientist, determined to get a job
+HECTOR MANZANA…………..An eccentric scientist on the brink of a major breakthrough
+EARL…………Hector’s laid-back neighbor. Enjoys grilling and tiki lights. Also he’s a bigfoot
+HARRY……………………….……….An alien visitor come to destroy earth distracted by soap operas
+FRANK…………...A gentle giant and abomination. Currently suffering an unrequited crush
+VICTOR……………………………………The brain of Hector’s petty and fragile childhood rival, in a jar
+BUS DRIVER…….............................................A weary bystander delivering Nate into the unknown
+
+
+
+
+
+
+
+
+
+
+Puzzle Structure
+  
+
+
+
+3 easy linear puzzles to start!
+
+
+
+
+
+
+
+
+A little harder and non-linear!
+
+
+
+
+
+
+Then the whole game opens up into a big sprawling mess!
+
+
+
+
+
+
+
+
+One last challenge before the end!
+
+
+
+
+
+
+Location Layout
+
+
+  
+
+
+
+
+
+
+
+
+
+Cut-Scene and Puzzle Descriptions
+Cut-Scene: Intro
+
+
+  
+
+
+
+Deep in New England…
+
+
+Music plays as dusk passes over a sleepy New England town.  As credits begin to roll, scenes of life are displayed: A glowing building marked ‘Keep Out’. A small ‘Help Wanted’ ad in a magazine. A police dossier of some usual suspects. Someone purchasing a bus ticket. A newspaper article about mysterious disappearances. A kid asleep on a bus as it leaves a densely populated city. An abandoned sanitarium. A kid sleeping on a bus as it passes through sparse suburbs during sunset. A street light turning on outside a foreboding church. A kid sleeping as a bus drives through the country in complete darkness. The music ends. The screen goes black.
+
+
+Brakes of the bus screech and hiss, followed by sounds of a door opening.
+
+
+“Hey…”
+
+
+“Hey kid, wake up!”
+
+
+The scene returns as the kid asleep in the back of the bus jerks awake and stares blankly for a moment. 
+
+
+“This is the last stop. Are you getting out or what?”
+
+
+The kid moves to the front of the bus, slowly and silently.
+
+
+“Are you sure you want to be left alone out here?”  
+“There won’t be another bus coming this way for a week”
+
+
+“Yeah, I’m sure.”
+
+
+“What could possibly be out here for you?”
+          
+The kid pauses, perhaps deep in thought, perhaps just for dramatic emphasis.  He faces the camera.        
+
+
+“I want to be a scientist.” 
+
+
+Puzzle #1: Enter the Lab
+
+
+  
+  
+
+
+
+After leaving the bus stop, Nate traverses a dark country road.  He passes a moonlit field full of fireflies and contemplates on how well the atmosphere is being established in this game already.  The music is soothing yet mysterious, creating a melancholy vibe with a slight sense of foreboding. 
+        
+He passes numerous warning signs bearing ominous slogans like “Beware of Toxic Sludge”, “Trespassers will be vaporized”, and “Help Wanted”. Eventually he approaches a remote building.  It’s half homestead, half aircraft hangar.  Every window is darkened, except for an erratic light shooting from the garage doors.  Nate is faced with a reinforced door with many high-tech security measures. 
+        
+He tries ringing the doorbell (seems to be broken). He tries knocking (no answer). He tries shouting (still no answer). Finally, he tries to open the door… but the door is locked!
+
+
+Solution:
+
+
+Nate recognizes the most basic and obvious of adventure game puzzles when he sees one and looks under the welcome mat for a key.  Instead he finds a crowbar.  There is also a post-it note with a hasty scrawl, “Note to self - Get extra key”. 
+
+
+No matter.  Nate uses the crowbar on the door and begins his journey into the fast-paced world of transcendental metaphysics by breaking and entering. 
+
+
+Puzzle #2: Get Hired
+
+
+  
+
+
+
+Upon entering the lab, Nate finds himself surrounded by insane contraptions and mind-bending weirdness. The erratic glowing seems to be coming from the back of the building.  The scene pans, revealing a mustachioed man wearing a lab coat and intricate safety goggles.  He is hard at work on a large device, sending sparks flying in every direction.
+
+
+Nate announces himself with a quiet *ahem* and the man looks up, inserting a pipe into his mouth.  The scene immediately shifts to a conversation with Hector.
+
+
+Hector politely informs Nate that he’s trespassing and has a disintegration ray pointed directly at that big bushy hairdo. Nate is scared speechless. Hector begins to think he’s either drunk or stupid. Nate finally regains control of his speech and attempts to navigate a twisting dialogue tree, but ultimately Hector decides he’s seen too much.
+
+
+Solution: 
+
+
+Nate hands Hector the ‘Help Wanted’ advertisement he carried in his inventory. Hector is surprised. “You’re braver than you look”. Normally there would be an intense screening process including a full manual brain scan (a.k.a. Hector will shrink down and walk around your brain). Luckily for Nate, Hector is on to something BIG tonight and could use any extra set of hands. Seeing as how he meets the number one requirement (he’s here right now), Nate is temporarily hired on a trial basis for the night.
+
+
+Puzzle #3: Ignition Sequence
+
+
+  
+
+
+
+So Nate has officially started his career as a Super-Scientist. His first challenge is to configure the polarity on Hector’s device. Hector gives Nate a list of instructions to perform as a final Ignition Sequence while he goes to secure the lab and make sure they don't have any other uninvited guests. When Nate looks at the instructions he finds an incomprehensible mess, literally impossible to complete with any confidence. “Pull the XYZ”? But there are 2! “Set the ABC to 11”? It only goes to 10!
+
+
+Solution: 
+
+
+Nate is working on a trial basis for the night and refuses to ask for help. So he makes a guess. Any combination will “work”. But there is an ominous feeling that something is about to go horribly wrong… 
+
+
+Cut-Scene: Now, Stand Back, For Your Own Safety
+
+
+  
+  
+
+
+
+Hector returns right as Nate finishes the ignition sequence. The machine kicks to life with a loud bang. (Is this concerning? Hector doesn’t seem fazed.) The final step is for both Hector and Nate to simultaneously activate their stations to maintain the temporal connection. 
+
+
+An ominous “clank”. The lights are getting too bright. The portal opens wider and wider. Too wide. 
+
+
+“Uh oh” Hector shows concern for the first time. 
+“Good heavens! What have I done?!?!?” Hector cries out as he is vaporized on the spot. 
+
+
+Title Card
+
+
+Immediate cut to the title card
+
+
+  
+
+
+
+Part One: Failure
+
+
+(“No One Is Watching” by DeVotchKa plays)
+
+
+
+
+Puzzle #4: Find Hector
+
+
+Something went wrong and now Nate is alone in the laboratory. “Hello? Hector?” From the next room over, Nate hears a loud CRASH and an “OOF” and an “Not again.” Nate can talk through a door to a back room and discover that Hector has been teleported. The door is locked and Hector can’t open it from his side. But “don’t worry Nate”, he’ll figure it out soon enough. 
+
+
+Nate isn’t going to sit idly by while Hector rescues himself. This night is a trial run after all. So he begins looking for a way to open the locked door.
+
+
+Solution:
+
+
+        Nate finds….. Stuff. And opens the door with it. Probably 2 things that he combines into a key of some sort. A retina scanner? A finger print? That’s overdone.
+
+
+Eventually Nate opens the locked door to find an empty room. He hears banging coming from a locker against the wall. He opens it to discover Hector. But to Nate’s surprise, Hector’s body comes running out of the locker, leaving his head behind on a shelf. Hector seems no worse for wear despite being decapitated. 
+
+
+“Nothing we can’t handle, Nate!” 
+
+
+Puzzle #5: Damage Report
+
+
+  
+
+
+
+The portal device is in shambles. Smoke pours out of the machinery. Gadgets and gizmos are scattered all over the lab. So many parts appear broken. Hector needs a readout from the lab computer to assess the worst of the damage. 
+
+
+Nate attempts to log into the computer but is prompted to enter a password. Unfortunately, Hector hasn’t used it in years and doesn’t remember it. The system must have rebooted.
+
+
+Solution:
+
+
+After making a failed attempt, Nate sees the “Forgot Password?” option. Selecting this prompts him to answer 3 security questions. Unfortunately, Hector doesn’t remember the answers to those either. 
+
+
+Nate needs to look around the lab for old photographs, articles, and journal entries that answer the security questions so he can successfully log in. Once he’s logged into the system he can print the damage report. He can also unlock the lab from this computer, but that requires Hector’s key card. 
+
+
+Puzzle #6: Unlock Lab
+
+
+  
+  
+  
+
+
+
+Before starting the experiment, Hector locked the door to the lab so you wouldn't be interrupted. Problem is, the key is in his coat pocket which is now running mindlessly around the lab.
+
+
+Nate  can try to catch Hector's body but it always remains out of reach. One of his arms is now acting as a coat hanger holding up a lab coat. Nate can attempt to take the lab coat but the stubborn hand refuses to let go. 
+
+
+Solution: 
+
+
+Nate finds a dusty book of scientific ethics. Then uses the book on Hector's face to blow dust, causing him to sneeze. This causes the hand to drop the jacket. Now Nate can chase the body into the hand, which captures the body for good. Nate can now retrieve the key card from Hector's lab coat. Combined with his access to the lab controls, he can finally exit the lab to explore the rest of the house.
+
+
+The Broken Components
+
+
+Now the game really begins! With a full diagnostic readout and damage report, Nate is free to explore Hector’s laboratory home. He can tackle the following puzzles in any order. If he gets stuck pursuing one, he can still make progress in another. He’ll need everything in place before he can repair the broken experiment, run it in reverse, save the day, and ultimately secure his internship!
+
+
+Hector’s analysis has found four major components that will need to be repaired or replaced:
+
+
+1. The Temporal Synchronizer
+2. The Nuclear Energy Resonator
+3. The Interdimensional Relay Service
+4. The Stabilizer Cortex (Neural CPU)
+
+
+Solution:
+
+
+Nate is momentarily dazzled by the technobabble. He studies the read out closely, and looks at the device. Upon further examination he might just be able to find suitable replacements for each damaged component... 
+
+
+Puzzle #7: Temporal Synchronizer
+
+
+  
+  
+  
+
+
+
+Damage Report: The Temporal Synchronizer is a key component in maintaining a stable timeline during the experiment. The explosion has caused temporal anomalies, creating time loops and shifts in the surrounding area. Repairing the Temporal Synchronizer is crucial to restore the proper flow of time and prevent further disruptions.
+
+
+Nate deduces that this component is basically a fancy clock. He can see a suitable replacement high on a wall, far out of reach. He'll need an assortment of items to ultimately reach the goal. 
+
+
+Solution:
+
+
+First he finds a box of "Moon Shoes" (or Satellite Shoes). The box clearly describes that they are for ‘jumping’ and ‘getting some height’. Nate thinks this is the right track. But the moon shoes are broken! They need two springs. The first spring can be found easily enough by exploring the lab. Opening a cabinet on the experiment causes a spring to explode out. The second can be found in a lumpy mattress in Frank's bedroom. Nate picks up a scalpel from the lab that he can use to cut the mattress and retrieve the spring. But it turns out, the shoes don't get him high enough. He'll need something more.
+
+
+Meanwhile, Nate explores the backyard. He finds a tall fence with glowing lights, cool music, and delicious smells coming from the other side. Nate can talk-to the fence. The eyes of Earl the neighbor appear and start to talk to Nate. By saying the right things, Nate can score an invite to his yard and a hidden door opens in the fence. In Earl's backyard, Nate can see a ladder. Maybe THIS will help reach the clock. Nate tries to take it but Earl stops him. Nate asks if he can borrow it and Earl says he couldn't possibly loan Hector more stuff until some of it's returned.  Earl tells Nate that Hector borrowed (something) three years ago and hasn't returned it. Nate goes off looking for the borrowed/stolen item. He discovers it being put to an unexpected use (something like holding up a coffee table but more surprising). He returns the item and receives the ladder. But the ladder isn't tall enough either!
+
+
+Nate must combine the ladder and the Moon Shoes to reach the clock. Jumping off the ladder results in the extra oomph needed… to soar past the clock and hit the ceiling. But the resulting crash causes the clock to fall off the wall anyway, hitting Nate in the head. Can't argue with results. Nate, ever the scientist, declares, "That shouldn't have worked. Newton would be furious."
+
+
+Puzzle #8: Nuclear Energy Resonator
+
+
+  
+  
+
+
+
+Damage Report: A highly advanced power supply unit essential for providing the experiment with a stable source of nuclear energy. When the experiment exploded, the Nuclear Energy Resonator was heavily damaged, causing the energy supply to fluctuate wildly and endangering the entire facility and surrounding 20 mile radius.
+
+
+Nate finds a nuclear generator in the basement. He can see it powers two parts of the lab (Lab 1 and Lab 2). The Lab 1 option is off, and a fuse appears to be blown, but Lab 2 is still active. Hector will tell Nate that he has spare fuses in the secure storage (blocked by lasers). Nate can unplug the generator from the wall (unplug it and plug it back in, IT 101). Upon unplugging it, the laser security system in the lab deactivates, however a backup security robot is now deployed, preventing Nate from entering the storage room.
+
+
+Solution:
+
+
+Nate can find a padlock around the house. He can use this padlock to lock the security robot in its charging station. This allows him to access the back room. However, he discovers it's empty! Back to the drawing board. Nate can also find one of those old-timey wind up monkeys banging cymbals together. He can place that in the back room. If he unlocks the robot again, it will deploy and investigate the disturbance. If Nate walks into the storage room, the robot is attempting to shoot the monkey (and missing) (“Freeze dirtbag” it says to the stationary toy), but when it sees Nate it changes targets, forcing Nate to run out of the room. 
+
+
+Nate needs to lock the charging station while the robot is outside, then turn the generator back on to enable the primary security system. This enables the lasers and causes the robot to return to its station (“Powering down”). But it can't because of the lock, so it ineffectually bumps into the wall, allowing Nate to open a back panel and take out the fuse. The fuse disables the robot and can be used to fix the power supply.
+
+
+Puzzle #9: Interdimensional Relay Service
+
+
+  
+  
+
+
+
+Damage Report: The Interdimensional Relay Service is a device that focuses collected shadow and light to produce a visual approximation of localized parallel phenomena in a format perceivable by 3 dimensional entities. The explosion has fractured the Interdimensional Interface. The damage has led to an unstable connection between dimensions, and the display is completely cracked.
+
+
+Nate soon figures out that this component is basically a ‘monitor’. As you explore the house, you find some pull-down stairs to the attic. In the attic is the messy room of an angsty teenager, except the occupant is an alien. You can talk to the alien, he's grumpy and rude and generally dislikes earthlings (but also clearly lonely and pathetic). You learn he's come to earth to destroy it, but his ship crashed and extinction device was broken and he got distracted by cheesy earthling sitcoms (“They’re so cruel to each other! Haha!”). He's watching a TV which would be the perfect replacement part, but he won't let you touch it. 
+
+
+Solution:
+
+
+        As Nate explores, he exits a window and finds a satellite dish on the roof. It has a keypad to enter new coordinates. Changing this points the satellite in a new direction and the channel on the TV. If Nate changes it to any random channel, the alien likes the new show. Nate needs to talk to the alien and find out what he absolutely HATES. Then he needs to find a TV Guide to know the specific channel to tune to. If he tunes to this channel, it enrages the alien, but he quickly changes it back with his remote. 
+
+
+So now he has to sabotage the satellite by sticking a wrench into it to prevent it from moving back. Combining this with the right channel means the alien will leave his room to come to the roof and fix the problem. Nate can enter the room and try to steal his stuff, but the alien comes back too quickly!
+
+
+The final step is to lock the window to the roof once he leaves, trapping the alien outside, allowing Nate to abscond with the TV. 
+
+
+Puzzle #10: Stabilizer Cortex - a.k.a. Neural CPU
+
+
+  
+  
+  
+
+
+
+Damage Report: The stabilizer core is a central processing unit responsible for maintaining order through an advanced intelligence assisted process, composed of a composite of neural plasticities. The explosion has disrupted the core's delicate balance, causing rifts in spacetime and unpredictable energy fluctuations. Replacing the Stabilizer Coretex is essential to restore order and prevent further damage.
+
+
+Nate explores the house until he finds a basement bulkhead. Inside he discovers a Frankenstein chilling out, wearing glasses and reading the TV Guide (circling shows he wants to watch in case the Alien ever lets him watch TV). There is also a brain in a jar (obviously labeled "abnormal"). Nate can connect the dots: Neural CPU sounds a lot like a brain, let's try to hook this into the machine. It powers up but goes haywire. Nate quickly removes it. 
+
+
+Nate can ask Hector or Frank about the brain. They let Nate know that it's an old college rival of Hector's. He had donated his brain to science and Hector was the recipient. Their guess is the brain is… uncooperative. 
+
+
+When talking to Frankenstein, he offers to let Nate swap his brain for the Rival's brain so Nate can talk to him. But he requires Nate to strap him down so the Rival doesn't walk away with his body. (If Nate tries to use Frankenstein's brain in the machine, it's… underqualified. If Nate asks Frankenstein about it later, the response is "yeah I have no idea what I'm doing, I'm a gardener.")
+
+
+Talking to the Rival, Nate learns how petty and bitter he is. In life he was passed over for a small award that Hector won and he's never gotten over it. (“It should have been mine!”) So since he has nothing else going on right now, he'll agree to help... IF Hector admits defeat and hands over the trophy in person.
+
+
+The problem is, not only is Hector "momentarily incapacitated", he also refuses to make that admission ("it's laughable!") Also, Hector threw that trophy in the trash years ago. 
+
+
+Solution: 
+
+
+Nate needs 2 things: a replacement trophy, and convincing Hector disguise.
+
+
+For the trophy, Nate collects a couple of items and tapes them together haphazardly with scotch tape. Then he spray paints the whole thing gold and writes the Rival's name on it in sharpie.
+
+
+For the costume, Nate collects a lab coat from the lab (a previous puzzle to get the coat to drop from the arm), and retrieves a pair of Hector's iconic goggles from Hector's closet. Perhaps he also needs a distinguished moustache with sharpie. (Note: to get the goggles from Hector's closet is another small puzzle. Hector won't let Nate access his private quarters. "Restricted Area!" he yells. So Nate simply needs to close the locker Hector's head is in and he can walk up unnoticed) 
+
+
+Finally, with the makeshift trophy and modest costume, the rival isn't fooled! His eyes are too sharp. Frankenstein's body is still wearing the glasses. Nate needs to swap the brain back and ask Frankenstein to loan him the TV Guide (needed for the Alien puzzle). It's a simple dialogue request and Frankenstein removes his glasses in the process. Then Nate switches brains back and successfully fools the Rival!
+
+
+Puzzle #11: Extra Hands
+
+
+  
+  
+
+
+
+Nate now has now repaired all of the components needed to re-run the experiment. Thinking back, he realizes the experiment required TWO people to perform. Now Nate's alone in the lab. He needs a second set of hands. (The Alien obviously won't, Earl isn't messing with that ‘science stuff’, and Frankenstein says he's too clumsy and Hector doesn't let him touch any of those things).
+
+
+Solution:
+
+
+Nate finds a "Teleporter" machine in Hector's lab. He can enter this and be 'teleported' as many times as he wants. At some point he can talk to Hector and learn that it's not a teleporter, but actually a cloning machine with a death ray installed on one end. Nate can disable the death ray by holding a mirror above his head, which results in successfully creating a clone. Then the two can re-run the experiment together. 
+
+
+In the end, Clone Nate gets pulled into the machine just like Hector did, disappearing forever (or does he?).
+
+
+Puzzle #12: Reverse the Polarity
+
+
+  
+  
+
+
+
+One final hiccup: The experiment was run in a specific direction. If Nate does this again, nothing gets corrected. 
+
+
+Solution: 
+
+
+Nate needs to 'reverse the polarity' to get the experiment to run in reverse and fix the damage rather than create more. This could be as simple as flipping a sign around, swapping a component backwards, or perhaps as complicated as running the ignition sequence from the beginning in reverse. TBD.
+
+
+Cut-Scene: Everything In Its Right Place
+
+
+  
+
+
+
+Hector pops back into the lab, fully formed, touches his body and face to double check all the parts are there, and then immediately says "You're Hired." Cut to black. End of game. 
+
+
+Credits roll and eventually we get a post-credits screen where Clone Nate blinks into existence in some strange alien world and says "...Where am i??"
+
+
+The End
+Puzzle Dependency Chart  
+Confidential and Proprietary                                    Page                                                                         January 2026
+©2026 Damn Fine Games                Chris Mallon

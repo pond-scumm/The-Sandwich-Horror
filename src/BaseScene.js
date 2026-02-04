@@ -56,6 +56,9 @@
                 this.itemOutsideInventoryTimer = null;
                 this.itemCursor = null;
 
+                // Selected item for "use on" actions (scene-local, not persisted)
+                this.selectedItem = null;
+
                 // Cursor
                 this.crosshairCursor = null;
                 this.crosshairGraphics = null;
@@ -98,36 +101,50 @@
             }
 
             // ========== GAME STATE MANAGEMENT ==========
+            // Now uses TSH.State as the single source of truth.
+            // See ARCHITECTURE_GUIDE.md for API documentation.
 
-            getGameState() {
-                let state = this.registry.get('gameState');
-                if (!state) {
-                    // Initialize default state ONCE and save it
-                    console.log('[GameState] Initializing fresh state (first time)');
-                    state = {
-                        inventory: [],
-                        selectedItem: null,
-                        flags: {},
-                        visitedRooms: []
-                    };
-                    this.registry.set('gameState', state);
-                }
-                return state;
-            }
-
-            setGameState(state) {
-                this.registry.set('gameState', state);
-            }
-
+            // Get flag value. Supports both grouped ('clock.has_spring') and
+            // flat ('alien_talked') notation for backwards compatibility.
             getFlag(flagName) {
-                const state = this.getGameState();
-                return state.flags[flagName] || false;
+                // If already has a dot, use it directly
+                if (flagName.includes('.')) {
+                    return TSH.State.getFlag(flagName);
+                }
+                // Flat flag name - store under 'misc' group for backwards compatibility
+                return TSH.State.getFlag('misc.' + flagName);
             }
 
+            // Set flag value. Supports both grouped and flat notation.
             setFlag(flagName, value = true) {
-                const state = this.getGameState();
-                state.flags[flagName] = value;
-                this.setGameState(state);
+                if (flagName.includes('.')) {
+                    TSH.State.setFlag(flagName, value);
+                } else {
+                    // Flat flag name - store under 'misc' group
+                    TSH.State.setFlag('misc.' + flagName, value);
+                }
+            }
+
+            // Get item object from ID (looks up in TSH.Items)
+            getItemById(itemId) {
+                return TSH.Items[itemId] || { id: itemId, name: itemId, description: 'Unknown item' };
+            }
+
+            // Get current inventory as array of item objects
+            getInventoryItems() {
+                const ids = TSH.State.getInventory();
+                return ids.map(id => this.getItemById(id));
+            }
+
+            // Get spawn point for current scene transition
+            getSpawnPoint() {
+                return TSH.State._spawnPoint || 'default';
+            }
+
+            // Promise-based delay for async sequences
+            // Usage: await this.delay(1000);
+            delay(ms) {
+                return new Promise(resolve => this.time.delayedCall(ms, resolve));
             }
 
             // ========== SCENE LIFECYCLE ==========
@@ -188,22 +205,20 @@
             }
 
             rebuildInventoryFromState() {
-                const state = this.getGameState();
+                const items = this.getInventoryItems();
 
-                console.log('[' + this.scene.key + '] Rebuilding inventory from state:', {
-                    inventory: state.inventory ? state.inventory.map(i => i.id) : [],
-                    flags: state.flags,
-                    selectedItem: state.selectedItem ? state.selectedItem.id : null,
+                console.log('[' + this.scene.key + '] Rebuilding inventory from TSH.State:', {
+                    inventory: items.map(i => i.id),
                     slotsAvailable: this.inventorySlots.length
                 });
 
-                if (!state.inventory || state.inventory.length === 0) {
+                if (items.length === 0) {
                     console.log('[' + this.scene.key + '] No items in inventory to restore');
                     return;
                 }
 
                 // Re-add each item to inventory UI (slots are fresh, so just add to UI)
-                state.inventory.forEach(item => {
+                items.forEach(item => {
                     // Check if slot already has this item (shouldn't happen but be safe)
                     const existingSlot = this.inventorySlots.find(s => s.item && s.item.id === item.id);
                     if (!existingSlot) {
@@ -214,13 +229,7 @@
                     }
                 });
 
-                // Restore selected item cursor
-                if (state.selectedItem) {
-                    const slot = this.inventorySlots.find(s => s.item && s.item.id === state.selectedItem.id);
-                    if (slot) {
-                        this.selectItem(state.selectedItem, slot);
-                    }
-                }
+                // Note: selectedItem is scene-local and doesn't persist across scene transitions
             }
 
             // ========== INPUT HANDLERS ==========
@@ -255,7 +264,7 @@
                             this.hideVerbCoin();
                             return;
                         }
-                        if (this.getGameState().selectedItem) {
+                        if (this.selectedItem) {
                             this.deselectItem();
                             return;
                         }
@@ -269,7 +278,7 @@
 
                 this.input.on('pointermove', (pointer) => {
                     this.updateVerbCoinHover(pointer);
-                    if (this.inventoryOpen && this.getGameState().selectedItem) {
+                    if (this.inventoryOpen && this.selectedItem) {
                         this.checkItemOutsideInventory(pointer);
                     }
                 });
@@ -318,7 +327,7 @@
                     return;
                 }
 
-                if (this.getGameState().selectedItem) {
+                if (this.selectedItem) {
                     this.deselectItem();
                     return;
                 }
@@ -458,7 +467,7 @@
                     return;
                 }
 
-                const selectedItem = this.getGameState().selectedItem;
+                const selectedItem = this.selectedItem;
                 if (selectedItem) {
                     this.clickedUI = true;
                     if (this.isPlayerNearHotspot(hotspot)) {
@@ -571,53 +580,173 @@
 
             // ========== WALKING ==========
 
-            walkTo(targetX, targetY, onComplete = null, isRunning = false) {
-                if (this.dialogActive || this.conversationActive) return;
-
+            // Check if a point is inside the walkable polygon (or bounding box if no polygon)
+            isPointInWalkableArea(x, y) {
                 const { height } = this.scale;
-                targetX = Phaser.Math.Clamp(targetX, 30, this.worldWidth - 30);
-                targetY = Phaser.Math.Clamp(targetY, height * this.walkableArea.minY, height * this.walkableArea.maxY);
 
-                if (this.walkTween) this.walkTween.stop();
-                if (this.bobTween) this.bobTween.stop();
+                if (this.walkableArea.polygon && this.walkableArea.polygon.length >= 3) {
+                    // Convert polygon to pixel coordinates
+                    const points = this.walkableArea.polygon.map(p => ({
+                        x: p.x,
+                        y: height * p.y
+                    }));
+                    return this.pointInPolygon(x, y, points);
+                } else {
+                    // Fallback to bounding box
+                    const minY = height * this.walkableArea.minY;
+                    const maxY = height * this.walkableArea.maxY;
+                    return y >= minY && y <= maxY;
+                }
+            }
 
-                const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, targetX, targetY);
-                if (distance < 5) {
-                    if (onComplete) onComplete();
-                    return;
+            // Point-in-polygon test using ray casting algorithm
+            pointInPolygon(x, y, polygon) {
+                let inside = false;
+                for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                    const xi = polygon[i].x, yi = polygon[i].y;
+                    const xj = polygon[j].x, yj = polygon[j].y;
+
+                    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+                        inside = !inside;
+                    }
+                }
+                return inside;
+            }
+
+            // Find the nearest point inside/on the walkable area
+            getNearestWalkablePoint(x, y) {
+                const { height } = this.scale;
+
+                if (this.walkableArea.polygon && this.walkableArea.polygon.length >= 3) {
+                    // Convert polygon to pixel coordinates
+                    const points = this.walkableArea.polygon.map(p => ({
+                        x: p.x,
+                        y: height * p.y
+                    }));
+
+                    // If already inside, return the point
+                    if (this.pointInPolygon(x, y, points)) {
+                        return { x, y };
+                    }
+
+                    // Find nearest point on polygon edge
+                    let nearestPoint = { x, y };
+                    let nearestDist = Infinity;
+
+                    for (let i = 0; i < points.length; i++) {
+                        const p1 = points[i];
+                        const p2 = points[(i + 1) % points.length];
+
+                        const nearest = this.nearestPointOnSegment(x, y, p1.x, p1.y, p2.x, p2.y);
+                        const dist = Phaser.Math.Distance.Between(x, y, nearest.x, nearest.y);
+
+                        if (dist < nearestDist) {
+                            nearestDist = dist;
+                            nearestPoint = nearest;
+                        }
+                    }
+
+                    return nearestPoint;
+                } else {
+                    // Fallback to bounding box clamping
+                    const minY = height * this.walkableArea.minY;
+                    const maxY = height * this.walkableArea.maxY;
+                    return {
+                        x: x,
+                        y: Phaser.Math.Clamp(y, minY, maxY)
+                    };
+                }
+            }
+
+            // Find nearest point on a line segment
+            nearestPointOnSegment(px, py, x1, y1, x2, y2) {
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                const lengthSq = dx * dx + dy * dy;
+
+                if (lengthSq === 0) {
+                    return { x: x1, y: y1 };
                 }
 
-                if (targetX < this.player.x) this.player.setScale(-1, 1);
-                else if (targetX > this.player.x) this.player.setScale(1, 1);
+                let t = ((px - x1) * dx + (py - y1) * dy) / lengthSq;
+                t = Phaser.Math.Clamp(t, 0, 1);
 
-                this.isWalking = true;
-                this.startWalkAnimation(isRunning);
+                return {
+                    x: x1 + t * dx,
+                    y: y1 + t * dy
+                };
+            }
 
-                const speed = isRunning ? 500 : 300;
-                const duration = (distance / speed) * 1000;
-
-                this.walkTween = this.tweens.add({
-                    targets: this.player,
-                    x: targetX,
-                    y: targetY,
-                    duration: duration,
-                    ease: 'Linear',
-                    onUpdate: () => {
-                        this.player.setDepth(100 + this.player.y);
-                        // Camera follow for wide rooms
-                        if (this.worldWidth > this.screenWidth) {
-                            this.cameras.main.scrollX = Phaser.Math.Clamp(
-                                this.player.x - this.screenWidth / 2,
-                                0,
-                                this.worldWidth - this.screenWidth
-                            );
-                        }
-                    },
-                    onComplete: () => {
-                        this.isWalking = false;
-                        this.stopWalkAnimation();
+            // Walk to a position. Returns a Promise for async/await support.
+            // Also supports legacy callback pattern via onComplete parameter.
+            walkTo(targetX, targetY, onComplete = null, isRunning = false) {
+                return new Promise((resolve) => {
+                    const done = () => {
                         if (onComplete) onComplete();
+                        resolve();
+                    };
+
+                    if (this.dialogActive || this.conversationActive) {
+                        done();
+                        return;
                     }
+
+                    const { height } = this.scale;
+                    targetX = Phaser.Math.Clamp(targetX, 30, this.worldWidth - 30);
+
+                    // Use polygon-aware movement if available
+                    const walkablePoint = this.getNearestWalkablePoint(targetX, targetY);
+                    targetX = walkablePoint.x;
+                    targetY = walkablePoint.y;
+
+                    if (this.walkTween) this.walkTween.stop();
+                    if (this.bobTween) this.bobTween.stop();
+
+                    const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, targetX, targetY);
+                    if (distance < 5) {
+                        done();
+                        return;
+                    }
+
+                    if (targetX < this.player.x) this.player.setScale(-1, 1);
+                    else if (targetX > this.player.x) this.player.setScale(1, 1);
+
+                    this.isWalking = true;
+                    this.startWalkAnimation(isRunning);
+
+                    const speed = isRunning ? 500 : 300;
+                    const duration = (distance / speed) * 1000;
+
+                    this.walkTween = this.tweens.add({
+                        targets: this.player,
+                        x: targetX,
+                        y: targetY,
+                        duration: duration,
+                        ease: 'Linear',
+                        onUpdate: () => {
+                            // Constrain to walkable area every frame
+                            if (!this.isPointInWalkableArea(this.player.x, this.player.y)) {
+                                const corrected = this.getNearestWalkablePoint(this.player.x, this.player.y);
+                                this.player.x = corrected.x;
+                                this.player.y = corrected.y;
+                            }
+
+                            this.player.setDepth(100 + this.player.y);
+                            // Camera follow for wide rooms
+                            if (this.worldWidth > this.screenWidth) {
+                                this.cameras.main.scrollX = Phaser.Math.Clamp(
+                                    this.player.x - this.screenWidth / 2,
+                                    0,
+                                    this.worldWidth - this.screenWidth
+                                );
+                            }
+                        },
+                        onComplete: () => {
+                            this.isWalking = false;
+                            this.stopWalkAnimation();
+                            done();
+                        }
+                    });
                 });
             }
 
@@ -669,9 +798,38 @@
                 this.hotspots = [];
 
                 hotspotData.forEach(spot => {
-                    const zone = this.add.zone(spot.x, spot.y, spot.w, spot.h)
-                        .setInteractive()
-                        .setOrigin(0.5);
+                    let zone;
+
+                    if (spot.polygon && spot.polygon.length >= 3) {
+                        // Polygon hotspot - create zone with polygon hitArea
+                        // Calculate bounding box for the zone size
+                        const xs = spot.polygon.map(p => p.x);
+                        const ys = spot.polygon.map(p => p.y);
+                        const minX = Math.min(...xs);
+                        const minY = Math.min(...ys);
+                        const maxX = Math.max(...xs);
+                        const maxY = Math.max(...ys);
+
+                        // Create polygon points relative to zone center
+                        const centerX = (minX + maxX) / 2;
+                        const centerY = (minY + maxY) / 2;
+                        const relativePoints = [];
+                        spot.polygon.forEach(p => {
+                            relativePoints.push(p.x - centerX + (maxX - minX) / 2);
+                            relativePoints.push(p.y - centerY + (maxY - minY) / 2);
+                        });
+
+                        const polygon = new Phaser.Geom.Polygon(relativePoints);
+
+                        zone = this.add.zone(centerX, centerY, maxX - minX, maxY - minY)
+                            .setInteractive(polygon, Phaser.Geom.Polygon.Contains)
+                            .setOrigin(0.5);
+                    } else {
+                        // Rectangle hotspot
+                        zone = this.add.zone(spot.x, spot.y, spot.w, spot.h)
+                            .setInteractive()
+                            .setOrigin(0.5);
+                    }
 
                     const hotspot = { zone, ...spot };
                     this.hotspots.push(hotspot);
@@ -707,6 +865,28 @@
             // Override in subclass for room-specific item interactions
             useItemOnHotspot(item, hotspot) {
                 this.showDialog(`That doesn't work.`);
+            }
+
+            // Remove a hotspot from the scene (e.g., after picking up an item)
+            removeHotspot(hotspotId) {
+                const index = this.hotspots.findIndex(h => h.id === hotspotId || h._data?.id === hotspotId);
+                if (index === -1) {
+                    console.warn('[BaseScene] removeHotspot: hotspot not found:', hotspotId);
+                    return false;
+                }
+
+                const hotspot = this.hotspots[index];
+
+                // Destroy the interactive zone
+                if (hotspot.zone) {
+                    hotspot.zone.destroy();
+                }
+
+                // Remove from array
+                this.hotspots.splice(index, 1);
+
+                console.log('[BaseScene] Removed hotspot:', hotspotId);
+                return true;
             }
 
             // ========== VERB COIN ==========
@@ -1164,8 +1344,7 @@
             // Hide arrow cursor (show crosshair)
             hideArrowCursor() {
                 this.arrowCursor.setVisible(false);
-                const state = this.getGameState();
-                if (!state.selectedItem) {
+                if (!this.selectedItem) {
                     this.crosshairCursor.setVisible(true);
                 }
                 this.arrowDirection = null;
@@ -1173,7 +1352,7 @@
 
             setCrosshairHover(hotspot) {
                 this.currentHoveredHotspot = hotspot;
-                const selectedItem = this.getGameState().selectedItem;
+                const selectedItem = this.selectedItem;
 
                 if (hotspot) {
                     this.drawCrosshair(0xff0000);
@@ -1366,7 +1545,7 @@
                 if (isOutside) {
                     if (!this.itemOutsideInventoryTimer) {
                         this.itemOutsideInventoryTimer = this.time.delayedCall(100, () => {
-                            if (this.inventoryOpen && this.getGameState().selectedItem) this.toggleInventory();
+                            if (this.inventoryOpen && this.selectedItem) this.toggleInventory();
                             this.itemOutsideInventoryTimer = null;
                         });
                     }
@@ -1385,11 +1564,10 @@
                     return false;
                 }
 
-                const state = this.getGameState();
-                state.inventory.push(item);
-                this.setGameState(state);
+                // Add to TSH.State (stores just the ID)
+                TSH.State.addItem(item.id);
 
-                console.log('[' + this.scene.key + '] Added to inventory:', item.id, 'Total items:', state.inventory.length);
+                console.log('[' + this.scene.key + '] Added to inventory:', item.id, 'Total items:', TSH.State.getInventory().length);
 
                 this.addItemToSlot(item);
 
@@ -1400,12 +1578,201 @@
                 return true;
             }
 
-            addItemToSlot(item) {
-                const emptySlot = this.inventorySlots.find(slot => slot.item === null);
-                if (!emptySlot) return false;
+            hasItem(itemId) {
+                return TSH.State.hasItem(itemId);
+            }
 
-                emptySlot.item = item;
-                emptySlot.display.removeAll(true);
+            removeFromInventory(itemId) {
+                if (!TSH.State.hasItem(itemId)) return false;
+
+                TSH.State.removeItem(itemId);
+
+                const slot = this.inventorySlots.find(s => s.item && s.item.id === itemId);
+                if (slot) {
+                    slot.display.removeAll(true);
+                    slot.item = null;
+                }
+
+                return true;
+            }
+
+            tryCombineItems(itemA, itemB) {
+                // itemA = selected item (cursor), itemB = clicked item (in slot)
+                console.log('[Inventory] Trying to combine:', itemA.id, '+', itemB.id);
+
+                // Try the combination
+                const result = TSH.Combinations.tryCombine(itemA.id, itemB.id);
+
+                if (!result) {
+                    // No combination exists
+                    this.showDialog(`I can't combine the ${itemA.name} with the ${itemB.name}.`);
+                    this.deselectItem();
+                    return;
+                }
+
+                if (!result.success) {
+                    // Combination exists but condition not met
+                    this.showDialog(result.dialogue || "Something's missing...");
+                    this.deselectItem();
+                    return;
+                }
+
+                // Find slot containing itemB (the clicked item)
+                const slotB = this.inventorySlots.find(s => s.item && s.item.id === itemB.id);
+
+                // Determine what happens to each item
+                const itemAConsumed = result.consumes.includes(itemA.id);
+                const itemBConsumed = result.consumes.includes(itemB.id);
+                const producedItem = result.produces ? TSH.Items[result.produces] : null;
+
+                // Update game state
+                for (const consumedId of result.consumes) {
+                    TSH.State.removeItem(consumedId);
+                }
+                if (result.produces) {
+                    TSH.State.addItem(result.produces);
+                }
+                if (result.setFlags) {
+                    for (const [path, value] of Object.entries(result.setFlags)) {
+                        TSH.State.setFlag(path, value);
+                    }
+                }
+
+                // Update UI in-place
+                if (itemAConsumed && itemBConsumed) {
+                    // Both consumed: clear cursor, put produced item in slotB
+                    this.deselectItem();
+                    if (slotB && producedItem) {
+                        this.updateSlotItem(slotB, producedItem);
+                    }
+                } else if (itemAConsumed) {
+                    // Selected item consumed: cursor becomes produced item
+                    if (producedItem) {
+                        this.selectedItem = producedItem;
+                        this.updateItemCursor(producedItem);
+                    } else {
+                        this.deselectItem();
+                    }
+                } else if (itemBConsumed) {
+                    // Clicked item consumed: its slot becomes produced item, cursor stays
+                    if (slotB && producedItem) {
+                        this.updateSlotItem(slotB, producedItem);
+                    } else if (slotB) {
+                        // Just clear the slot
+                        slotB.display.removeAll(true);
+                        slotB.item = null;
+                    }
+                }
+                // If neither consumed, both stay where they are (produced goes to new slot)
+
+                // Show success dialogue
+                this.showDialog(result.dialogue);
+
+                console.log('[Inventory] Combination successful! Produced:', result.produces);
+            }
+
+            updateSlotItem(slot, newItem) {
+                // Update a slot's item in-place (preserves slot position)
+                slot.display.removeAll(true);
+                slot.item = newItem;
+
+                const itemSize = 50;
+                const itemGraphic = this.add.graphics();
+                itemGraphic.fillStyle(newItem.color || 0xffd700, 1);
+                itemGraphic.fillRoundedRect(-itemSize / 2, -itemSize / 2, itemSize, itemSize, 8);
+                itemGraphic.lineStyle(2, 0x000000, 0.3);
+                itemGraphic.strokeRoundedRect(-itemSize / 2, -itemSize / 2, itemSize, itemSize, 8);
+                slot.display.add(itemGraphic);
+
+                const slotSize = slot.size;
+                const hitArea = this.add.rectangle(0, 0, slotSize - 4, slotSize - 4, 0x000000, 0).setInteractive();
+
+                hitArea.on('pointerdown', (pointer) => {
+                    if (!pointer.leftButtonDown()) return;
+                    this.clickedUI = true;
+                    this.pressedInventoryItem = newItem;
+                    this.pressedInventorySlot = slot;
+
+                    if (this.inventoryItemPressTimer) this.inventoryItemPressTimer.remove();
+                    this.inventoryItemPressTimer = this.time.delayedCall(this.verbCoinDelay, () => {
+                        this.showInventoryVerbCoin(newItem, pointer.x, pointer.y);
+                    });
+                });
+
+                hitArea.on('pointerup', () => {
+                    if (!this.verbCoinVisible && this.pressedInventoryItem && this.pressedInventoryItem.id === newItem.id) {
+                        if (this.selectedItem && this.selectedItem.id !== newItem.id) {
+                            this.tryCombineItems(this.selectedItem, newItem);
+                        } else {
+                            this.selectItem(newItem, slot);
+                        }
+                        this.pressedInventoryItem = null;
+                        this.pressedInventorySlot = null;
+                    }
+                });
+
+                hitArea.on('pointerover', () => {
+                    this.drawCrosshair(0xff0000);
+                    this.hotspotLabel.setText(newItem.name);
+                });
+
+                hitArea.on('pointerout', () => {
+                    this.drawCrosshair(0xffffff);
+                    this.hotspotLabel.setText('');
+                });
+
+                slot.display.add(hitArea);
+            }
+
+            updateItemCursor(item) {
+                // Update the cursor to show a new item (when selected item transforms)
+                this.itemCursor.removeAll(true);
+
+                const cursorBg = this.add.graphics();
+                cursorBg.fillStyle(item.color || 0xffd700, 1);
+                cursorBg.fillRoundedRect(-25, -25, 50, 50, 8);
+                cursorBg.lineStyle(2, 0xffffff, 0.8);
+                cursorBg.strokeRoundedRect(-25, -25, 50, 50, 8);
+                this.itemCursor.add(cursorBg);
+
+                this.itemCursorHighlight = this.add.graphics();
+                this.itemCursorHighlight.lineStyle(4, 0xff0000, 1);
+                this.itemCursorHighlight.strokeRoundedRect(-29, -29, 58, 58, 10);
+                this.itemCursorHighlight.setVisible(false);
+                this.itemCursor.add(this.itemCursorHighlight);
+
+                this.hotspotLabel.setText(item.name);
+            }
+
+            refreshInventoryUI() {
+                // Clear all slots
+                this.inventorySlots.forEach(slot => {
+                    slot.display.removeAll(true);
+                    slot.item = null;
+                });
+
+                // Rebuild from state
+                const items = this.getInventoryItems();
+                items.forEach(item => {
+                    const emptySlot = this.inventorySlots.find(slot => slot.item === null);
+                    if (emptySlot) {
+                        this.addItemToSlot(item, emptySlot);
+                    }
+                });
+            }
+
+            addItemToSlot(item, slot = null) {
+                // Find an empty slot if none provided
+                if (!slot) {
+                    slot = this.inventorySlots.find(s => s.item === null);
+                    if (!slot) {
+                        console.warn('[Inventory] No empty slot for item:', item.id);
+                        return false;
+                    }
+                }
+
+                slot.item = item;
+                slot.display.removeAll(true);
 
                 const itemSize = 50;
                 const itemGraphic = this.add.graphics();
@@ -1413,16 +1780,16 @@
                 itemGraphic.fillRoundedRect(-itemSize / 2, -itemSize / 2, itemSize, itemSize, 8);
                 itemGraphic.lineStyle(2, 0x000000, 0.3);
                 itemGraphic.strokeRoundedRect(-itemSize / 2, -itemSize / 2, itemSize, itemSize, 8);
-                emptySlot.display.add(itemGraphic);
+                slot.display.add(itemGraphic);
 
-                const slotSize = emptySlot.size;
+                const slotSize = slot.size;
                 const hitArea = this.add.rectangle(0, 0, slotSize - 4, slotSize - 4, 0x000000, 0).setInteractive();
 
                 hitArea.on('pointerdown', (pointer) => {
                     if (!pointer.leftButtonDown()) return;
                     this.clickedUI = true;
                     this.pressedInventoryItem = item;
-                    this.pressedInventorySlot = emptySlot;
+                    this.pressedInventorySlot = slot;
 
                     if (this.inventoryItemPressTimer) this.inventoryItemPressTimer.remove();
                     this.inventoryItemPressTimer = this.time.delayedCall(this.verbCoinDelay, () => {
@@ -1432,7 +1799,12 @@
 
                 hitArea.on('pointerup', () => {
                     if (!this.verbCoinVisible && this.pressedInventoryItem && this.pressedInventoryItem.id === item.id) {
-                        this.selectItem(item, emptySlot);
+                        // If another item is selected, try to combine
+                        if (this.selectedItem && this.selectedItem.id !== item.id) {
+                            this.tryCombineItems(this.selectedItem, item);
+                        } else {
+                            this.selectItem(item, slot);
+                        }
                         this.pressedInventoryItem = null;
                         this.pressedInventorySlot = null;
                     }
@@ -1448,41 +1820,17 @@
                     this.hotspotLabel.setText('');
                 });
 
-                emptySlot.display.add(hitArea);
-                return true;
-            }
-
-            hasItem(itemId) {
-                return this.getGameState().inventory.some(item => item.id === itemId);
-            }
-
-            removeFromInventory(itemId) {
-                const state = this.getGameState();
-                const index = state.inventory.findIndex(item => item.id === itemId);
-                if (index === -1) return false;
-
-                state.inventory.splice(index, 1);
-                this.setGameState(state);
-
-                const slot = this.inventorySlots.find(s => s.item && s.item.id === itemId);
-                if (slot) {
-                    slot.display.removeAll(true);
-                    slot.item = null;
-                }
-
-                return true;
+                slot.display.add(hitArea);
             }
 
             selectItem(item, slot) {
-                const state = this.getGameState();
-
-                if (state.selectedItem && state.selectedItem.id === item.id) {
+                // Toggle off if clicking the same item
+                if (this.selectedItem && this.selectedItem.id === item.id) {
                     this.deselectItem();
                     return;
                 }
 
-                state.selectedItem = item;
-                this.setGameState(state);
+                this.selectedItem = item;
 
                 this.crosshairCursor.setVisible(false);
 
@@ -1507,9 +1855,7 @@
             }
 
             deselectItem() {
-                const state = this.getGameState();
-                state.selectedItem = null;
-                this.setGameState(state);
+                this.selectedItem = null;
 
                 this.itemCursor.setVisible(false);
                 this.itemCursor.removeAll(true);
@@ -1544,20 +1890,29 @@
                 this.speechBubble.add(this.dialogText);
             }
 
+            // Show dialog text. Returns a Promise for async/await support.
+            // Also supports legacy callback pattern via onComplete parameter.
             showDialog(text, onComplete = null) {
-                if (this.dialogTimer) this.dialogTimer.remove();
-                this.dialogQueue = [];
-                this.dialogCallback = onComplete;
+                return new Promise((resolve) => {
+                    if (this.dialogTimer) this.dialogTimer.remove();
+                    this.dialogQueue = [];
 
-                const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+                    // Store both callback and resolver
+                    this.dialogCallback = () => {
+                        if (onComplete) onComplete();
+                        resolve();
+                    };
 
-                if (sentences.length > 1) {
-                    this.dialogQueue = sentences.slice(1).map(s => s.trim());
-                    this.startDialogSequence();
-                    this.showSingleDialog(sentences[0].trim(), true);
-                } else {
-                    this.showSingleDialog(text, false);
-                }
+                    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+
+                    if (sentences.length > 1) {
+                        this.dialogQueue = sentences.slice(1).map(s => s.trim());
+                        this.startDialogSequence();
+                        this.showSingleDialog(sentences[0].trim(), true);
+                    } else {
+                        this.showSingleDialog(text, false);
+                    }
+                });
             }
 
             startDialogSequence() {
@@ -1573,8 +1928,7 @@
             endDialogSequence() {
                 this.dialogActive = false;
                 this.dialogSkipReady = false;
-                const state = this.getGameState();
-                if (this.crosshairCursor && !state.selectedItem) this.crosshairCursor.setVisible(true);
+                if (this.crosshairCursor && !this.selectedItem) this.crosshairCursor.setVisible(true);
             }
 
             skipToNextDialog() {
@@ -1716,8 +2070,7 @@
                 if (this.hotspotLabel) this.hotspotLabel.setText('');
 
                 // Restore normal cursor state
-                const state = this.getGameState();
-                if (this.crosshairCursor && !state.selectedItem) {
+                if (this.crosshairCursor && !this.selectedItem) {
                     this.crosshairCursor.setVisible(true);
                     this.drawCrosshair(0xffffff);
                 }
@@ -1951,17 +2304,23 @@
             // ========== SCENE TRANSITION ==========
 
             transitionToScene(targetScene, spawnPoint) {
-                const state = this.getGameState();
                 console.log('[' + this.scene.key + '] Transitioning to', targetScene, 'with state:', {
-                    inventory: state.inventory ? state.inventory.map(i => i.id) : [],
-                    flags: state.flags
+                    inventory: TSH.State.getInventory(),
+                    currentRoom: TSH.State.getCurrentRoom()
                 });
 
-                this.registry.set('spawnPoint', spawnPoint);
+                // Store spawn point and update room in TSH.State
+                TSH.State._spawnPoint = spawnPoint;
+                TSH.State.setCurrentRoom(targetScene);
 
                 this.cameras.main.fadeOut(500, 0, 0, 0);
                 this.cameras.main.once('camerafadeoutcomplete', () => {
-                    this.scene.start(targetScene);
+                    // Prefer RoomScene for data-driven rooms, fall back to legacy scenes
+                    if (TSH.Rooms && TSH.Rooms[targetScene]) {
+                        this.scene.start('RoomScene', { roomId: targetScene });
+                    } else {
+                        this.scene.start(targetScene);
+                    }
                 });
             }
 
@@ -1984,7 +2343,7 @@
                 }
 
                 // Update item cursor position
-                const selectedItem = this.getGameState().selectedItem;
+                const selectedItem = this.selectedItem;
                 if (selectedItem && this.itemCursor && this.itemCursor.visible) {
                     this.itemCursor.setPosition(pointer.x + scrollX + 20, pointer.y + scrollY + 20);
                 }

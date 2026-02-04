@@ -131,33 +131,60 @@ Nathaniel embodies forward motion. He doesn't know much, but he wants to engage.
 - Introduces himself formally as "Nathaniel"; some characters may call him "Nate"
 
 **Personality:**
-- **The Buster Keaton quality:** The still point in a chaotic world. Weird things happen around him and he processes them with bemused acceptance rather than panic. His deadpan isn't detachment—he's engaged and curious—but he doesn't lose his composure.
-- **Observational humor:** He notices absurdity and comments on it, but he's not trying to be funny. The comedy comes from his genuine reactions to strange situations.
-- **Underreacts to the extraordinary:** A bigfoot lives next door and Nathaniel's takeaway is "this guy knows his way around a grill." The weird is mundane.
-- **Kind without being saccharine:** Good listener, interested in people, not rude but not performatively polite either.
+- **Playful & goofy:** Finds joy in small things, makes little jokes, genuinely delighted by the world around him. Not trying to be funny—he just is.
+- **Enthusiastic:** Genuinely excited about science and being here. He wanted this job, he got it, and he's thrilled. This isn't detached irony—he's engaged and eager.
+- **Warm & kind:** Talks to inanimate objects like friends. Good listener, interested in people, not rude but not performatively polite either.
+- **Observational:** Notices details and makes connections. Comments on absurdity with genuine reactions, not practiced wit.
+- **Underreacts to the extraordinary:** A bigfoot lives next door and Nathaniel's takeaway is "this guy knows his way around a grill." The weird is mundane—but that doesn't mean he's bored by it.
 - **Competent but untested:** Smart enough to figure things out, green enough to need to figure them out. Not a doofus who stumbles into solutions.
 - **Actualized:** He knows what he wants—to be a scientist—and he's actively pursuing it. This gives him groundedness that lets him roll with the weird.
-- **"Whatever happens, happens"** when things are beyond his control, but proactive about what he can control.
 - **Can be the butt of jokes** but isn't pathetic. He has dignity even when covered in whatever just exploded.
 
 **Voice Examples:**
 
-*Looking at dirty dishes:*
-"These have been here a while. I'm not judging. Science waits for no one, including mold."
+*Examining a fireplace:*
+"Now THAT'S a fireplace. Mantle's got all sorts of stuff on it."
 
-*Looking at a soap opera on TV:*
-"I don't know what's happening, but I think someone just betrayed someone else's twin."
+*Looking at a cluttered table:*
+"That's not a table, that's a mail fort. Years of 'Science Monthly'! Jealous."
 
-*Trying to pick up something heavy:*
-"I'm going to be a scientist, not a weightlifter. There's a reason those are different jobs."
+*Sitting in a comfortable chair:*
+"Oh wow. OH wow. This is comfortable. I could live here."
 
-*Looking at Bigfoot's grill:*
-"Nice grill. Charcoal, not propane. This guy's serious."
+*Examining mysterious blueprints:*
+"Portal Mark VII? What happened to marks one through six?"
 
-*Noticing a single chair in Bigfoot's yard:*
-"There's only one chair over here. Must not get a lot of noise complaints."
+*Looking at a strange glowing device:*
+"Brass, glass, glowing, humming... I have no idea what this is but I want one."
+
+*Talking to a candle:*
+"Flicker once if you're haunted! ...Okay that one was just a draft."
+
+*Examining an old coat rack:*
+"Ooh, vintage! The moths think so too, apparently."
+
+*Thanking a door:*
+"Thanks for not being locked!"
+
+**Voice Calibration (The "Sweet Spot"):**
+
+| Too Deadpan | Too Extreme | Sweet Spot |
+|-------------|-------------|------------|
+| "A candle on a brass holder." | "WOW a CANDLE! AMAZING!!" | "Ooh, fancy brass candlestick! Very atmospheric." |
+| "Blueprints for a portal device." | "'PORTAL MARK VII'?! What happened to marks one through six?!" | "Portal Mark VII? What happened to marks one through six?" |
+| "A comfortable leather chair." | "OH WOW. This is THE BEST CHAIR EVER!!" | "Oh wow. OH wow. This is comfortable. I could live here." |
+
+**Dialogue Patterns That Work:**
+- Trailing observations: "Nice rug! Faded, but in a cozy way."
+- Friendly asides to objects: "Keep up the good work, big guy."
+- Playful self-awareness: "Thanks for not being locked!"
+- Enthusiastic curiosity: "I have no idea what this is but I want one."
+- Light humor: "That's not a table, that's a mail fort."
 
 **What Nathaniel Does NOT Do:**
+- Narrate his own actions ("I examine the candle" — just react to it instead)
+- Be too deadpan or literal (don't just describe what things are)
+- Go too extreme (no ALL CAPS, no ?! combinations)
 - Mock or be mean to people (situations are fair game, people are not)
 - Explain himself or his goals out loud (his actions speak for him)
 - Editorialize earnestly about other characters' emotional states

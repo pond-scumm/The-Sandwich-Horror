@@ -1,6 +1,7 @@
-﻿        class GardenScene extends BaseScene {
+﻿        // Room ID: 'front_of_house'
+        class FrontOfHouseScene extends BaseScene {
             constructor() {
-                super({ key: 'GardenScene' });
+                super({ key: 'front_of_house' });
                 this.worldWidth = 1280;
                 this.screenWidth = 1280;
                 this.walkableArea = { minY: 0.70, maxY: 0.92 };
@@ -84,7 +85,7 @@
                 this.createEdgeZones(height);
 
                 // Create player at spawn position
-                const spawnPoint = this.registry.get('spawnPoint') || 'default';
+                const spawnPoint = this.getSpawnPoint();
                 let spawnX = 640;
                 if (spawnPoint === 'from_house') spawnX = 900;
                 else if (spawnPoint === 'from_forest') spawnX = 120;
@@ -93,10 +94,8 @@
                 this.createPlayer(spawnX, height * 0.80);
 
                 // Mark room as visited
-                const state = this.getGameState();
-                if (!state.visitedRooms.includes('garden')) {
-                    state.visitedRooms.push('garden');
-                    this.setGameState(state);
+                if (!TSH.State.hasVisitedRoom('front_of_house')) {
+                    TSH.State.markRoomVisited('front_of_house');
                     this.showDialog("Ah, fresh night air. And the faint smell of roses and mystery.");
                 }
             }
@@ -390,11 +389,11 @@
                     if (isDoubleClick) {
                         // Immediate transition
                         this.hideArrowCursor();
-                        this.transitionToScene('ForestScene', 'from_garden');
+                        this.transitionToScene('woods', 'from_garden');
                     } else {
                         // Walk to edge then transition
                         this.hideArrowCursor();
-                        this.walkToEdgeAndTransition(80, height * 0.80, 'ForestScene', 'from_garden');
+                        this.walkToEdgeAndTransition(80, height * 0.80, 'woods', 'from_garden');
                     }
                 });
             }
@@ -409,7 +408,7 @@
             executeAction(action, hotspot) {
                 if (action === 'Use') {
                     if (hotspot.name === 'Front Door') {
-                        this.transitionToScene('GameScene', 'left');
+                        this.transitionToScene('interior', 'left');
                     } else {
                         this.showDialog(hotspot.useResponse);
                     }

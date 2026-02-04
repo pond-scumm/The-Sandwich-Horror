@@ -1,0 +1,1186 @@
+// ============================================================================
+// ROOM SCENE - Generic Data-Driven Room Renderer
+// ============================================================================
+// A single scene class that can render any room by reading its definition
+// from TSH.Rooms. This replaces the need for per-room scene classes.
+//
+// Features:
+//   - Parallax layer system (multiple layers with different scroll speeds)
+//   - Supports both procedural and image-based layers
+//   - Data-driven hotspots, exits, spawns
+//   - Integrates with TSH.Style for consistent visuals
+// ============================================================================
+
+class RoomScene extends BaseScene {
+    constructor() {
+        super({ key: 'RoomScene' });
+        this.roomId = null;
+        this.roomData = null;
+        this.layers = [];  // Stores rendered layer sprites
+    }
+
+    // Called before create() - receives data passed from scene.start()
+    init(data) {
+        // Get room ID from: passed data > saved state > default
+        this.roomId = data?.roomId || TSH.State.getCurrentRoom() || 'interior';
+        this.roomData = TSH.Rooms[this.roomId];
+
+        // If no room data exists, redirect to legacy scene
+        if (!this.roomData) {
+            console.log('[RoomScene] No room data for:', this.roomId, '- redirecting to legacy scene');
+            this.shouldRedirect = true;
+            this.redirectTarget = this.roomId;
+            // Use minimal default data to prevent errors during redirect
+            this.roomData = this.getDefaultRoomData();
+            return;
+        }
+
+        this.shouldRedirect = false;
+
+        // Apply room config to scene
+        this.worldWidth = this.roomData.worldWidth || 1280;
+        this.screenWidth = this.roomData.screenWidth || 1280;
+
+        // Handle walkable area - compute minY/maxY from polygon if needed
+        const wa = this.roomData.walkableArea || { minY: 0.72, maxY: 0.92 };
+        if (wa.polygon && wa.polygon.length >= 3) {
+            // Compute bounding box from polygon for backwards compatibility
+            const ys = wa.polygon.map(p => p.y);
+            this.walkableArea = {
+                polygon: wa.polygon,
+                minY: Math.min(...ys),
+                maxY: Math.max(...ys)
+            };
+        } else {
+            this.walkableArea = wa;
+        }
+    }
+
+    // Preload image-based layers
+    preload() {
+        if (this.shouldRedirect) return;
+
+        const room = this.roomData;
+        if (!room.layers) return;
+
+        // Load any image-based layers
+        room.layers.forEach((layerDef, index) => {
+            if (layerDef.type === 'image' && layerDef.src) {
+                const key = layerDef.src;
+                if (!this.textures.exists(key)) {
+                    console.log('[RoomScene] Preloading layer image:', key);
+                    this.load.image(key, key);
+                }
+            }
+        });
+    }
+
+    create() {
+        // Redirect to legacy scene if no room data exists
+        if (this.shouldRedirect) {
+            console.log('[RoomScene] Redirecting to legacy scene:', this.redirectTarget);
+            this.scene.start(this.redirectTarget);
+            return;
+        }
+
+        const { width, height } = this.scale;
+        const room = this.roomData;
+
+        console.log('[RoomScene] Creating room:', this.roomId);
+
+        // Camera setup for scrolling rooms
+        this.cameras.main.setBounds(0, 0, this.worldWidth, height);
+
+        // Setup lighting if enabled
+        this.setupLighting(room);
+
+        // Render all layers (parallax background system)
+        this.renderLayers(this.worldWidth, height);
+
+        // Call parent create (sets up UI systems)
+        super.create();
+
+        // Create hotspots from room data
+        this.createHotspotsFromData(height);
+
+        // Create exit zones
+        this.createExitZones(height);
+
+        // Spawn player at correct position
+        this.spawnPlayer(height);
+
+        // Center camera on player
+        if (this.worldWidth > this.screenWidth) {
+            this.cameras.main.scrollX = Phaser.Math.Clamp(
+                this.player.x - this.screenWidth / 2,
+                0,
+                this.worldWidth - this.screenWidth
+            );
+        }
+
+        // Handle first visit
+        this.handleFirstVisit();
+
+        // Setup debug overlay (toggle with ` key)
+        this.setupDebugOverlay();
+
+        // Fade in
+        this.cameras.main.fadeIn(500, 0, 0, 0);
+    }
+
+    // ========== LIGHTING SETUP ==========
+
+    setupLighting(room) {
+        if (!room.lighting?.enabled) return;
+
+        this.lights.enable();
+        const isMobile = this.sys.game.device.input.touch;
+
+        // Get ambient color from room data or TSH.Style
+        let ambientColor;
+        if (room.lighting.ambient) {
+            ambientColor = isMobile
+                ? (room.lighting.ambientMobile || room.lighting.ambient)
+                : room.lighting.ambient;
+        } else if (room.lighting.preset) {
+            // Use preset from TSH.Style
+            const preset = room.lighting.preset;
+            ambientColor = isMobile
+                ? TSH.Style.lighting.ambientMobile[preset]
+                : TSH.Style.lighting.ambient[preset];
+        } else {
+            ambientColor = 0x888888;
+        }
+
+        this.lights.setAmbientColor(ambientColor);
+
+        // Create dynamic light sources defined in room data
+        if (room.lighting.sources) {
+            room.lighting.sources.forEach(source => {
+                this.createLightSource(source);
+            });
+        }
+    }
+
+    createLightSource(source) {
+        const { height } = this.scale;
+        const x = source.x;
+        const y = typeof source.y === 'number' && source.y <= 1 ? height * source.y : source.y;
+        const radius = source.radius || 200;
+        const color = source.color || TSH.Style.lighting.sources[source.type] || 0xffffff;
+        const intensity = source.intensity || 1;
+
+        const light = this.lights.addLight(x, y, radius, color, intensity);
+
+        // Store reference for animations
+        if (source.id) {
+            this[`light_${source.id}`] = light;
+        }
+
+        return light;
+    }
+
+    // ========== PARALLAX LAYER SYSTEM ==========
+
+    renderLayers(worldWidth, height) {
+        const room = this.roomData;
+        this.layers = [];
+
+        // Check if room has layer definitions
+        if (room.layers && room.layers.length > 0) {
+            // Render each defined layer
+            room.layers.forEach((layerDef, index) => {
+                const layer = this.renderLayer(layerDef, worldWidth, height, index);
+                if (layer) {
+                    this.layers.push(layer);
+                }
+            });
+        } else if (room.drawRoom && typeof room.drawRoom === 'function') {
+            // Legacy: single drawRoom function (no parallax)
+            this.renderLegacyRoom(room, worldWidth, height);
+        } else {
+            // Fallback: placeholder background
+            this.renderPlaceholderLayer(worldWidth, height);
+        }
+    }
+
+    renderLayer(layerDef, worldWidth, height, index) {
+        const {
+            type = 'procedural',
+            name = `layer_${index}`,
+            scrollFactor = 1.0,
+            depth = index * 10,
+            draw,           // For procedural: function(graphics, scene, width, height)
+            src,            // For image: path to image file
+            x = 0,
+            y = 0
+        } = layerDef;
+
+        let sprite;
+
+        if (type === 'image' && src) {
+            // Image-based layer
+            sprite = this.renderImageLayer(src, x, y, worldWidth, height);
+        } else if (type === 'procedural' && draw) {
+            // Procedural layer with custom draw function
+            sprite = this.renderProceduralLayer(name, draw, worldWidth, height);
+        } else {
+            console.warn(`[RoomScene] Invalid layer definition:`, layerDef);
+            return null;
+        }
+
+        if (sprite) {
+            sprite.setDepth(depth);
+            sprite.setScrollFactor(scrollFactor);
+
+            // Enable lighting on this layer
+            if (this.roomData.lighting?.enabled) {
+                sprite.setPipeline('Light2D');
+            }
+
+            // Store metadata
+            sprite._layerName = name;
+            sprite._layerDef = layerDef;
+        }
+
+        return sprite;
+    }
+
+    renderImageLayer(src, x, y, worldWidth, height) {
+        // Check if texture exists
+        if (!this.textures.exists(src)) {
+            console.warn(`[RoomScene] Image not found: ${src}`);
+            return null;
+        }
+
+        const sprite = this.add.image(x, y, src);
+        sprite.setOrigin(0, 0);
+
+        return sprite;
+    }
+
+    renderProceduralLayer(name, drawFn, worldWidth, height) {
+        // Create unique texture name for this layer
+        const textureName = `${this.roomId}_${name}`;
+
+        // Clean up existing texture if present
+        if (this.textures.exists(textureName)) {
+            this.textures.remove(textureName);
+        }
+
+        // Create render texture
+        const renderTexture = this.add.renderTexture(0, 0, worldWidth, height);
+        const graphics = this.make.graphics({ add: false });
+
+        // Call the draw function
+        try {
+            drawFn(graphics, this, worldWidth, height);
+        } catch (e) {
+            console.error(`[RoomScene] Error drawing layer "${name}":`, e);
+        }
+
+        // Commit to texture
+        renderTexture.draw(graphics);
+        graphics.destroy();
+
+        // Save as reusable texture
+        renderTexture.saveTexture(textureName);
+        renderTexture.destroy();
+
+        // Create sprite from texture
+        const sprite = this.add.sprite(0, 0, textureName);
+        sprite.setOrigin(0, 0);
+
+        return sprite;
+    }
+
+    renderLegacyRoom(room, worldWidth, height) {
+        // Handle old-style single drawRoom function
+        const textureName = `${this.roomId}_background`;
+
+        if (this.textures.exists(textureName)) {
+            this.textures.remove(textureName);
+        }
+
+        const renderTexture = this.add.renderTexture(0, 0, worldWidth, height);
+        const graphics = this.make.graphics({ add: false });
+
+        room.drawRoom(graphics, this, worldWidth, height);
+
+        renderTexture.draw(graphics);
+        graphics.destroy();
+        renderTexture.saveTexture(textureName);
+        renderTexture.destroy();
+
+        const sprite = this.add.sprite(0, 0, textureName);
+        sprite.setOrigin(0, 0);
+        sprite.setDepth(0);
+
+        if (this.roomData.lighting?.enabled) {
+            sprite.setPipeline('Light2D');
+        }
+
+        this.layers.push(sprite);
+    }
+
+    renderPlaceholderLayer(worldWidth, height) {
+        const textureName = `${this.roomId}_placeholder`;
+
+        if (this.textures.exists(textureName)) {
+            this.textures.remove(textureName);
+        }
+
+        const graphics = this.add.graphics();
+        const p = TSH.Style.pixelSize;
+
+        // Gradient background using style colors
+        const colorTop = TSH.Style.palette.wall.dark;
+        const colorBottom = TSH.Style.palette.wall.mid;
+
+        for (let y = 0; y < height; y += p) {
+            const ratio = y / height;
+            const r = Phaser.Display.Color.Interpolate.ColorWithColor(
+                Phaser.Display.Color.IntegerToColor(colorTop),
+                Phaser.Display.Color.IntegerToColor(colorBottom),
+                1, ratio
+            );
+            graphics.fillStyle(Phaser.Display.Color.GetColor(r.r, r.g, r.b));
+            graphics.fillRect(0, y, worldWidth, p);
+        }
+
+        // Floor
+        const floorY = height * this.walkableArea.minY;
+        graphics.fillStyle(TSH.Style.palette.floor.dark);
+        graphics.fillRect(0, floorY, worldWidth, height - floorY);
+
+        // Room name label
+        const text = this.add.text(worldWidth / 2, height / 2, this.roomData.name || this.roomId, {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '24px',
+            fill: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5).setAlpha(0.5).setDepth(5);
+
+        graphics.setDepth(0);
+        this.layers.push(graphics);
+    }
+
+    // ========== HOTSPOTS ==========
+
+    createHotspotsFromData(height) {
+        const room = this.roomData;
+        if (!room.hotspots || room.hotspots.length === 0) return;
+
+        const hotspotData = room.hotspots.map(hs => {
+            const data = {
+                id: hs.id,
+                interactX: hs.interactX,
+                interactY: height * hs.interactY,
+                name: hs.name,
+                verbLabels: hs.verbs ? {
+                    actionVerb: hs.verbs.action || 'Use',
+                    lookVerb: hs.verbs.look || 'Look at',
+                    talkVerb: hs.verbs.talk || 'Talk to'
+                } : undefined,
+                lookResponse: hs.responses?.look,
+                useResponse: hs.responses?.action,
+                talkResponse: hs.responses?.talk,
+                _data: hs
+            };
+
+            // Check if this is a polygon or rectangle hotspot
+            if (hs.polygon && hs.polygon.length >= 3) {
+                // Polygon hotspot - convert y percentages to pixels
+                data.polygon = hs.polygon.map(pt => ({
+                    x: pt.x,
+                    y: height * pt.y
+                }));
+                // Calculate bounding box for quick rejection tests
+                const xs = data.polygon.map(p => p.x);
+                const ys = data.polygon.map(p => p.y);
+                data.x = (Math.min(...xs) + Math.max(...xs)) / 2;
+                data.y = (Math.min(...ys) + Math.max(...ys)) / 2;
+                data.w = Math.max(...xs) - Math.min(...xs);
+                data.h = Math.max(...ys) - Math.min(...ys);
+            } else {
+                // Rectangle hotspot
+                data.x = hs.x;
+                data.y = height * hs.y;
+                data.w = hs.w;
+                data.h = height * hs.h;
+            }
+
+            return data;
+        });
+
+        this.createHotspots(hotspotData);
+    }
+
+    executeAction(action, hotspot) {
+        const hsData = hotspot._data;
+
+        // Handle actionTrigger (transitions, custom actions)
+        if ((action === 'Use' || action === hotspot.verbLabels?.actionVerb) && hsData?.actionTrigger) {
+            const trigger = hsData.actionTrigger;
+
+            if (trigger.type === 'transition') {
+                this.walkTo(hotspot.interactX, hotspot.interactY, () => {
+                    this.transitionToScene(trigger.target, trigger.spawnPoint);
+                });
+                return;
+            }
+
+            if (trigger.type === 'action') {
+                const actionFn = TSH.Actions[trigger.action];
+                if (actionFn) {
+                    actionFn(this, hotspot);
+                    return;
+                }
+            }
+        }
+
+        // Handle item pickup
+        if ((action === 'Use' || action === hotspot.verbLabels?.actionVerb) && hsData?.giveItem) {
+            const itemId = hsData.giveItem;
+            const item = TSH.Items[itemId];
+
+            if (!item) {
+                console.warn('[RoomScene] giveItem references unknown item:', itemId);
+                this.showDialog("I can't pick that up.");
+                return;
+            }
+
+            // Check if already picked up
+            if (TSH.State.hasItem(itemId)) {
+                this.showDialog("I already have that.");
+                return;
+            }
+
+            // Add item to inventory
+            this.addToInventory(item);
+
+            // Show pickup response
+            const response = hsData.responses?.action || hsData.useResponse || `Got ${item.name}!`;
+            this.showDialog(response);
+
+            // Set flag if specified
+            if (hsData.pickupFlag) {
+                TSH.State.setFlag(hsData.pickupFlag, true);
+            }
+
+            // Remove hotspot if specified
+            if (hsData.removeAfterPickup) {
+                this.removeHotspot(hsData.id);
+            }
+
+            return;
+        }
+
+        // Default verb responses
+        if (action === 'Use' || action === hotspot.verbLabels?.actionVerb) {
+            this.showDialog(hotspot.useResponse || "I can't use that.");
+        } else if (action === 'Look At' || action === hotspot.verbLabels?.lookVerb) {
+            this.showDialog(hotspot.lookResponse || "Nothing special about it.");
+        } else if (action === 'Talk To' || action === hotspot.verbLabels?.talkVerb) {
+            this.showDialog(hotspot.talkResponse || "It doesn't respond.");
+        }
+    }
+
+    useItemOnHotspot(item, hotspot) {
+        const room = this.roomData;
+        const interactions = room.itemInteractions || {};
+        const hsId = hotspot._data?.id || hotspot.id;
+
+        if (interactions[hsId]) {
+            const hsInteractions = interactions[hsId];
+            const response = hsInteractions[item.id] || hsInteractions.default;
+            if (response) {
+                const text = response
+                    .replace('{item}', item.name)
+                    .replace('{hotspot}', hotspot.name);
+                this.showDialog(text);
+                return;
+            }
+        }
+
+        if (interactions._default) {
+            const text = interactions._default
+                .replace('{item}', item.name)
+                .replace('{hotspot}', hotspot.name);
+            this.showDialog(text);
+            return;
+        }
+
+        this.showDialog(`I don't think the ${item.name} works with the ${hotspot.name}.`);
+    }
+
+    // ========== EXIT ZONES ==========
+
+    createExitZones(height) {
+        const room = this.roomData;
+        if (!room.exits || room.exits.length === 0) return;
+
+        room.exits.forEach(exit => {
+            let x, w, h;
+            h = height;
+
+            if (exit.edge === 'left') {
+                x = exit.x || 40;
+                w = exit.width || 80;
+            } else if (exit.edge === 'right') {
+                x = exit.x || (this.worldWidth - 40);
+                w = exit.width || 80;
+            } else {
+                x = exit.x;
+                w = exit.width || 80;
+            }
+
+            const zone = this.add.zone(x, height * 0.5, w, h)
+                .setInteractive()
+                .setOrigin(0.5);
+
+            zone.on('pointerdown', (pointer) => {
+                if (this.inventoryOpen) return;
+
+                const targetY = height * ((this.walkableArea.minY + this.walkableArea.maxY) / 2);
+                let targetX = exit.edge === 'left' ? 100 : this.worldWidth - 100;
+
+                this.walkTo(targetX, targetY, () => {
+                    this.transitionToScene(exit.target, exit.spawnPoint);
+                });
+            });
+
+            zone.on('pointerover', () => {
+                if (this.inventoryOpen || this.conversationActive) return;
+                const direction = exit.edge === 'left' ? 'left' : 'right';
+                this.showArrowCursor(direction);
+            });
+
+            zone.on('pointerout', () => {
+                this.hideArrowCursor();
+            });
+        });
+    }
+
+    // ========== PLAYER SPAWNING ==========
+
+    spawnPlayer(height) {
+        const room = this.roomData;
+        const spawnPoint = this.getSpawnPoint();
+
+        let spawnX = 250;
+        let spawnY = 0.82;
+
+        if (room.spawns) {
+            const spawn = room.spawns[spawnPoint] || room.spawns.default;
+            if (spawn) {
+                spawnX = spawn.x;
+                spawnY = spawn.y;
+            }
+        }
+
+        this.createPlayer(spawnX, height * spawnY);
+    }
+
+    // ========== FIRST VISIT ==========
+
+    handleFirstVisit() {
+        const room = this.roomData;
+
+        if (!TSH.State.hasVisitedRoom(this.roomId)) {
+            TSH.State.markRoomVisited(this.roomId);
+
+            if (room.firstVisit?.dialogue) {
+                const delay = room.firstVisit.delay || 500;
+                this.time.delayedCall(delay, () => {
+                    this.showDialog(room.firstVisit.dialogue);
+                });
+            }
+        }
+    }
+
+    // ========== DEFAULT DATA ==========
+
+    getDefaultRoomData() {
+        return {
+            id: 'unknown',
+            name: 'Unknown Room',
+            worldWidth: 1280,
+            screenWidth: 1280,
+            walkableArea: { minY: 0.72, maxY: 0.92 },
+            spawns: { default: { x: 640, y: 0.82 } },
+            exits: [],
+            hotspots: []
+        };
+    }
+
+    // ========== SCENE TRANSITION ==========
+
+    transitionToScene(targetRoomId, spawnPoint) {
+        console.log('[RoomScene] Transitioning to:', targetRoomId, 'spawn:', spawnPoint);
+
+        TSH.State._spawnPoint = spawnPoint;
+        TSH.State.setCurrentRoom(targetRoomId);
+
+        this.cameras.main.fadeOut(500, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+            if (TSH.Rooms[targetRoomId]) {
+                this.scene.start('RoomScene', { roomId: targetRoomId });
+            } else {
+                this.scene.start(targetRoomId);
+            }
+        });
+    }
+
+    // ========== LAYER EXPORT (for locking in procedural art) ==========
+    //
+    // Usage from browser console:
+    //   game.scene.scenes[0].exportLayerAsImage('room')     // Export single layer
+    //   game.scene.scenes[0].exportAllLayers()              // Export all layers
+    //   game.scene.scenes[0].listLayers()                   // See available layers
+    //
+    // Exported PNGs can be placed in assets/rooms/[roomId]/ and referenced
+    // by changing layer type from 'procedural' to 'image' with src path.
+    // ========================================================================
+
+    listLayers() {
+        console.log('[RoomScene] Available layers for', this.roomId + ':');
+        this.layers.forEach((layer, i) => {
+            const def = layer._layerDef || {};
+            console.log(`  ${i}: "${layer._layerName}" (scrollFactor: ${def.scrollFactor}, depth: ${def.depth})`);
+        });
+        return this.layers.map(l => l._layerName);
+    }
+
+    exportLayerAsImage(layerName, download = true) {
+        const layer = this.layers.find(l => l._layerName === layerName);
+        if (!layer) {
+            console.error(`[RoomScene] Layer not found: ${layerName}`);
+            console.log('Available layers:', this.layers.map(l => l._layerName));
+            return null;
+        }
+
+        const textureKey = layer.texture.key;
+        const texture = this.textures.get(textureKey);
+
+        if (!texture || texture.key === '__MISSING') {
+            console.error(`[RoomScene] Texture not found: ${textureKey}`);
+            return null;
+        }
+
+        // Get the source image (canvas or image element)
+        const source = texture.getSourceImage();
+
+        // Create a canvas to draw the texture
+        const canvas = document.createElement('canvas');
+        canvas.width = source.width;
+        canvas.height = source.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(source, 0, 0);
+
+        // Convert to data URL
+        const dataUrl = canvas.toDataURL('image/png');
+
+        if (download) {
+            // Trigger download
+            const filename = `${this.roomId}_${layerName}.png`;
+            this.downloadDataUrl(dataUrl, filename);
+            console.log(`[RoomScene] Exported: ${filename} (${canvas.width}x${canvas.height})`);
+        }
+
+        return dataUrl;
+    }
+
+    exportAllLayers(download = true) {
+        console.log(`[RoomScene] Exporting ${this.layers.length} layers for room: ${this.roomId}`);
+
+        const exports = {};
+        this.layers.forEach(layer => {
+            const name = layer._layerName;
+            if (name) {
+                exports[name] = this.exportLayerAsImage(name, download);
+            }
+        });
+
+        console.log('[RoomScene] Export complete. To use as images, update room data:');
+        console.log(`
+// In src/data/rooms/${this.roomId}.js, change layers from:
+{
+    name: 'layerName',
+    type: 'procedural',
+    draw: function(g, scene, w, h) { ... }
+}
+
+// To:
+{
+    name: 'layerName',
+    type: 'image',
+    src: 'assets/rooms/${this.roomId}/${this.roomId}_layerName.png'
+}
+        `);
+
+        return exports;
+    }
+
+    downloadDataUrl(dataUrl, filename) {
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Re-render a single layer (useful for iteration)
+    refreshLayer(layerName) {
+        const layerIndex = this.layers.findIndex(l => l._layerName === layerName);
+        if (layerIndex === -1) {
+            console.error(`[RoomScene] Layer not found: ${layerName}`);
+            return;
+        }
+
+        const oldLayer = this.layers[layerIndex];
+        const layerDef = oldLayer._layerDef;
+
+        if (!layerDef || layerDef.type === 'image') {
+            console.error(`[RoomScene] Cannot refresh non-procedural layer: ${layerName}`);
+            return;
+        }
+
+        // Destroy old layer
+        oldLayer.destroy();
+
+        // Re-render
+        const { height } = this.scale;
+        const newLayer = this.renderLayer(layerDef, this.worldWidth, height, layerIndex);
+
+        if (newLayer) {
+            this.layers[layerIndex] = newLayer;
+            console.log(`[RoomScene] Refreshed layer: ${layerName}`);
+        }
+    }
+
+    // ========== DEBUG OVERLAY ==========
+    //
+    // Toggle with backtick (`) key
+    // Shows: coordinates, hotspots, interact points, spawns, exits, walkable area
+    // ====================================
+
+    setupDebugOverlay() {
+        this.debugEnabled = false;
+        this.debugContainer = null;
+        this.debugCoordText = null;
+
+        // Listen for backtick key (keyCode 192)
+        this.debugKey = this.input.keyboard.addKey(192);
+        this.debugKey.on('down', () => {
+            this.toggleDebugOverlay();
+        });
+
+        // Track mouse position for coordinate display
+        this.input.on('pointermove', (pointer) => {
+            if (this.debugEnabled && this.debugCoordText) {
+                const worldX = Math.round(pointer.worldX);
+                const worldY = Math.round(pointer.worldY);
+                const screenX = Math.round(pointer.x);
+                const screenY = Math.round(pointer.y);
+                const { height } = this.scale;
+                const yPercent = (worldY / height).toFixed(3);
+
+                this.debugCoordText.setText(
+                    `World: ${worldX}, ${worldY}\n` +
+                    `Screen: ${screenX}, ${screenY}\n` +
+                    `Y%: ${yPercent}`
+                );
+            }
+        });
+
+        // Log coordinates on click when debug is active
+        this.input.on('pointerdown', (pointer) => {
+            if (this.debugEnabled) {
+                const worldX = Math.round(pointer.worldX);
+                const worldY = Math.round(pointer.worldY);
+                const { height } = this.scale;
+                const yPercent = (worldY / height).toFixed(3);
+
+                console.log(`[Debug] Click at: x=${worldX}, y=${worldY}, y%=${yPercent}`);
+                console.log(`  Hotspot format: { x: ${worldX}, y: ${yPercent}, ... }`);
+            }
+        });
+    }
+
+    toggleDebugOverlay() {
+        this.debugEnabled = !this.debugEnabled;
+
+        if (this.debugEnabled) {
+            this.renderDebugOverlay();
+            console.log('[Debug] Overlay enabled - press ` to hide');
+        } else {
+            this.destroyDebugOverlay();
+            console.log('[Debug] Overlay disabled');
+        }
+    }
+
+    renderDebugOverlay() {
+        const { width, height } = this.scale;
+
+        // Create container for all debug visuals (fixed to camera)
+        this.debugContainer = this.add.container(0, 0);
+        this.debugContainer.setDepth(9999);
+        this.debugContainer.setScrollFactor(0);
+
+        // Create container for world-space debug visuals (moves with camera)
+        this.debugWorldContainer = this.add.container(0, 0);
+        this.debugWorldContainer.setDepth(9998);
+
+        // Coordinate display (top-left, fixed to screen)
+        this.debugCoordText = this.add.text(10, 10, 'Move mouse...', {
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            fill: '#00ff00',
+            backgroundColor: '#000000aa',
+            padding: { x: 8, y: 6 }
+        });
+        this.debugContainer.add(this.debugCoordText);
+
+        // Room info (top-right)
+        const roomInfo = this.add.text(width - 10, 10,
+            `Room: ${this.roomId}\nWorld: ${this.worldWidth}x${height}`, {
+            fontFamily: 'monospace',
+            fontSize: '12px',
+            fill: '#ffff00',
+            backgroundColor: '#000000aa',
+            padding: { x: 6, y: 4 }
+        }).setOrigin(1, 0);
+        this.debugContainer.add(roomInfo);
+
+        // Draw walkable area bounds
+        this.drawDebugWalkableArea(height);
+
+        // Draw hotspots
+        this.drawDebugHotspots(height);
+
+        // Draw spawn points
+        this.drawDebugSpawns(height);
+
+        // Draw exits
+        this.drawDebugExits(height);
+    }
+
+    drawDebugWalkableArea(height) {
+        const graphics = this.add.graphics();
+        const room = this.roomData;
+
+        // Check if walkable area has a polygon defined
+        if (room.walkableArea?.polygon && room.walkableArea.polygon.length >= 3) {
+            // Draw polygon walkable area
+            const points = room.walkableArea.polygon.map(pt => ({
+                x: pt.x,
+                y: height * pt.y
+            }));
+
+            // Draw polygon outline (cyan)
+            graphics.lineStyle(2, 0x00ffff, 0.9);
+            graphics.beginPath();
+            graphics.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) {
+                graphics.lineTo(points[i].x, points[i].y);
+            }
+            graphics.closePath();
+            graphics.strokePath();
+
+            // Semi-transparent fill
+            graphics.fillStyle(0x00ffff, 0.1);
+            graphics.beginPath();
+            graphics.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) {
+                graphics.lineTo(points[i].x, points[i].y);
+            }
+            graphics.closePath();
+            graphics.fillPath();
+
+            // Draw vertex markers with numbers
+            points.forEach((pt, i) => {
+                // Vertex dot
+                graphics.fillStyle(0x00ffff, 1);
+                graphics.fillCircle(pt.x, pt.y, 5);
+                graphics.lineStyle(2, 0x000000, 1);
+                graphics.strokeCircle(pt.x, pt.y, 5);
+
+                // Vertex number label
+                const label = this.add.text(pt.x + 8, pt.y - 8, `${i}`, {
+                    fontFamily: 'monospace',
+                    fontSize: '10px',
+                    fill: '#00ffff',
+                    backgroundColor: '#000000cc',
+                    padding: { x: 3, y: 1 }
+                });
+                this.debugWorldContainer.add(label);
+            });
+
+            // Label
+            const labelText = this.add.text(10, points[0].y - 25, `walkable polygon (${points.length} points)`, {
+                fontFamily: 'monospace',
+                fontSize: '11px',
+                fill: '#00ffff',
+                backgroundColor: '#000000aa',
+                padding: { x: 4, y: 2 }
+            });
+            this.debugWorldContainer.add(labelText);
+
+        } else {
+            // Fallback: draw old minY/maxY horizontal lines
+            graphics.lineStyle(2, 0x00ffff, 0.8);
+
+            const minY = height * this.walkableArea.minY;
+            const maxY = height * this.walkableArea.maxY;
+
+            // Draw horizontal lines for walkable bounds
+            graphics.lineBetween(0, minY, this.worldWidth, minY);
+            graphics.lineBetween(0, maxY, this.worldWidth, maxY);
+
+            // Semi-transparent fill between lines
+            graphics.fillStyle(0x00ffff, 0.1);
+            graphics.fillRect(0, minY, this.worldWidth, maxY - minY);
+
+            // Labels
+            const minLabel = this.add.text(5, minY - 18, `walkable minY: ${this.walkableArea.minY}`, {
+                fontFamily: 'monospace',
+                fontSize: '11px',
+                fill: '#00ffff',
+                backgroundColor: '#000000aa',
+                padding: { x: 4, y: 2 }
+            });
+
+            const maxLabel = this.add.text(5, maxY + 2, `walkable maxY: ${this.walkableArea.maxY}`, {
+                fontFamily: 'monospace',
+                fontSize: '11px',
+                fill: '#00ffff',
+                backgroundColor: '#000000aa',
+                padding: { x: 4, y: 2 }
+            });
+
+            this.debugWorldContainer.add(minLabel);
+            this.debugWorldContainer.add(maxLabel);
+        }
+
+        this.debugWorldContainer.add(graphics);
+    }
+
+    drawDebugHotspots(height) {
+        const room = this.roomData;
+        if (!room.hotspots) return;
+
+        const graphics = this.add.graphics();
+
+        room.hotspots.forEach((hs, index) => {
+            // Interact point (yellow dot) - same for both types
+            const interactX = hs.interactX;
+            const interactY = height * hs.interactY;
+            graphics.fillStyle(0xffff00, 1);
+            graphics.fillCircle(interactX, interactY, 6);
+            graphics.lineStyle(2, 0x000000, 1);
+            graphics.strokeCircle(interactX, interactY, 6);
+
+            let labelX, labelY;
+
+            if (hs.polygon && hs.polygon.length >= 3) {
+                // Polygon hotspot - draw polygon shape
+                const points = hs.polygon.map(pt => ({
+                    x: pt.x,
+                    y: height * pt.y
+                }));
+
+                // Draw polygon outline (magenta)
+                graphics.lineStyle(2, 0xff00ff, 0.9);
+                graphics.beginPath();
+                graphics.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    graphics.lineTo(points[i].x, points[i].y);
+                }
+                graphics.closePath();
+                graphics.strokePath();
+
+                // Semi-transparent fill
+                graphics.fillStyle(0xff00ff, 0.15);
+                graphics.beginPath();
+                graphics.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    graphics.lineTo(points[i].x, points[i].y);
+                }
+                graphics.closePath();
+                graphics.fillPath();
+
+                // Draw vertex markers (small circles at each point)
+                graphics.fillStyle(0xff00ff, 1);
+                points.forEach((pt, i) => {
+                    graphics.fillCircle(pt.x, pt.y, 4);
+                });
+
+                // Calculate label position (top of polygon)
+                const minY = Math.min(...points.map(p => p.y));
+                const avgX = points.reduce((sum, p) => sum + p.x, 0) / points.length;
+                labelX = avgX;
+                labelY = minY - 4;
+            } else {
+                // Rectangle hotspot
+                const x = hs.x;
+                const y = height * hs.y;
+                const w = hs.w;
+                const h = height * hs.h;
+
+                // Hotspot bounding box (magenta)
+                graphics.lineStyle(2, 0xff00ff, 0.9);
+                graphics.strokeRect(x - w/2, y - h/2, w, h);
+
+                // Semi-transparent fill
+                graphics.fillStyle(0xff00ff, 0.15);
+                graphics.fillRect(x - w/2, y - h/2, w, h);
+
+                labelX = x;
+                labelY = y - h/2 - 4;
+            }
+
+            // Label for hotspot
+            const label = this.add.text(labelX, labelY,
+                `${hs.id || 'hs' + index}\n"${hs.name}"`, {
+                fontFamily: 'monospace',
+                fontSize: '10px',
+                fill: '#ff00ff',
+                backgroundColor: '#000000cc',
+                padding: { x: 4, y: 2 },
+                align: 'center'
+            }).setOrigin(0.5, 1);
+            this.debugWorldContainer.add(label);
+
+            // Label for interact point
+            const interactLabel = this.add.text(interactX + 10, interactY - 10,
+                `interact: ${hs.id}`, {
+                fontFamily: 'monospace',
+                fontSize: '9px',
+                fill: '#ffff00',
+                backgroundColor: '#000000aa',
+                padding: { x: 2, y: 1 }
+            });
+            this.debugWorldContainer.add(interactLabel);
+        });
+
+        this.debugWorldContainer.add(graphics);
+    }
+
+    drawDebugSpawns(height) {
+        const room = this.roomData;
+        if (!room.spawns) return;
+
+        const graphics = this.add.graphics();
+
+        Object.entries(room.spawns).forEach(([spawnId, spawn]) => {
+            const x = spawn.x;
+            const y = height * spawn.y;
+
+            // Spawn point marker (green diamond)
+            graphics.fillStyle(0x00ff00, 1);
+            graphics.beginPath();
+            graphics.moveTo(x, y - 10);
+            graphics.lineTo(x + 8, y);
+            graphics.lineTo(x, y + 10);
+            graphics.lineTo(x - 8, y);
+            graphics.closePath();
+            graphics.fillPath();
+
+            graphics.lineStyle(2, 0x000000, 1);
+            graphics.beginPath();
+            graphics.moveTo(x, y - 10);
+            graphics.lineTo(x + 8, y);
+            graphics.lineTo(x, y + 10);
+            graphics.lineTo(x - 8, y);
+            graphics.closePath();
+            graphics.strokePath();
+
+            // Label
+            const label = this.add.text(x, y - 16, `spawn: ${spawnId}`, {
+                fontFamily: 'monospace',
+                fontSize: '10px',
+                fill: '#00ff00',
+                backgroundColor: '#000000aa',
+                padding: { x: 4, y: 2 }
+            }).setOrigin(0.5, 1);
+            this.debugWorldContainer.add(label);
+        });
+
+        this.debugWorldContainer.add(graphics);
+    }
+
+    drawDebugExits(height) {
+        const room = this.roomData;
+        if (!room.exits) return;
+
+        const graphics = this.add.graphics();
+
+        room.exits.forEach((exit, index) => {
+            let x, w;
+            const h = height;
+            const zoneY = height * 0.5;
+
+            if (exit.edge === 'left') {
+                x = exit.x || 40;
+                w = exit.width || 80;
+            } else if (exit.edge === 'right') {
+                x = exit.x || (this.worldWidth - 40);
+                w = exit.width || 80;
+            } else {
+                x = exit.x;
+                w = exit.width || 80;
+            }
+
+            // Exit zone (orange rectangle)
+            graphics.lineStyle(3, 0xff8800, 0.9);
+            graphics.strokeRect(x - w/2, 0, w, h);
+
+            // Semi-transparent fill
+            graphics.fillStyle(0xff8800, 0.1);
+            graphics.fillRect(x - w/2, 0, w, h);
+
+            // Arrow indicating direction
+            const arrowX = exit.edge === 'left' ? x - w/2 + 20 : x + w/2 - 20;
+            const arrowDir = exit.edge === 'left' ? -1 : 1;
+
+            graphics.fillStyle(0xff8800, 1);
+            graphics.beginPath();
+            graphics.moveTo(arrowX + arrowDir * 15, zoneY);
+            graphics.lineTo(arrowX - arrowDir * 5, zoneY - 15);
+            graphics.lineTo(arrowX - arrowDir * 5, zoneY + 15);
+            graphics.closePath();
+            graphics.fillPath();
+
+            // Label
+            const labelX = exit.edge === 'left' ? x - w/2 + 5 : x + w/2 - 5;
+            const labelOriginX = exit.edge === 'left' ? 0 : 1;
+
+            const label = this.add.text(labelX, 60,
+                `EXIT: ${exit.edge}\n→ ${exit.target}\nspawn: ${exit.spawnPoint || 'default'}`, {
+                fontFamily: 'monospace',
+                fontSize: '10px',
+                fill: '#ff8800',
+                backgroundColor: '#000000cc',
+                padding: { x: 4, y: 2 }
+            }).setOrigin(labelOriginX, 0);
+            this.debugWorldContainer.add(label);
+        });
+
+        this.debugWorldContainer.add(graphics);
+    }
+
+    destroyDebugOverlay() {
+        if (this.debugContainer) {
+            this.debugContainer.destroy();
+            this.debugContainer = null;
+        }
+        if (this.debugWorldContainer) {
+            this.debugWorldContainer.destroy();
+            this.debugWorldContainer = null;
+        }
+        this.debugCoordText = null;
+    }
+}

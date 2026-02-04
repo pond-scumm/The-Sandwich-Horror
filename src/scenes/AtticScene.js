@@ -1,6 +1,7 @@
-﻿        class AtticScene extends BaseScene {
+﻿        // Room ID: 'alien_room'
+        class AlienRoomScene extends BaseScene {
             constructor() {
-                super({ key: 'AtticScene' });
+                super({ key: 'alien_room' });
                 this.worldWidth = 1280; // Single screen, no scrolling
                 this.screenWidth = 1280;
                 this.walkableArea = { minY: 0.70, maxY: 0.92 };
@@ -215,17 +216,15 @@
                 this.createAlien(height);
 
                 // Create player at spawn position
-                const spawnPoint = this.registry.get('spawnPoint') || 'default';
+                const spawnPoint = this.getSpawnPoint();
                 let spawnX = 180;
                 if (spawnPoint === 'from_house') spawnX = 180;
 
                 this.createPlayer(spawnX, height * 0.82);
 
                 // Mark room as visited
-                const state = this.getGameState();
-                if (!state.visitedRooms.includes('attic')) {
-                    state.visitedRooms.push('attic');
-                    this.setGameState(state);
+                if (!TSH.State.hasVisitedRoom('alien_room')) {
+                    TSH.State.markRoomVisited('alien_room');
                     // First time entering - alien speaks
                     this.time.delayedCall(500, () => {
                         this.showDialog("*muttering from the darkness* Oh great. ANOTHER visitor. As if I didn't have enough interruptions.");
@@ -708,7 +707,7 @@
             executeAction(action, hotspot) {
                 if (action === 'Use' || action === hotspot.verbLabels?.actionVerb) {
                     if (hotspot.name === 'Stairs Down') {
-                        this.transitionToScene('GameScene', 'from_attic');
+                        this.transitionToScene('interior', 'from_attic');
                     } else {
                         this.showDialog(hotspot.useResponse);
                     }

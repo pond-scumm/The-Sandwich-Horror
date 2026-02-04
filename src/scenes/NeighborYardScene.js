@@ -1,6 +1,7 @@
-﻿        class NeighborYardScene extends BaseScene {
+﻿        // Room ID: 'earls_yard'
+        class EarlsYardScene extends BaseScene {
             constructor() {
-                super({ key: 'NeighborYardScene' });
+                super({ key: 'earls_yard' });
                 this.worldWidth = 1280; // Single screen, no scrolling
                 this.screenWidth = 1280;
                 this.walkableArea = { minY: 0.70, maxY: 0.92 };
@@ -225,7 +226,7 @@
                 this.createEdgeZones(height);
 
                 // Create player at spawn position
-                const spawnPoint = this.registry.get('spawnPoint') || 'default';
+                const spawnPoint = this.getSpawnPoint();
                 let spawnX = 100;
                 if (spawnPoint === 'from_backyard') spawnX = 100;
 
@@ -235,10 +236,8 @@
                 this.createEarl(height);
 
                 // Mark room as visited
-                const state = this.getGameState();
-                if (!state.visitedRooms.includes('neighbor_yard')) {
-                    state.visitedRooms.push('neighbor_yard');
-                    this.setGameState(state);
+                if (!TSH.State.hasVisitedRoom('earls_yard')) {
+                    TSH.State.markRoomVisited('earls_yard');
                     this.showDialog("Earl's backyard. Cozy. The grill smells amazing and those tiki lights give the whole place a warm, festive feel.");
                 }
             }
@@ -785,11 +784,11 @@
                     if (isDoubleClick) {
                         // Immediate transition
                         this.hideArrowCursor();
-                        this.transitionToScene('BackyardScene', 'from_neighbor');
+                        this.transitionToScene('backyard', 'from_neighbor');
                     } else {
                         // Walk to edge then transition
                         this.hideArrowCursor();
-                        this.walkToEdgeAndTransition(80, height * 0.80, 'BackyardScene', 'from_neighbor');
+                        this.walkToEdgeAndTransition(80, height * 0.80, 'backyard', 'from_neighbor');
                     }
                 });
             }

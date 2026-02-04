@@ -1,10 +1,11 @@
 // ============================================================================
-// GAME SCENE - Hector's Foyer/Living Room
+// INTERIOR SCENE - Hector's Foyer/Living Room
 // First room the player explores after entering Hector's home
+// Room ID: 'interior'
 // ============================================================================
-class GameScene extends BaseScene {
+class InteriorScene extends BaseScene {
     constructor() {
-        super({ key: 'GameScene' });
+        super({ key: 'interior' });
         this.worldWidth = 2560; // 2x screen width for scrolling
         this.screenWidth = 1280;
         this.walkableArea = { minY: 0.72, maxY: 0.92 };
@@ -205,7 +206,7 @@ class GameScene extends BaseScene {
         this.createEdgeZones(height);
         
         // Spawn player
-        const spawnPoint = this.registry.get('spawnPoint') || 'default';
+        const spawnPoint = this.getSpawnPoint();
         let spawnX = 250;
         if (spawnPoint === 'from_lab') spawnX = 2200;
         if (spawnPoint === 'from_outside') spawnX = 250;
@@ -220,10 +221,8 @@ class GameScene extends BaseScene {
         );
         
         // First time entering - Nate speaks
-        const state = this.getGameState();
-        if (!state.visitedRooms.includes('hector_foyer')) {
-            state.visitedRooms.push('hector_foyer');
-            this.setGameState(state);
+        if (!TSH.State.hasVisitedRoom('interior')) {
+            TSH.State.markRoomVisited('interior');
             this.time.delayedCall(800, () => {
                 this.showDialog("Hello? Is anyone home?");
             });
@@ -1717,7 +1716,7 @@ class GameScene extends BaseScene {
         
         this.rightEdgeZone.on('pointerdown', (pointer) => {
             if (this.inventoryOpen) return;
-            this.walkToEdgeAndTransition(this.worldWidth - 100, height * 0.82, 'LaboratoryScene', 'from_foyer');
+            this.walkToEdgeAndTransition(this.worldWidth - 100, height * 0.82, 'laboratory', 'from_foyer');
         });
     }
     
@@ -1731,7 +1730,7 @@ class GameScene extends BaseScene {
         if (action === 'Use' || action === hotspot.verbLabels?.actionVerb) {
             if (hotspot.useResponse === 'TRANSITION_TO_LAB') {
                 this.walkTo(hotspot.interactX, hotspot.interactY, () => {
-                    this.transitionToScene('LaboratoryScene', 'from_foyer');
+                    this.transitionToScene('laboratory', 'from_foyer');
                 });
             } else {
                 this.showDialog(hotspot.useResponse);

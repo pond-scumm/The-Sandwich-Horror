@@ -11,7 +11,8 @@ const config = {
         height: 720
     },
     backgroundColor: '#1a1a2e',
-    scene: [GameScene, GardenScene, ForestScene, LaboratoryScene, BackyardScene, NeighborYardScene, AtticScene],
+    // RoomScene first - loads 'interior' by default, uses data-driven layers
+    scene: [RoomScene, FrontOfHouseScene, InteriorScene, WoodsScene, LaboratoryScene, BackyardScene, EarlsYardScene, AlienRoomScene],
     input: { activePointers: 1 }
 };
 

@@ -1,6 +1,7 @@
-﻿        class ForestScene extends BaseScene {
+﻿        // Room ID: 'woods'
+        class WoodsScene extends BaseScene {
             constructor() {
-                super({ key: 'ForestScene' });
+                super({ key: 'woods' });
                 this.worldWidth = 3840; // 3x screen width
                 this.screenWidth = 1280;
                 this.walkableArea = { minY: 0.72, maxY: 0.94 };
@@ -96,7 +97,7 @@
                 this.createEdgeZones(height);
 
                 // Create player at spawn position
-                const spawnPoint = this.registry.get('spawnPoint') || 'default';
+                const spawnPoint = this.getSpawnPoint();
                 let spawnX = this.worldWidth / 2;
                 if (spawnPoint === 'from_garden') spawnX = this.worldWidth - 150;
                 else if (spawnPoint === 'left') spawnX = 150;
@@ -109,10 +110,8 @@
                 );
 
                 // Mark room as visited
-                const state = this.getGameState();
-                if (!state.visitedRooms.includes('forest')) {
-                    state.visitedRooms.push('forest');
-                    this.setGameState(state);
+                if (!TSH.State.hasVisitedRoom('woods')) {
+                    TSH.State.markRoomVisited('woods');
                     this.showDialog("Well, this isn't creepy at all. Said no one, ever.");
                 }
             }
@@ -508,11 +507,11 @@
                     if (isDoubleClick) {
                         // Immediate transition
                         this.hideArrowCursor();
-                        this.transitionToScene('GardenScene', 'from_forest');
+                        this.transitionToScene('front_of_house', 'from_forest');
                     } else {
                         // Walk to edge then transition
                         this.hideArrowCursor();
-                        this.walkToEdgeAndTransition(this.worldWidth - 80, height * 0.82, 'GardenScene', 'from_forest');
+                        this.walkToEdgeAndTransition(this.worldWidth - 80, height * 0.82, 'front_of_house', 'from_forest');
                     }
                 });
             }

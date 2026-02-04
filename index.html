@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -22,8 +22,34 @@
 <body>
     <div id="game-container"></div>
     
-    <!-- Load game scripts in order -->
+    <!-- ============================================================ -->
+    <!-- LOAD ORDER MATTERS! Each layer depends on the one above it. -->
+    <!-- ============================================================ -->
+    
+    <!-- 1. Global namespace (must be first) -->
+    <script src="src/TSH.js"></script>
+    
+    <!-- 2. Core systems -->
+    <script src="src/GameState.js"></script>
+    <script src="src/SaveSystem.js"></script>
+    
+    <!-- 3. Game data (items, combinations, rooms, NPCs, dialogue) -->
+    <script src="src/data/style.js"></script>
+    <script src="src/data/items/items.js"></script>
+    <script src="src/data/items/combinations.js"></script>
+    <!-- Room data files -->
+    <script src="src/data/rooms/interior.js"></script>
+    <!-- <script src="src/data/rooms/laboratory.js"></script> -->
+    <!-- NPC data files -->
+    <!-- <script src="src/data/npcs/hector.js"></script> -->
+    <!-- Dialogue data files -->
+    <!-- <script src="src/data/dialogue/hector.js"></script> -->
+    
+    <!-- 4. Scene base class -->
     <script src="src/BaseScene.js"></script>
+    
+    <!-- 5. Game scenes -->
+    <script src="src/scenes/RoomScene.js"></script>
     <script src="src/scenes/GameScene.js"></script>
     <script src="src/scenes/GardenScene.js"></script>
     <script src="src/scenes/ForestScene.js"></script>
@@ -31,6 +57,8 @@
     <script src="src/scenes/BackyardScene.js"></script>
     <script src="src/scenes/NeighborYardScene.js"></script>
     <script src="src/scenes/AtticScene.js"></script>
+    
+    <!-- 6. Config (starts the game - must be last) -->
     <script src="src/config.js"></script>
 </body>
 </html>
