@@ -88,6 +88,23 @@
                 this.longPressTimer = null;
                 this.longPressStartPos = null;
 
+                // Mobile gesture detection
+                this.mobileGesture = {
+                    startPos: null,           // {x, y} where touch started
+                    startTime: 0,             // Timestamp of touch start
+                    isDragging: false,        // True if moved beyond threshold
+                    isLongPress: false,       // True if held beyond long-press threshold
+                    lastTapTime: 0,           // For double-tap detection
+                    lastTapPos: null,         // Position of last tap
+                    dragThreshold: 10,        // Pixels before drag is recognized
+                    doubleTapThreshold: 300,  // ms for double-tap
+                    longPressThreshold: 500,  // ms for long-press (inventory item pickup)
+                    longPressTimer: null,     // Timer for long-press detection
+                    hoveredHotspot: null,     // Hotspot under finger during drag
+                    dragWithItem: false,      // True if dragging with inventory item
+                    draggedItem: null         // The item being dragged
+                };
+
                 // UI tracking
                 this.clickedUI = false;
 
@@ -227,119 +244,54 @@
             // ========== INPUT HANDLERS ==========
 
             setupInputHandlers() {
-                // Left click
+                // ========== POINTER DOWN ==========
                 this.input.on('pointerdown', (pointer) => {
-                    // If settings menu is open, only allow menu interactions
+                    // Settings menu has its own handlers
                     if (this.settingsMenuOpen) {
-                        if (pointer.leftButtonDown()) {
-                            // Check for Return button or X button click
-                            if (this.isClickOnSettingsReturnButton(pointer) || this.isClickOnSettingsCloseButton(pointer)) {
-                                this.closeSettingsMenu();
-                            }
-                            // Check for fullscreen checkbox click
-                            else if (this.isClickOnFullscreenCheckbox(pointer)) {
-                                this.toggleFullscreen();
-                            }
-                            // Check for volume mute button clicks
-                            else if (this.isClickOnVolumeMuteButton(pointer)) {
-                                // Handled in the function
-                            }
-                            // Check for volume slider clicks (start dragging)
-                            else if (this.isClickOnVolumeSlider(pointer)) {
-                                // Handled in the function
-                            }
-                        }
+                        this.handleSettingsPointerDown(pointer);
                         return;
                     }
 
-                    if (pointer.leftButtonDown()) {
-                        // Check settings button first
-                        if (this.isClickOnSettingsButton(pointer)) {
-                            this.clickedUI = true;
-                            this.openSettingsMenu();
-                            return;
-                        }
-                        // Check mobile inventory button (uses screen coords, ignores camera scroll)
-                        if (this.isClickOnInventoryButton(pointer)) {
-                            this.clickedUI = true;
-                            this.toggleInventory();
-                            return;
-                        }
-                        if (this.dialogActive) {
-                            this.skipToNextDialog();
-                            return;
-                        }
-                        if (this.conversationActive) {
-                            // Allow clicking to skip conversation dialogue
-                            // But not if we just clicked a dialogue option (that would skip the hero's line)
-                            if (this.conversationLineCallback && !this.justClickedDialogueOption) {
-                                this.skipConversationLine();
-                            }
-                            return;
-                        }
-                        this.handleBackgroundPress(pointer);
-                    }
-                    if (pointer.rightButtonDown()) {
-                        if (this.conversationActive) return;
-                        if (this.dialogActive) return;
-
-                        // Right-click with item selected = deselect (works in inventory too)
-                        if (this.selectedItem) {
-                            this.deselectItem();
-                            return;
-                        }
-
-                        // Right-click on hotspot = examine (no walking required)
-                        if (!this.inventoryOpen && this.currentHoveredHotspot) {
-                            this.executeAction('Look At', this.currentHoveredHotspot);
-                        }
-                    }
-
-                    // Long-press for hotspot highlighting (mobile)
-                    if (this.isMobile && pointer.leftButtonDown()) {
-                        this.longPressStartPos = { x: pointer.x, y: pointer.y };
-                        this.longPressTimer = this.time.delayedCall(1000, () => {
-                            this.showHotspotHighlights();
-                        });
+                    // Mobile vs Desktop handling
+                    if (this.isMobile) {
+                        this.handleMobilePointerDown(pointer);
+                    } else {
+                        this.handleDesktopPointerDown(pointer);
                     }
                 });
 
+                // ========== POINTER UP ==========
                 this.input.on('pointerup', (pointer) => {
                     // Stop any volume slider dragging
                     this.stopVolumeSliderDrag();
 
-                    this.handlePointerUp(pointer);
-
-                    // Cancel long-press timer and hide highlights (mobile)
-                    if (this.longPressTimer) {
-                        this.longPressTimer.destroy();
-                        this.longPressTimer = null;
+                    if (this.settingsMenuOpen) {
+                        return;
                     }
-                    this.longPressStartPos = null;
+
+                    // Mobile vs Desktop handling
                     if (this.isMobile) {
-                        this.hideHotspotHighlights();
+                        this.handleMobilePointerUp(pointer);
+                    } else {
+                        this.handleDesktopPointerUp(pointer);
                     }
                 });
 
+                // ========== POINTER MOVE ==========
                 this.input.on('pointermove', (pointer) => {
-                    // Handle volume slider dragging
+                    // Handle volume slider dragging (both platforms)
                     if (this.settingsMenuOpen && this.draggingVolumeSlider) {
                         this.updateVolumeSliderDrag(pointer);
+                        return;
                     }
 
-                    if (this.inventoryOpen && this.selectedItem) {
-                        this.checkItemOutsideInventory(pointer);
-                    }
-
-                    // Cancel long-press if finger moves too much (it's a drag, not a hold)
-                    if (this.longPressTimer && this.longPressStartPos) {
-                        const dx = pointer.x - this.longPressStartPos.x;
-                        const dy = pointer.y - this.longPressStartPos.y;
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-                        if (distance > 10) {
-                            this.longPressTimer.destroy();
-                            this.longPressTimer = null;
-                            this.longPressStartPos = null;
+                    // Mobile vs Desktop handling
+                    if (this.isMobile) {
+                        this.handleMobilePointerMove(pointer);
+                    } else {
+                        // Desktop: check item outside inventory during drag
+                        if (this.inventoryOpen && this.selectedItem) {
+                            this.checkItemOutsideInventory(pointer);
                         }
                     }
                 });
@@ -439,6 +391,451 @@
                 }
 
                 this.pointerDownPos = null;
+            }
+
+            // ========== SETTINGS MENU INPUT ==========
+
+            handleSettingsPointerDown(pointer) {
+                // Check if clicking X button or Return button
+                if (this.isClickOnSettingsXButton(pointer) || this.isClickOnSettingsReturnButton(pointer)) {
+                    this.closeSettingsMenu();
+                    return;
+                }
+
+                // Check volume slider interaction
+                this.checkVolumeSliderClick(pointer);
+            }
+
+            // ========== DESKTOP INPUT HANDLERS ==========
+
+            handleDesktopPointerDown(pointer) {
+                // Check for settings button click
+                if (this.isClickOnSettingsButton(pointer)) {
+                    this.openSettingsMenu();
+                    return;
+                }
+
+                // Check inventory button (mobile only, but check anyway)
+                if (this.isClickOnInventoryButton(pointer)) {
+                    this.clickedUI = true;
+                    this.toggleInventory();
+                    return;
+                }
+
+                // Check inventory panel interaction
+                if (this.inventoryOpen) {
+                    const clickedItem = this.getInventoryItemAtPointer(pointer);
+                    if (clickedItem) {
+                        this.clickedUI = true;
+                        if (pointer.rightButtonDown()) {
+                            this.examineItem(clickedItem);
+                        } else {
+                            this.selectItem(clickedItem);
+                        }
+                        return;
+                    }
+                }
+
+                // Check hotspots
+                const hotspot = this.getHotspotAtPointer(pointer);
+                if (hotspot) {
+                    if (pointer.rightButtonDown()) {
+                        this.clickedUI = true;
+                        this.examineHotspot(hotspot);
+                    } else {
+                        this.handleHotspotPress(hotspot, pointer);
+                    }
+                    return;
+                }
+
+                // Background interaction
+                this.handleBackgroundPress(pointer);
+            }
+
+            handleDesktopPointerUp(pointer) {
+                this.handlePointerUp(pointer);
+            }
+
+            // ========== MOBILE INPUT HANDLERS ==========
+
+            handleMobilePointerDown(pointer) {
+                const gesture = this.mobileGesture;
+                const currentTime = Date.now();
+
+                // Store touch start position and time
+                gesture.startPos = { x: pointer.x, y: pointer.y };
+                gesture.startTime = currentTime;
+                gesture.isDragging = false;
+                gesture.isLongPress = false;
+                gesture.hoveredHotspot = null;
+
+                // Clear any existing long-press timer
+                if (gesture.longPressTimer) {
+                    gesture.longPressTimer.destroy();
+                    gesture.longPressTimer = null;
+                }
+
+                // Check for settings button
+                if (this.isClickOnSettingsButton(pointer)) {
+                    this.openSettingsMenu();
+                    return;
+                }
+
+                // Check inventory button
+                if (this.isClickOnInventoryButton(pointer)) {
+                    this.clickedUI = true;
+                    this.toggleInventory();
+                    return;
+                }
+
+                // Check if touching an inventory item (for long-press pickup)
+                if (this.inventoryOpen) {
+                    const clickedItem = this.getInventoryItemAtPointer(pointer);
+                    if (clickedItem) {
+                        this.clickedUI = true;
+                        gesture.touchedInventoryItem = clickedItem;
+
+                        // Start long-press timer for item pickup
+                        gesture.longPressTimer = this.time.delayedCall(gesture.longPressThreshold, () => {
+                            gesture.isLongPress = true;
+                            gesture.dragWithItem = true;
+                            gesture.draggedItem = clickedItem;
+                            this.selectItem(clickedItem);
+                            // Visual feedback - could add haptic or sound here
+                        });
+                        return;
+                    }
+                }
+
+                // Check for double-tap to start continuous running (on background only)
+                const timeSinceLastTap = currentTime - gesture.lastTapTime;
+                const isDoubleTap = timeSinceLastTap < gesture.doubleTapThreshold &&
+                                    gesture.lastTapPos &&
+                                    this.getDistance(pointer, gesture.lastTapPos) < 30;
+
+                if (isDoubleTap && !this.inventoryOpen && !this.dialogActive && !this.conversationActive) {
+                    const hotspot = this.getHotspotAtPointer(pointer);
+                    if (!hotspot) {
+                        // Double-tap on background - start continuous running
+                        this.isRunningHold = true;
+                        this.runningHoldStartTime = currentTime;
+                        this.runToPointer(pointer);
+                        // Clear last tap so triple-tap doesn't re-trigger
+                        gesture.lastTapTime = 0;
+                        gesture.lastTapPos = null;
+                        return;
+                    }
+                }
+
+                // Not touching inventory - start long-press timer for hotspot highlights
+                if (!this.inventoryOpen && !this.selectedItem) {
+                    gesture.longPressTimer = this.time.delayedCall(1000, () => {
+                        gesture.isLongPress = true;
+                        this.showHotspotHighlights();
+                    });
+                }
+            }
+
+            handleMobilePointerUp(pointer) {
+                const gesture = this.mobileGesture;
+                const touchDuration = Date.now() - gesture.startTime;
+
+                // Clear long-press timer
+                if (gesture.longPressTimer) {
+                    gesture.longPressTimer.destroy();
+                    gesture.longPressTimer = null;
+                }
+
+                // Hide hotspot highlights if they were shown
+                if (this.hotspotHighlightsVisible) {
+                    this.hideHotspotHighlights();
+                }
+
+                // Stop continuous running if active
+                if (this.isRunningHold) {
+                    this.isRunningHold = false;
+                    this.isWalking = false;
+                    this.stopWalkAnimation();
+                    return;
+                }
+
+                // Handle drag-with-item release
+                if (gesture.dragWithItem && gesture.draggedItem) {
+                    const hotspot = this.getHotspotAtPointer(pointer);
+                    if (hotspot) {
+                        // Use item on hotspot
+                        if (this.isPlayerNearHotspot(hotspot)) {
+                            this.useItemOnHotspot(gesture.draggedItem, hotspot);
+                        } else {
+                            this.walkTo(hotspot.interactX, hotspot.interactY, () => {
+                                this.useItemOnHotspot(gesture.draggedItem, hotspot);
+                            }, true);
+                        }
+                    } else {
+                        // Check if dropping on another inventory item (combine)
+                        const targetItem = this.getInventoryItemAtPointer(pointer);
+                        if (targetItem && targetItem !== gesture.draggedItem) {
+                            this.combineItems(gesture.draggedItem, targetItem);
+                        }
+                    }
+                    // Reset drag state
+                    gesture.dragWithItem = false;
+                    gesture.draggedItem = null;
+                    gesture.touchedInventoryItem = null;
+                    this.clickedUI = false;
+                    return;
+                }
+
+                // Handle inventory item tap (examine on quick tap)
+                if (gesture.touchedInventoryItem && !gesture.isDragging && !gesture.isLongPress) {
+                    if (touchDuration < gesture.longPressThreshold) {
+                        this.examineItem(gesture.touchedInventoryItem);
+                    }
+                    gesture.touchedInventoryItem = null;
+                    this.clickedUI = false;
+                    return;
+                }
+
+                // Handle drag release on hotspot (lift finger to use)
+                if (gesture.isDragging && !gesture.isLongPress) {
+                    const hotspot = this.getHotspotAtPointer(pointer);
+                    if (hotspot) {
+                        // Lift on hotspot after drag = use/interact
+                        if (this.selectedItem) {
+                            // Use selected item on hotspot
+                            if (this.isPlayerNearHotspot(hotspot)) {
+                                this.useItemOnHotspot(this.selectedItem, hotspot);
+                            } else {
+                                this.walkTo(hotspot.interactX, hotspot.interactY, () => {
+                                    this.useItemOnHotspot(this.selectedItem, hotspot);
+                                }, true);
+                            }
+                        } else {
+                            // Normal use action
+                            const isNPC = hotspot.type === 'npc' || hotspot.isNPC;
+                            const action = isNPC ? 'Talk To' : 'Use';
+                            if (this.isPlayerNearHotspot(hotspot)) {
+                                this.executeAction(action, hotspot);
+                            } else {
+                                this.walkTo(hotspot.interactX, hotspot.interactY, () => {
+                                    this.executeAction(action, hotspot);
+                                }, true);
+                            }
+                        }
+                        // Hide label after use
+                        this.setCrosshairHover(null);
+                        gesture.hoveredHotspot = null;
+                    }
+                    gesture.isDragging = false;
+                    return;
+                }
+
+                // Handle taps (not drags)
+                if (!gesture.isDragging) {
+                    const currentTime = Date.now();
+                    const timeSinceLastTap = currentTime - gesture.lastTapTime;
+                    const isDoubleTap = timeSinceLastTap < gesture.doubleTapThreshold &&
+                                        gesture.lastTapPos &&
+                                        this.getDistance(pointer, gesture.lastTapPos) < 30;
+
+                    // Check what was tapped
+                    const hotspot = this.getHotspotAtPointer(pointer);
+
+                    if (hotspot) {
+                        if (isDoubleTap) {
+                            // Double-tap on hotspot = examine
+                            this.examineHotspot(hotspot);
+                        } else {
+                            // Single tap on hotspot = run + use
+                            if (this.selectedItem) {
+                                if (this.isPlayerNearHotspot(hotspot)) {
+                                    this.useItemOnHotspot(this.selectedItem, hotspot);
+                                } else {
+                                    this.walkTo(hotspot.interactX, hotspot.interactY, () => {
+                                        this.useItemOnHotspot(this.selectedItem, hotspot);
+                                    }, true);
+                                }
+                            } else {
+                                const isNPC = hotspot.type === 'npc' || hotspot.isNPC;
+                                const action = isNPC ? 'Talk To' : 'Use';
+                                if (this.isPlayerNearHotspot(hotspot)) {
+                                    this.executeAction(action, hotspot);
+                                } else {
+                                    this.walkTo(hotspot.interactX, hotspot.interactY, () => {
+                                        this.executeAction(action, hotspot);
+                                    }, true);
+                                }
+                            }
+                        }
+                    } else {
+                        // Tapped on background
+                        if (this.inventoryOpen) {
+                            // Check if outside inventory panel to close it
+                            const { width, height } = this.scale;
+                            const panelWidth = this.inventoryPanelWidth || (width - 300);
+                            const panelHeight = this.inventoryPanelHeight || (height - 240);
+                            const panelLeft = (width - panelWidth) / 2;
+                            const panelRight = panelLeft + panelWidth;
+                            const panelTop = (height - panelHeight) / 2;
+                            const panelBottom = panelTop + panelHeight;
+
+                            if (pointer.x < panelLeft || pointer.x > panelRight ||
+                                pointer.y < panelTop || pointer.y > panelBottom) {
+                                this.toggleInventory();
+                            }
+                        } else if (this.selectedItem) {
+                            // Tap background with item = deselect
+                            this.deselectItem();
+                        } else {
+                            // Single tap = walk (double-tap handled in pointerdown)
+                            const { height } = this.scale;
+                            const scrollX = this.cameras.main.scrollX || 0;
+                            const scrollY = this.cameras.main.scrollY || 0;
+                            const worldX = pointer.x + scrollX;
+                            const worldY = pointer.y + scrollY;
+                            const minY = height * this.walkableArea.minY;
+                            const maxY = height * this.walkableArea.maxY;
+                            const targetY = Phaser.Math.Clamp(worldY, minY, maxY);
+                            this.walkTo(worldX, targetY, null, false);
+                        }
+                    }
+
+                    // Store tap info for double-tap detection
+                    gesture.lastTapTime = currentTime;
+                    gesture.lastTapPos = { x: pointer.x, y: pointer.y };
+                }
+
+                // Reset gesture state
+                gesture.isDragging = false;
+                gesture.isLongPress = false;
+            }
+
+            handleMobilePointerMove(pointer) {
+                const gesture = this.mobileGesture;
+
+                // If no start position, ignore
+                if (!gesture.startPos) return;
+
+                // Calculate distance moved
+                const distance = this.getDistance(pointer, gesture.startPos);
+
+                // Check if we've moved beyond drag threshold
+                if (!gesture.isDragging && distance > gesture.dragThreshold) {
+                    gesture.isDragging = true;
+
+                    // Cancel long-press timer if dragging
+                    if (gesture.longPressTimer && !gesture.isLongPress) {
+                        gesture.longPressTimer.destroy();
+                        gesture.longPressTimer = null;
+                    }
+                }
+
+                // Handle drag-with-item (moving item cursor)
+                if (gesture.dragWithItem && gesture.draggedItem) {
+                    // Update item cursor position
+                    if (this.itemCursor) {
+                        this.itemCursor.setPosition(pointer.x, pointer.y);
+                    }
+
+                    // Check hotspot under finger for visual feedback
+                    const hotspot = this.getHotspotAtPointer(pointer);
+                    if (hotspot !== gesture.hoveredHotspot) {
+                        gesture.hoveredHotspot = hotspot;
+                        this.setCrosshairHover(hotspot);
+                    }
+                    return;
+                }
+
+                // Handle drag-to-explore (show hotspot labels)
+                if (gesture.isDragging && !gesture.isLongPress) {
+                    const hotspot = this.getHotspotAtPointer(pointer);
+
+                    // Update label if hotspot changed
+                    if (hotspot !== gesture.hoveredHotspot) {
+                        gesture.hoveredHotspot = hotspot;
+                        this.setCrosshairHover(hotspot);
+                    }
+                }
+            }
+
+            // Helper to calculate distance between two points
+            getDistance(p1, p2) {
+                const dx = p1.x - p2.x;
+                const dy = p1.y - p2.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            // Find hotspot at pointer position (uses world coordinates)
+            getHotspotAtPointer(pointer) {
+                if (!this.hotspots || this.hotspots.length === 0) return null;
+
+                const { height } = this.scale;
+                const scrollX = this.cameras.main.scrollX || 0;
+                const scrollY = this.cameras.main.scrollY || 0;
+                const worldX = pointer.x + scrollX;
+                const worldY = pointer.y + scrollY;
+
+                for (const hotspot of this.hotspots) {
+                    if (hotspot.polygon && hotspot.polygon.length >= 3) {
+                        // Polygon hotspot - convert to pixel coordinates and test
+                        const points = hotspot.polygon.map(p => ({
+                            x: p.x,
+                            y: height * p.y
+                        }));
+                        if (this.pointInPolygon(worldX, worldY, points)) {
+                            return hotspot;
+                        }
+                    } else {
+                        // Rectangle hotspot
+                        const w = hotspot.w || 80;
+                        const h = (hotspot.h || 0.1) * height;
+                        const y = hotspot.y * height;
+                        const left = hotspot.x - w / 2;
+                        const right = hotspot.x + w / 2;
+                        const top = y - h / 2;
+                        const bottom = y + h / 2;
+
+                        if (worldX >= left && worldX <= right && worldY >= top && worldY <= bottom) {
+                            return hotspot;
+                        }
+                    }
+                }
+
+                return null;
+            }
+
+            // Find inventory item at pointer position (screen coordinates)
+            getInventoryItemAtPointer(pointer) {
+                if (!this.inventoryOpen || !this.inventorySlots) return null;
+
+                for (const slot of this.inventorySlots) {
+                    if (!slot.item) continue;
+
+                    const halfSize = slot.size / 2;
+                    if (pointer.x >= slot.x - halfSize && pointer.x <= slot.x + halfSize &&
+                        pointer.y >= slot.y - halfSize && pointer.y <= slot.y + halfSize) {
+                        return slot.item;
+                    }
+                }
+
+                return null;
+            }
+
+            // Examine a hotspot (show look description)
+            examineHotspot(hotspot) {
+                const lookText = hotspot.lookResponse || hotspot.look || `It's ${hotspot.name}.`;
+                this.showDialog(lookText);
+            }
+
+            // Examine an inventory item (show description)
+            examineItem(item) {
+                const description = item.description || `It's a ${item.name}.`;
+                this.showDialog(description);
+            }
+
+            // Combine two inventory items
+            combineItems(itemA, itemB) {
+                this.tryCombineItems(itemA, itemB);
             }
 
             handleBackgroundClick(x, y) {
@@ -921,10 +1318,8 @@
                         this.setCrosshairHover(null);
                     });
 
-                    zone.on('pointerdown', (pointer) => {
-                        if (this.inventoryOpen || this.settingsMenuOpen) return;
-                        this.handleHotspotPress(hotspot, pointer);
-                    });
+                    // Note: pointerdown is now handled manually in handleDesktopPointerDown/handleMobilePointerDown
+                    // to support mobile gestures and consistent cross-platform behavior
                 });
             }
 
@@ -975,6 +1370,11 @@
                 this.crosshairGraphics = this.add.graphics();
                 this.drawCrosshair(0xffffff);
                 this.crosshairCursor.add(this.crosshairGraphics);
+
+                // Hide cursor on mobile (no mouse pointer)
+                if (this.isMobile) {
+                    this.crosshairCursor.setVisible(false);
+                }
 
                 // Create arrow cursor (for edge zone transitions)
                 this.arrowCursor = this.add.container(width / 2, height / 2);
@@ -1065,7 +1465,7 @@
             // Hide arrow cursor (show crosshair)
             hideArrowCursor() {
                 this.arrowCursor.setVisible(false);
-                if (!this.selectedItem) {
+                if (!this.selectedItem && !this.isMobile) {
                     this.crosshairCursor.setVisible(true);
                 }
                 this.arrowDirection = null;
@@ -1921,12 +2321,12 @@
                 this.settingsBlurOverlay.setVisible(false);
                 this.settingsPanel.setVisible(false);
 
-                // Restore crosshair cursor (if no item selected)
-                if (this.crosshairCursor && !this.selectedItem) {
+                // Restore crosshair cursor (if no item selected, and not mobile)
+                if (this.crosshairCursor && !this.selectedItem && !this.isMobile) {
                     this.crosshairCursor.setVisible(true);
                 }
-                // Restore item cursor if item is selected
-                if (this.itemCursor && this.selectedItem) {
+                // Restore item cursor if item is selected (desktop only)
+                if (this.itemCursor && this.selectedItem && !this.isMobile) {
                     this.itemCursor.setVisible(true);
                 }
 
@@ -2546,7 +2946,9 @@
                 this.itemCursor.setVisible(false);
                 this.itemCursor.removeAll(true);
                 this.selectedSlotHighlight.setVisible(false);
-                this.crosshairCursor.setVisible(true);
+                if (!this.isMobile) {
+                    this.crosshairCursor.setVisible(true);
+                }
                 this.hotspotLabel.setText('');
                 this.hideItemCursorHighlight();
             }
@@ -2615,7 +3017,9 @@
             endDialogSequence() {
                 this.dialogActive = false;
                 this.dialogSkipReady = false;
-                if (this.crosshairCursor && !this.selectedItem) this.crosshairCursor.setVisible(true);
+                if (this.crosshairCursor && !this.selectedItem && !this.isMobile) {
+                    this.crosshairCursor.setVisible(true);
+                }
                 // Refresh hotspot label if cursor is over a hotspot
                 if (this.currentHoveredHotspot) {
                     this.setCrosshairHover(this.currentHoveredHotspot);
@@ -2748,9 +3152,11 @@
                 // Freeze movement and hide normal UI
                 this.stopCharacterMovement();
 
-                // Keep crosshair visible during conversation
-                if (this.crosshairCursor) this.crosshairCursor.setVisible(true);
-                this.drawCrosshair(0xffffff); // White cursor
+                // Keep crosshair visible during conversation (desktop only)
+                if (this.crosshairCursor && !this.isMobile) {
+                    this.crosshairCursor.setVisible(true);
+                    this.drawCrosshair(0xffffff); // White cursor
+                }
 
                 // Show initial dialogue options
                 console.log('[Conversation] Calling showDialogueOptions with start');
@@ -2776,8 +3182,8 @@
                 // Clear hotspot label
                 if (this.hotspotLabel) this.hotspotLabel.setText('');
 
-                // Restore normal cursor state
-                if (this.crosshairCursor && !this.selectedItem) {
+                // Restore normal cursor state (desktop only)
+                if (this.crosshairCursor && !this.selectedItem && !this.isMobile) {
                     this.crosshairCursor.setVisible(true);
                     this.drawCrosshair(0xffffff);
                 }
@@ -3154,10 +3560,10 @@
 
                 // When settings menu is open, still update crosshair but skip game updates
                 if (this.settingsMenuOpen) {
-                    // Hide item/arrow cursors, keep crosshair
+                    // Hide item/arrow cursors, keep crosshair (desktop only)
                     if (this.arrowCursor) this.arrowCursor.setVisible(false);
                     if (this.itemCursor) this.itemCursor.setVisible(false);
-                    if (this.crosshairCursor) {
+                    if (this.crosshairCursor && !this.isMobile) {
                         this.crosshairCursor.setVisible(true);
                         this.crosshairCursor.setPosition(pointer.x, pointer.y);
                     }
