@@ -493,8 +493,8 @@
                     return;
                 }
 
-                // Check inventory button
-                if (this.isClickOnInventoryButton(pointer)) {
+                // Check inventory button (use hover state set in update loop)
+                if (this.inventoryButtonHovered) {
                     this.clickedUI = true;
                     this.toggleInventory();
                     return;
