@@ -630,6 +630,9 @@
         g.fillStyle(COLORS.FIRE_LIGHT);
         g.fillRect(candleX + p*2, itemBaseY - p*14, p, p*2);
 
+        // Matchbox is drawn as a pickup overlay (see pickupOverlays in room data)
+        // so it can be removed dynamically when picked up
+
         const fireWidth = fireboxWidth - p*8;
         const fireX = fireboxX + (fireboxWidth - fireWidth) / 2;
         drawFire(g, fireX, floorY - p*6, fireWidth, p*14);
@@ -1299,7 +1302,7 @@
             {
                 draft: true,
                 id: 'matches',
-                x: 980, y: 0.350, w: 20, h: 0.04,
+                x: 991, y: 0.377, w: 20, h: 0.022,
                 interactX: 960, interactY: 0.82,
                 name: 'Matches',
                 verbs: { action: 'Take', look: 'Examine', talk: 'Talk to' },
@@ -1393,19 +1396,6 @@
                     spawnPoint: 'from_interior'
                 }
             },
-            {
-                draft: true,
-                id: 'worn_rug',
-                x: 909, y: 0.852, w: 407, h: 0.161,
-                interactX: 909, interactY: 0.88,
-                name: 'Worn Rug',
-                verbs: { action: 'Move', look: 'Examine', talk: 'Talk to' },
-                responses: {
-                    look: "Nice rug! Faded, but in a cozy way.",
-                    action: "Just floorboards. No trap door. A little disappointed, honestly.",
-                    talk: "You're doing great, rug. Real good floor coverage."
-                }
-            },
             // === FRONT ROW (in front of back row) ===
             {
                 draft: true,
@@ -1418,6 +1408,7 @@
                     { x: 750, y: 0.792 },
                     { x: 641, y: 0.793 }
                 ],
+                highlightX: 679, highlightY: 0.757,
                 interactX: 695, interactY: 0.88,
                 name: 'Left Armchair',
                 verbs: { action: 'Sit in', look: 'Examine', talk: 'Talk to' },
@@ -1438,6 +1429,7 @@
                     { x: 1085, y: 0.735 },
                     { x: 1159, y: 0.733 }
                 ],
+                highlightX: 1149, highlightY: 0.761,
                 interactX: 1135, interactY: 0.88,
                 name: 'Right Armchair',
                 verbs: { action: 'Sit in', look: 'Examine', talk: 'Talk to' },
@@ -1450,7 +1442,7 @@
             {
                 draft: true,
                 id: 'coffee_table',
-                x: 907, y: 0.817, w: 166, h: 0.072,
+                x: 910, y: 0.766, w: 177, h: 0.068,
                 interactX: 907, interactY: 0.88,
                 name: 'Coffee Table',
                 verbs: { action: 'Search', look: 'Examine', talk: 'Talk to' },
@@ -1458,6 +1450,30 @@
                     look: "'Quantum Tunneling for Beginners,' 'Dimensional Theory,' and... 'TV Guide.' A well-rounded reader.",
                     action: "Way over my head. But give me a few months!",
                     talk: "One day I'll understand all of this. ONE DAY."
+                }
+            }
+        ],
+
+        // Dynamic overlays for pickable items (removed when item is picked up)
+        pickupOverlays: [
+            {
+                hotspotId: 'matches',
+                itemId: 'matches',
+                x: 984,
+                y: 0.365,
+                depth: 55,
+                draw: (g, x, y) => {
+                    const p = 4;
+                    // Brown matchbox
+                    g.fillStyle(0x8B4513);
+                    g.fillRect(x, y, p*5, p*3);
+                    g.fillStyle(0xA0522D);  // Lighter top
+                    g.fillRect(x, y, p*5, p);
+                    g.fillStyle(0x654321);  // Dark edge
+                    g.fillRect(x + p*4, y, p, p*3);
+                    // Red striker strip
+                    g.fillStyle(0x8B0000);
+                    g.fillRect(x, y + p, p*4, p);
                 }
             }
         ],

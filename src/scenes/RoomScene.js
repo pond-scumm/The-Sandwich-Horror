@@ -175,6 +175,9 @@ class RoomScene extends BaseScene {
         // Create hotspots from room data
         this.createHotspotsFromData(height);
 
+        // Create pickup overlays (dynamic graphics for pickable items)
+        this.createPickupOverlays(height);
+
         // Create exit zones
         this.createExitZones(height);
 
@@ -464,6 +467,9 @@ class RoomScene extends BaseScene {
                 lookResponse: hs.responses?.look,
                 useResponse: hs.responses?.action,
                 talkResponse: hs.responses?.talk,
+                // Optional manual highlight position (for irregular shapes)
+                _highlightX: hs.highlightX,
+                _highlightY: hs.highlightY !== undefined ? height * hs.highlightY : undefined,
                 _data: hs
             };
 
@@ -493,6 +499,34 @@ class RoomScene extends BaseScene {
         });
 
         this.createHotspots(hotspotData);
+    }
+
+    createPickupOverlays(height) {
+        const room = this.roomData;
+        this.pickupOverlays = {};
+
+        // Check if room defines pickup overlays
+        if (!room.pickupOverlays) return;
+
+        room.pickupOverlays.forEach(overlay => {
+            // Skip if item already picked up
+            if (overlay.itemId && TSH.State.hasItem(overlay.itemId)) return;
+
+            const g = this.add.graphics();
+            const y = overlay.y * height;
+
+            // Call the overlay's draw function
+            if (overlay.draw && typeof overlay.draw === 'function') {
+                overlay.draw(g, overlay.x, y, height);
+            }
+
+            g.setDepth(overlay.depth || 50);
+
+            // Store reference by hotspot ID for later removal
+            if (overlay.hotspotId) {
+                this.pickupOverlays[overlay.hotspotId] = g;
+            }
+        });
     }
 
     executeAction(action, hotspot) {
@@ -550,6 +584,11 @@ class RoomScene extends BaseScene {
             // Remove hotspot if specified
             if (hsData.removeAfterPickup) {
                 this.removeHotspot(hsData.id);
+                // Also remove associated pickup overlay if it exists
+                if (this.pickupOverlays && this.pickupOverlays[hsData.id]) {
+                    this.pickupOverlays[hsData.id].destroy();
+                    delete this.pickupOverlays[hsData.id];
+                }
             }
 
             return;

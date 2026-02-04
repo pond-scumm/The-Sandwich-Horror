@@ -85,37 +85,47 @@
         },
 
         // ========== CHARACTER ==========
-        // Default footsteps (left/right alternating)
-        footstep_left: {
-            key: 'sfx_footstep_left',
-            path: 'assets/audio/sfx/footstep_left.wav',
+        // Walk footsteps (left/right, 2 variants each for variation)
+        stepwlkl1: {
+            key: 'sfx_stepwlkl1',
+            path: 'assets/audio/sfx/stepwlkl1.wav',
             volume: 0.3
         },
-        footstep_right: {
-            key: 'sfx_footstep_right',
-            path: 'assets/audio/sfx/footstep_right.wav',
+        stepwlkl2: {
+            key: 'sfx_stepwlkl2',
+            path: 'assets/audio/sfx/stepwlkl2.wav',
             volume: 0.3
         },
-        // Surface-specific footsteps (for future use)
-        footstep_wood_left: {
-            key: 'sfx_footstep_wood_left',
-            path: 'assets/audio/sfx/footstep_wood_left.wav',
+        stepwlkr1: {
+            key: 'sfx_stepwlkr1',
+            path: 'assets/audio/sfx/stepwlkr1.wav',
             volume: 0.3
         },
-        footstep_wood_right: {
-            key: 'sfx_footstep_wood_right',
-            path: 'assets/audio/sfx/footstep_wood_right.wav',
+        stepwlkr2: {
+            key: 'sfx_stepwlkr2',
+            path: 'assets/audio/sfx/stepwlkr2.wav',
             volume: 0.3
         },
-        footstep_stone_left: {
-            key: 'sfx_footstep_stone_left',
-            path: 'assets/audio/sfx/footstep_stone_left.wav',
-            volume: 0.3
+        // Run footsteps (left/right, 2 variants each)
+        steprunl1: {
+            key: 'sfx_steprunl1',
+            path: 'assets/audio/sfx/steprunl1.wav',
+            volume: 0.35
         },
-        footstep_stone_right: {
-            key: 'sfx_footstep_stone_right',
-            path: 'assets/audio/sfx/footstep_stone_right.wav',
-            volume: 0.3
+        steprunl2: {
+            key: 'sfx_steprunl2',
+            path: 'assets/audio/sfx/steprunl2.wav',
+            volume: 0.35
+        },
+        steprunr1: {
+            key: 'sfx_steprunr1',
+            path: 'assets/audio/sfx/steprunr1.wav',
+            volume: 0.35
+        },
+        steprunr2: {
+            key: 'sfx_steprunr2',
+            path: 'assets/audio/sfx/steprunr2.wav',
+            volume: 0.35
         },
 
         // ========== DIALOGUE ==========

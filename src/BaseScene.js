@@ -26,7 +26,7 @@
                 // Footsteps
                 this.footstepTimer = null;
                 this.footstepIsLeft = true;  // Alternates left/right
-                this.footstepSurface = null; // Set by room data (null = default)
+                this.footstepIsRunning = false;  // Track walk vs run for sounds
 
                 // Input tracking
                 this.pointerDownPos = null;
@@ -81,6 +81,12 @@
                 // Hotspots
                 this.hotspots = [];
                 this.itemCursorHighlight = null;
+
+                // Hotspot highlighting (Shift on desktop, long-press on mobile)
+                this.hotspotHighlightsVisible = false;
+                this.hotspotHighlightGraphics = null;
+                this.longPressTimer = null;
+                this.longPressStartPos = null;
 
                 // UI tracking
                 this.clickedUI = false;
@@ -247,15 +253,45 @@
                             this.executeAction('Look At', this.currentHoveredHotspot);
                         }
                     }
+
+                    // Long-press for hotspot highlighting (mobile)
+                    if (this.isMobile && pointer.leftButtonDown()) {
+                        this.longPressStartPos = { x: pointer.x, y: pointer.y };
+                        this.longPressTimer = this.time.delayedCall(1000, () => {
+                            this.showHotspotHighlights();
+                        });
+                    }
                 });
 
                 this.input.on('pointerup', (pointer) => {
                     this.handlePointerUp(pointer);
+
+                    // Cancel long-press timer and hide highlights (mobile)
+                    if (this.longPressTimer) {
+                        this.longPressTimer.destroy();
+                        this.longPressTimer = null;
+                    }
+                    this.longPressStartPos = null;
+                    if (this.isMobile) {
+                        this.hideHotspotHighlights();
+                    }
                 });
 
                 this.input.on('pointermove', (pointer) => {
                     if (this.inventoryOpen && this.selectedItem) {
                         this.checkItemOutsideInventory(pointer);
+                    }
+
+                    // Cancel long-press if finger moves too much (it's a drag, not a hold)
+                    if (this.longPressTimer && this.longPressStartPos) {
+                        const dx = pointer.x - this.longPressStartPos.x;
+                        const dy = pointer.y - this.longPressStartPos.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance > 10) {
+                            this.longPressTimer.destroy();
+                            this.longPressTimer = null;
+                            this.longPressStartPos = null;
+                        }
                     }
                 });
 
@@ -266,6 +302,11 @@
                         this.skipConversationLine();
                     }
                 });
+
+                // Shift key for hotspot highlighting (desktop)
+                this.shiftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+                this.shiftKey.on('down', () => this.showHotspotHighlights());
+                this.shiftKey.on('up', () => this.hideHotspotHighlights());
 
                 // Prevent context menu
                 this.game.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -726,6 +767,9 @@
             startFootsteps(isRunning = false) {
                 this.stopFootsteps(); // Clear any existing timer
 
+                // Track running state for sound selection
+                this.footstepIsRunning = isRunning;
+
                 // Interval: walking ~400ms, running ~250ms
                 const interval = isRunning ? 250 : 400;
 
@@ -748,25 +792,24 @@
             }
 
             playFootstep() {
-                // Determine which sound to play based on surface and foot
-                const foot = this.footstepIsLeft ? 'left' : 'right';
-                this.footstepIsLeft = !this.footstepIsLeft; // Alternate
+                // Determine which foot (alternating left/right)
+                const foot = this.footstepIsLeft ? 'l' : 'r';
+                this.footstepIsLeft = !this.footstepIsLeft;
 
-                let sfxName;
-                if (this.footstepSurface) {
-                    // Surface-specific footstep (e.g., 'wood' -> 'footstep_wood_left')
-                    sfxName = `footstep_${this.footstepSurface}_${foot}`;
-                } else {
-                    // Default footstep
-                    sfxName = `footstep_${foot}`;
-                }
+                // Select variant: 75% chance of 1, 25% chance of 2
+                const variant = Math.random() < 0.75 ? '1' : '2';
+
+                // Build sound name: stepwlkl1, stepwlkr2, steprunl1, etc.
+                const action = this.footstepIsRunning ? 'run' : 'wlk';
+                const sfxName = `step${action}${foot}${variant}`;
 
                 TSH.Audio.playSFX(sfxName);
             }
 
-            // Set footstep surface type (called by room data or scene)
+            // Set footstep surface type (for future surface-specific sounds)
             setFootstepSurface(surface) {
-                this.footstepSurface = surface; // null, 'wood', 'stone', etc.
+                // Currently unused - footsteps use generic walk/run sounds
+                // Could be extended later for wood, stone, grass, etc.
             }
 
             isPlayerNearHotspot(hotspot) {
@@ -2026,6 +2069,93 @@
                         this.scene.start(targetScene);
                     }
                 });
+            }
+
+            // ========== HOTSPOT HIGHLIGHTING ==========
+
+            showHotspotHighlights() {
+                if (this.hotspotHighlightsVisible) return;
+                if (!this.hotspots || this.hotspots.length === 0) return;
+
+                this.hotspotHighlightsVisible = true;
+
+                const { height } = this.scale;
+
+                // Create graphics layer for highlights (high depth to be above most scene elements)
+                this.hotspotHighlightGraphics = this.add.graphics();
+                this.hotspotHighlightGraphics.setDepth(5000);
+
+                // Draw circle for each hotspot
+                this.hotspots.forEach(hotspot => {
+                    const center = this.getHotspotCenter(hotspot, height);
+
+                    // Small white circle with transparency
+                    this.hotspotHighlightGraphics.fillStyle(0xffffff, 0.6);
+                    this.hotspotHighlightGraphics.fillCircle(center.x, center.y, 8);
+
+                    // Subtle outer ring
+                    this.hotspotHighlightGraphics.lineStyle(1, 0xffffff, 0.3);
+                    this.hotspotHighlightGraphics.strokeCircle(center.x, center.y, 12);
+                });
+            }
+
+            hideHotspotHighlights() {
+                if (!this.hotspotHighlightsVisible) return;
+                this.hotspotHighlightsVisible = false;
+
+                if (this.hotspotHighlightGraphics) {
+                    this.hotspotHighlightGraphics.destroy();
+                    this.hotspotHighlightGraphics = null;
+                }
+            }
+
+            getHotspotCenter(hotspot, height) {
+                // Check for manually specified highlight position first
+                // (highlightX/highlightY in original data, converted to _highlightX/_highlightY in pixels)
+                if (hotspot._highlightX !== undefined && hotspot._highlightY !== undefined) {
+                    return { x: hotspot._highlightX, y: hotspot._highlightY };
+                }
+
+                // Note: hotspot.x, hotspot.y are already in pixels (converted in RoomScene.createHotspotsFromData)
+                if (hotspot.polygon && hotspot.polygon.length > 0) {
+                    // For polygon hotspots, find a point that's actually inside the polygon
+                    const polygon = hotspot.polygon;
+
+                    // First try: centroid (average of all vertices)
+                    let centroidX = 0, centroidY = 0;
+                    polygon.forEach(p => {
+                        centroidX += p.x;
+                        centroidY += p.y;
+                    });
+                    centroidX /= polygon.length;
+                    centroidY /= polygon.length;
+
+                    // Check if centroid is inside the polygon
+                    if (this.pointInPolygon(centroidX, centroidY, polygon)) {
+                        return { x: centroidX, y: centroidY };
+                    }
+
+                    // Fallback: try midpoints of each edge until we find one inside
+                    for (let i = 0; i < polygon.length; i++) {
+                        const p1 = polygon[i];
+                        const p2 = polygon[(i + 1) % polygon.length];
+                        const midX = (p1.x + p2.x) / 2;
+                        const midY = (p1.y + p2.y) / 2;
+
+                        if (this.pointInPolygon(midX, midY, polygon)) {
+                            return { x: midX, y: midY };
+                        }
+                    }
+
+                    // Last resort: use the first vertex (guaranteed to be on the boundary)
+                    return { x: polygon[0].x, y: polygon[0].y };
+                } else {
+                    // Rectangle hotspot - x and y are already pixel coordinates
+                    return {
+                        x: hotspot.x,
+                        y: hotspot.y
+                    };
+                }
             }
 
             // ========== UPDATE ==========
