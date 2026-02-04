@@ -483,7 +483,7 @@
                     .setOrigin(0.5);
 
                 this.rightEdgeZone.on('pointerover', () => {
-                    if (!this.inventoryOpen && !this.verbCoinVisible) {
+                    if (!this.inventoryOpen) {
                         this.edgeHovered = 'right';
                         this.showArrowCursor('right');
                     }

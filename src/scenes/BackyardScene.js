@@ -566,8 +566,6 @@
                     this.conversationData = dialogue;
                     this.conversationState = 'start';
                     this.stopCharacterMovement();
-                    if (this.verbCoin) this.verbCoin.setVisible(false);
-                    this.verbCoinVisible = false;
                     if (this.crosshairCursor) this.crosshairCursor.setVisible(true);
                     this.drawCrosshair(0xffffff);
 
@@ -688,7 +686,7 @@
                     .setOrigin(0.5);
 
                 this.gateEdgeZone.on('pointerover', () => {
-                    if (!this.inventoryOpen && !this.verbCoinVisible) {
+                    if (!this.inventoryOpen) {
                         this.edgeHovered = 'right';
                         this.showArrowCursor('right');
                     }
