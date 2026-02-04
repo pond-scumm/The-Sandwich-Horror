@@ -90,6 +90,16 @@
 
                 // UI tracking
                 this.clickedUI = false;
+
+                // Settings menu
+                this.settingsMenuOpen = false;
+                this.settingsPanel = null;
+                this.settingsBlurOverlay = null;
+                this.settingsButton = null;
+                this.settingsButtonArea = null;
+                this.settingsButtonHovered = false;
+                this.settingsBtnHollow = null;
+                this.settingsBtnFilled = null;
             }
 
             // ========== GAME STATE MANAGEMENT ==========
@@ -176,6 +186,7 @@
                 this.createItemCursor();
                 this.createDialogUI(width, height);
                 this.createConversationUI(width, height);
+                this.createSettingsUI(width, height);
 
                 // Restore inventory from game state
                 this.rebuildInventoryFromState();
@@ -217,8 +228,25 @@
             setupInputHandlers() {
                 // Left click
                 this.input.on('pointerdown', (pointer) => {
+                    // If settings menu is open, only allow menu interactions
+                    if (this.settingsMenuOpen) {
+                        if (pointer.leftButtonDown()) {
+                            // Check for Return button or X button click
+                            if (this.isClickOnSettingsReturnButton(pointer) || this.isClickOnSettingsCloseButton(pointer)) {
+                                this.closeSettingsMenu();
+                            }
+                        }
+                        return;
+                    }
+
                     if (pointer.leftButtonDown()) {
-                        // Check mobile inventory button first (uses screen coords, ignores camera scroll)
+                        // Check settings button first
+                        if (this.isClickOnSettingsButton(pointer)) {
+                            this.clickedUI = true;
+                            this.openSettingsMenu();
+                            return;
+                        }
+                        // Check mobile inventory button (uses screen coords, ignores camera scroll)
                         if (this.isClickOnInventoryButton(pointer)) {
                             this.clickedUI = true;
                             this.toggleInventory();
@@ -863,17 +891,17 @@
                     this.hotspots.push(hotspot);
 
                     zone.on('pointerover', () => {
-                        if (this.inventoryOpen || this.conversationActive) return;
+                        if (this.inventoryOpen || this.conversationActive || this.settingsMenuOpen) return;
                         this.setCrosshairHover(hotspot);
                     });
 
                     zone.on('pointerout', () => {
-                        if (this.inventoryOpen || this.conversationActive) return;
+                        if (this.inventoryOpen || this.conversationActive || this.settingsMenuOpen) return;
                         this.setCrosshairHover(null);
                     });
 
                     zone.on('pointerdown', (pointer) => {
-                        if (this.inventoryOpen) return;
+                        if (this.inventoryOpen || this.settingsMenuOpen) return;
                         this.handleHotspotPress(hotspot, pointer);
                     });
                 });
@@ -1026,8 +1054,8 @@
                 this.currentHoveredHotspot = hotspot;
                 const selectedItem = this.selectedItem;
 
-                // Don't show hotspot labels while dialog is active or inventory is open
-                if (this.dialogActive || this.inventoryOpen) {
+                // Don't show hotspot labels while dialog is active, inventory is open, or settings menu is open
+                if (this.dialogActive || this.inventoryOpen || this.settingsMenuOpen) {
                     this.hotspotLabel.setText('');
                     return;
                 }
@@ -1136,39 +1164,439 @@
                 this.selectedSlotHighlight.setDepth(2501);
                 this.selectedSlotHighlight.setVisible(false);
 
-                // Inventory button (top right corner)
+                // Inventory button (bottom left corner)
                 const btnSize = 90;
-                this.inventoryButtonArea = { x: width - btnSize/2 - 15, y: btnSize/2 + 15, size: btnSize };
+                this.inventoryButtonArea = { x: btnSize/2 + 15, y: height - btnSize/2 - 15, size: btnSize };
 
                 this.inventoryButton = this.add.container(this.inventoryButtonArea.x, this.inventoryButtonArea.y);
                 this.inventoryButton.setDepth(4000);
                 this.inventoryButton.setScrollFactor(0);
 
-                // Button background
-                const btnBg = this.add.graphics();
-                btnBg.fillStyle(0x4a3728, 0.9);
-                btnBg.fillRoundedRect(-btnSize/2, -btnSize/2, btnSize, btnSize, 12);
-                btnBg.lineStyle(4, 0x8b6914, 1);
-                btnBg.strokeRoundedRect(-btnSize/2, -btnSize/2, btnSize, btnSize, 12);
-                this.inventoryButton.add(btnBg);
+                // Create hollow (outline) version - shown by default
+                this.inventoryBtnHollow = this.add.graphics();
+                this.inventoryBtnHollow.lineStyle(3, 0x8b6914, 0.7);
+                this.inventoryBtnHollow.strokeRoundedRect(-btnSize/2, -btnSize/2, btnSize, btnSize, 12);
+                // Hollow backpack icon (outline only)
+                this.inventoryBtnHollow.lineStyle(2, 0xc9a227, 0.7);
+                this.inventoryBtnHollow.strokeRoundedRect(-24, -10, 48, 36, 8);
+                this.inventoryBtnHollow.strokeRoundedRect(-18, -22, 36, 16, 5);
+                this.inventoryBtnHollow.strokeCircle(0, -8, 7);
+                this.inventoryButton.add(this.inventoryBtnHollow);
 
-                // Backpack icon
-                const icon = this.add.graphics();
-                icon.fillStyle(0xc9a227, 1);
-                // Bag body
-                icon.fillRoundedRect(-24, -10, 48, 36, 8);
-                // Bag flap
-                icon.fillRoundedRect(-18, -22, 36, 16, 5);
-                // Bag clasp
-                icon.fillStyle(0x8b6914, 1);
-                icon.fillCircle(0, -8, 7);
-                icon.fillStyle(0x4a3728, 1);
-                icon.fillCircle(0, -8, 3);
-                this.inventoryButton.add(icon);
+                // Create filled version - shown on hover/open
+                this.inventoryBtnFilled = this.add.graphics();
+                this.inventoryBtnFilled.fillStyle(0x4a3728, 0.9);
+                this.inventoryBtnFilled.fillRoundedRect(-btnSize/2, -btnSize/2, btnSize, btnSize, 12);
+                this.inventoryBtnFilled.lineStyle(4, 0x8b6914, 1);
+                this.inventoryBtnFilled.strokeRoundedRect(-btnSize/2, -btnSize/2, btnSize, btnSize, 12);
+                // Filled backpack icon
+                this.inventoryBtnFilled.fillStyle(0xc9a227, 1);
+                this.inventoryBtnFilled.fillRoundedRect(-24, -10, 48, 36, 8);
+                this.inventoryBtnFilled.fillRoundedRect(-18, -22, 36, 16, 5);
+                this.inventoryBtnFilled.fillStyle(0x8b6914, 1);
+                this.inventoryBtnFilled.fillCircle(0, -8, 7);
+                this.inventoryBtnFilled.fillStyle(0x4a3728, 1);
+                this.inventoryBtnFilled.fillCircle(0, -8, 3);
+                this.inventoryBtnFilled.setVisible(false);
+                this.inventoryButton.add(this.inventoryBtnFilled);
+
+                // Track hover state
+                this.inventoryButtonHovered = false;
+            }
+
+            updateInventoryButtonState() {
+                // Show filled when hovered OR inventory is open
+                const showFilled = this.inventoryButtonHovered || this.inventoryOpen;
+                if (this.inventoryBtnHollow) this.inventoryBtnHollow.setVisible(!showFilled);
+                if (this.inventoryBtnFilled) this.inventoryBtnFilled.setVisible(showFilled);
+            }
+
+            // ========== SETTINGS MENU ==========
+
+            createSettingsUI(width, height) {
+                // Settings button (top right corner)
+                const btnSize = 70;
+                this.settingsButtonArea = { x: width - btnSize/2 - 15, y: btnSize/2 + 15, size: btnSize };
+
+                this.settingsButton = this.add.container(this.settingsButtonArea.x, this.settingsButtonArea.y);
+                this.settingsButton.setDepth(4000);
+                this.settingsButton.setScrollFactor(0);
+
+                // Create hollow (outline) version - shown by default
+                this.settingsBtnHollow = this.add.graphics();
+                this.settingsBtnHollow.lineStyle(3, 0x6a6a8a, 0.7);
+                this.settingsBtnHollow.strokeRoundedRect(-btnSize/2, -btnSize/2, btnSize, btnSize, 10);
+                // Hollow gear icon (outline only)
+                this.drawGearIcon(this.settingsBtnHollow, 0, 0, 22, false);
+                this.settingsButton.add(this.settingsBtnHollow);
+
+                // Create filled version - shown on hover/open
+                this.settingsBtnFilled = this.add.graphics();
+                this.settingsBtnFilled.fillStyle(0x3a3a5a, 0.9);
+                this.settingsBtnFilled.fillRoundedRect(-btnSize/2, -btnSize/2, btnSize, btnSize, 10);
+                this.settingsBtnFilled.lineStyle(3, 0x6a6a8a, 1);
+                this.settingsBtnFilled.strokeRoundedRect(-btnSize/2, -btnSize/2, btnSize, btnSize, 10);
+                // Filled gear icon
+                this.drawGearIcon(this.settingsBtnFilled, 0, 0, 22, true);
+                this.settingsBtnFilled.setVisible(false);
+                this.settingsButton.add(this.settingsBtnFilled);
+
+                // Create blur overlay (covers entire screen when menu is open)
+                this.settingsBlurOverlay = this.add.graphics();
+                this.settingsBlurOverlay.fillStyle(0x000000, 0.7);
+                this.settingsBlurOverlay.fillRect(0, 0, width, height);
+                this.settingsBlurOverlay.setDepth(5500);
+                this.settingsBlurOverlay.setScrollFactor(0);
+                this.settingsBlurOverlay.setVisible(false);
+
+                // Create settings panel (narrower and taller than inventory)
+                const panelWidth = 300;
+                const panelHeight = 400;
+                this.settingsPanel = this.add.container(width / 2, height / 2);
+                this.settingsPanel.setDepth(5600);
+                this.settingsPanel.setScrollFactor(0);
+                this.settingsPanel.setVisible(false);
+
+                // Panel background
+                const panelBg = this.add.graphics();
+                panelBg.fillStyle(0x1a1a2e, 0.98);
+                panelBg.fillRoundedRect(-panelWidth/2, -panelHeight/2, panelWidth, panelHeight, 15);
+                panelBg.lineStyle(3, 0x6a6a8a, 1);
+                panelBg.strokeRoundedRect(-panelWidth/2, -panelHeight/2, panelWidth, panelHeight, 15);
+                this.settingsPanel.add(panelBg);
+
+                // Title
+                const title = this.add.text(0, -panelHeight/2 + 35, 'SETTINGS', {
+                    fontFamily: '"Press Start 2P", cursive',
+                    fontSize: '18px',
+                    color: '#ffffff'
+                }).setOrigin(0.5);
+                this.settingsPanel.add(title);
+
+                // Close X button (top right)
+                const closeSize = 32;
+                const closeX = panelWidth/2 - 25;
+                const closeY = -panelHeight/2 + 25;
+
+                const closeBtnBg = this.add.graphics();
+                closeBtnBg.fillStyle(0x4a4a6a, 1);
+                closeBtnBg.fillCircle(closeX, closeY, closeSize/2);
+                this.settingsPanel.add(closeBtnBg);
+
+                const closeBtnText = this.add.text(closeX, closeY, 'X', {
+                    fontFamily: '"Press Start 2P", cursive',
+                    fontSize: '14px',
+                    color: '#ffffff'
+                }).setOrigin(0.5);
+                this.settingsPanel.add(closeBtnText);
+
+                this.settingsCloseBtnBg = closeBtnBg;
+                this.settingsCloseBtnHovered = false;
+                this.settingsCloseBtnArea = { x: closeX, y: closeY, size: closeSize };
+
+                // Return to Game button
+                const btnWidth = 220;
+                const btnHeight = 50;
+                const btnY = panelHeight/2 - 50;
+
+                const returnBtn = this.add.container(0, btnY);
+
+                const returnBtnBg = this.add.graphics();
+                returnBtnBg.fillStyle(0x4a6a4a, 1);
+                returnBtnBg.fillRoundedRect(-btnWidth/2, -btnHeight/2, btnWidth, btnHeight, 8);
+                returnBtnBg.lineStyle(2, 0x6a8a6a, 1);
+                returnBtnBg.strokeRoundedRect(-btnWidth/2, -btnHeight/2, btnWidth, btnHeight, 8);
+                returnBtn.add(returnBtnBg);
+
+                const returnBtnText = this.add.text(0, 0, 'Return to Game', {
+                    fontFamily: '"Press Start 2P", cursive',
+                    fontSize: '12px',
+                    color: '#ffffff'
+                }).setOrigin(0.5);
+                returnBtn.add(returnBtnText);
+
+                // Make button interactive
+                const hitArea = new Phaser.Geom.Rectangle(-btnWidth/2, -btnHeight/2, btnWidth, btnHeight);
+                returnBtn.setInteractive(hitArea, Phaser.Geom.Rectangle.Contains);
+
+                this.settingsPanel.add(returnBtn);
+                this.settingsReturnBtn = returnBtn;
+                this.settingsReturnBtnBg = returnBtnBg;
+                this.settingsReturnBtnHovered = false;
+            }
+
+            drawGearIcon(graphics, x, y, radius, filled) {
+                const teeth = 8;
+                const innerRadius = radius * 0.5;
+                const outerRadius = radius;
+                const toothDepth = radius * 0.25;
+
+                if (filled) {
+                    graphics.fillStyle(0xaaaacc, 1);
+                } else {
+                    graphics.lineStyle(2, 0xaaaacc, 0.7);
+                }
+
+                // Draw gear teeth
+                graphics.beginPath();
+                for (let i = 0; i < teeth; i++) {
+                    const angle1 = (i / teeth) * Math.PI * 2;
+                    const angle2 = ((i + 0.35) / teeth) * Math.PI * 2;
+                    const angle3 = ((i + 0.65) / teeth) * Math.PI * 2;
+                    const angle4 = ((i + 1) / teeth) * Math.PI * 2;
+
+                    const x1 = x + Math.cos(angle1) * (outerRadius - toothDepth);
+                    const y1 = y + Math.sin(angle1) * (outerRadius - toothDepth);
+                    const x2 = x + Math.cos(angle2) * outerRadius;
+                    const y2 = y + Math.sin(angle2) * outerRadius;
+                    const x3 = x + Math.cos(angle3) * outerRadius;
+                    const y3 = y + Math.sin(angle3) * outerRadius;
+                    const x4 = x + Math.cos(angle4) * (outerRadius - toothDepth);
+                    const y4 = y + Math.sin(angle4) * (outerRadius - toothDepth);
+
+                    if (i === 0) {
+                        graphics.moveTo(x1, y1);
+                    }
+                    graphics.lineTo(x2, y2);
+                    graphics.lineTo(x3, y3);
+                    graphics.lineTo(x4, y4);
+                }
+                graphics.closePath();
+
+                if (filled) {
+                    graphics.fill();
+                    // Center hole
+                    graphics.fillStyle(0x3a3a5a, 1);
+                    graphics.fillCircle(x, y, innerRadius);
+                } else {
+                    graphics.strokePath();
+                    // Center hole outline
+                    graphics.strokeCircle(x, y, innerRadius);
+                }
+            }
+
+            updateSettingsButtonState() {
+                const showFilled = this.settingsButtonHovered || this.settingsMenuOpen;
+                if (this.settingsBtnHollow) this.settingsBtnHollow.setVisible(!showFilled);
+                if (this.settingsBtnFilled) this.settingsBtnFilled.setVisible(showFilled);
+            }
+
+            isClickOnSettingsButton(pointer) {
+                if (!this.settingsButtonArea) return false;
+                const btn = this.settingsButtonArea;
+                return pointer.x >= btn.x - btn.size/2 && pointer.x <= btn.x + btn.size/2 &&
+                       pointer.y >= btn.y - btn.size/2 && pointer.y <= btn.y + btn.size/2;
+            }
+
+            isClickOnSettingsReturnButton(pointer) {
+                if (!this.settingsReturnBtn || !this.settingsPanel) return false;
+                const { width, height } = this.scale;
+                // Panel is centered on screen
+                const panelX = width / 2;
+                const panelY = height / 2;
+                // Button is at bottom of panel
+                const panelHeight = 400;
+                const btnY = panelY + (panelHeight / 2 - 50);
+                const btnWidth = 220;
+                const btnHeight = 50;
+
+                return pointer.x >= panelX - btnWidth/2 && pointer.x <= panelX + btnWidth/2 &&
+                       pointer.y >= btnY - btnHeight/2 && pointer.y <= btnY + btnHeight/2;
+            }
+
+            isClickOnSettingsCloseButton(pointer) {
+                if (!this.settingsCloseBtnArea || !this.settingsPanel) return false;
+                const { width, height } = this.scale;
+                // Panel is centered on screen
+                const panelX = width / 2;
+                const panelY = height / 2;
+                // Close button position relative to panel
+                const closeBtn = this.settingsCloseBtnArea;
+                const btnX = panelX + closeBtn.x;
+                const btnY = panelY + closeBtn.y;
+                // Check circular hit area
+                const dx = pointer.x - btnX;
+                const dy = pointer.y - btnY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                return dist <= closeBtn.size / 2;
+            }
+
+            openSettingsMenu() {
+                // Block if dialogue or conversation is active
+                if (this.dialogActive || this.conversationActive) return;
+                if (this.settingsMenuOpen) return;
+
+                this.settingsMenuOpen = true;
+                this.updateSettingsButtonState();
+
+                // Close inventory if open
+                if (this.inventoryOpen) {
+                    this.toggleInventory(true);
+                }
+
+                // Stop character movement
+                this.stopCharacterMovement();
+
+                // Reset crosshair and hide hotspot label
+                this.drawCrosshair(0xffffff);
+                if (this.hotspotLabel) {
+                    this.hotspotLabel.setVisible(false);
+                    this.hotspotLabel.setText('');
+                }
+
+                // Show overlay and panel (before pausing, so tween works)
+                this.settingsBlurOverlay.setVisible(true);
+                this.settingsPanel.setVisible(true);
+                this.settingsPanel.setScale(1);
+                this.settingsPanel.setAlpha(1);
+
+                // Pause the game
+                this.pauseGame();
+            }
+
+            closeSettingsMenu() {
+                if (!this.settingsMenuOpen) return;
+
+                this.settingsMenuOpen = false;
+                this.updateSettingsButtonState();
+
+                // Hide overlay and panel
+                this.settingsBlurOverlay.setVisible(false);
+                this.settingsPanel.setVisible(false);
+
+                // Restore crosshair cursor (if no item selected)
+                if (this.crosshairCursor && !this.selectedItem) {
+                    this.crosshairCursor.setVisible(true);
+                }
+                // Restore item cursor if item is selected
+                if (this.itemCursor && this.selectedItem) {
+                    this.itemCursor.setVisible(true);
+                }
+
+                // Restore hotspot label visibility
+                if (this.hotspotLabel) {
+                    this.hotspotLabel.setVisible(true);
+                }
+
+                // Resume the game
+                this.resumeGame();
+            }
+
+            updateSettingsMenuHover(pointer) {
+                const btnWidth = 220;
+                const btnHeight = 50;
+
+                // Check if hovering over return button
+                let overBtn = false;
+                if (this.settingsReturnBtn && this.settingsPanel && this.settingsPanel.visible) {
+                    const panel = this.settingsPanel;
+                    const btn = this.settingsReturnBtn;
+                    // Convert pointer to panel-local coordinates
+                    const localX = pointer.x - panel.x;
+                    const localY = pointer.y - panel.y - btn.y;
+
+                    overBtn = localX >= -btnWidth/2 && localX <= btnWidth/2 &&
+                              localY >= -btnHeight/2 && localY <= btnHeight/2;
+                }
+
+                // Update button visual state if hover changed
+                if (overBtn !== this.settingsReturnBtnHovered) {
+                    this.settingsReturnBtnHovered = overBtn;
+                    if (this.settingsReturnBtnBg) {
+                        this.settingsReturnBtnBg.clear();
+                        if (overBtn) {
+                            this.settingsReturnBtnBg.fillStyle(0x5a8a5a, 1);
+                            this.settingsReturnBtnBg.fillRoundedRect(-btnWidth/2, -btnHeight/2, btnWidth, btnHeight, 8);
+                            this.settingsReturnBtnBg.lineStyle(2, 0x7aaa7a, 1);
+                            this.settingsReturnBtnBg.strokeRoundedRect(-btnWidth/2, -btnHeight/2, btnWidth, btnHeight, 8);
+                        } else {
+                            this.settingsReturnBtnBg.fillStyle(0x4a6a4a, 1);
+                            this.settingsReturnBtnBg.fillRoundedRect(-btnWidth/2, -btnHeight/2, btnWidth, btnHeight, 8);
+                            this.settingsReturnBtnBg.lineStyle(2, 0x6a8a6a, 1);
+                            this.settingsReturnBtnBg.strokeRoundedRect(-btnWidth/2, -btnHeight/2, btnWidth, btnHeight, 8);
+                        }
+                    }
+                }
+
+                if (overBtn) {
+                    this.drawCrosshair(0xff0000);
+                    return;
+                }
+
+                // Check if hovering over close X button
+                let overClose = false;
+                if (this.settingsCloseBtnArea && this.settingsPanel && this.settingsPanel.visible) {
+                    const panel = this.settingsPanel;
+                    const closeBtn = this.settingsCloseBtnArea;
+                    // Convert pointer to panel-local coordinates
+                    const localX = pointer.x - panel.x;
+                    const localY = pointer.y - panel.y;
+                    const dx = localX - closeBtn.x;
+                    const dy = localY - closeBtn.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    overClose = dist <= closeBtn.size / 2;
+                }
+
+                // Update close button visual state if hover changed
+                if (overClose !== this.settingsCloseBtnHovered) {
+                    this.settingsCloseBtnHovered = overClose;
+                    if (this.settingsCloseBtnBg) {
+                        const closeBtn = this.settingsCloseBtnArea;
+                        this.settingsCloseBtnBg.clear();
+                        if (overClose) {
+                            this.settingsCloseBtnBg.fillStyle(0x6a6a8a, 1);
+                        } else {
+                            this.settingsCloseBtnBg.fillStyle(0x4a4a6a, 1);
+                        }
+                        this.settingsCloseBtnBg.fillCircle(closeBtn.x, closeBtn.y, closeBtn.size / 2);
+                    }
+                }
+
+                if (overClose) {
+                    this.drawCrosshair(0xff0000);
+                    return;
+                }
+
+                // Check settings button (gear icon)
+                if (this.settingsButtonArea) {
+                    const btn = this.settingsButtonArea;
+                    const overGear = pointer.x >= btn.x - btn.size/2 && pointer.x <= btn.x + btn.size/2 &&
+                                     pointer.y >= btn.y - btn.size/2 && pointer.y <= btn.y + btn.size/2;
+                    if (overGear) {
+                        this.drawCrosshair(0xff0000);
+                        return;
+                    }
+                }
+
+                // Default to white
+                this.drawCrosshair(0xffffff);
+            }
+
+            pauseGame() {
+                // Pause audio
+                TSH.Audio.pauseAll();
+
+                // Pause all tweens
+                this.tweens.pauseAll();
+
+                // Pause scene time (affects time.addEvent timers)
+                this.time.paused = true;
+            }
+
+            resumeGame() {
+                // Resume audio
+                TSH.Audio.resumeAll();
+
+                // Resume all tweens
+                this.tweens.resumeAll();
+
+                // Resume scene time
+                this.time.paused = false;
             }
 
             toggleInventory(silent = false) {
                 this.inventoryOpen = !this.inventoryOpen;
+                this.updateInventoryButtonState();
 
                 if (this.inventoryOpen) {
                     // Stop character movement when inventory opens
@@ -2165,6 +2593,46 @@
                 const { width, height } = this.scale;
                 const scrollX = this.cameras.main.scrollX || 0;
                 const scrollY = this.cameras.main.scrollY || 0;
+
+                // Check inventory button hover (screen coordinates)
+                if (this.inventoryButtonArea) {
+                    const btn = this.inventoryButtonArea;
+                    const wasHovered = this.inventoryButtonHovered;
+                    this.inventoryButtonHovered =
+                        pointer.x >= btn.x - btn.size/2 && pointer.x <= btn.x + btn.size/2 &&
+                        pointer.y >= btn.y - btn.size/2 && pointer.y <= btn.y + btn.size/2;
+
+                    if (wasHovered !== this.inventoryButtonHovered) {
+                        this.updateInventoryButtonState();
+                    }
+                }
+
+                // Check settings button hover (screen coordinates)
+                if (this.settingsButtonArea) {
+                    const btn = this.settingsButtonArea;
+                    const wasHovered = this.settingsButtonHovered;
+                    this.settingsButtonHovered =
+                        pointer.x >= btn.x - btn.size/2 && pointer.x <= btn.x + btn.size/2 &&
+                        pointer.y >= btn.y - btn.size/2 && pointer.y <= btn.y + btn.size/2;
+
+                    if (wasHovered !== this.settingsButtonHovered) {
+                        this.updateSettingsButtonState();
+                    }
+                }
+
+                // When settings menu is open, still update crosshair but skip game updates
+                if (this.settingsMenuOpen) {
+                    // Hide item/arrow cursors, keep crosshair
+                    if (this.arrowCursor) this.arrowCursor.setVisible(false);
+                    if (this.itemCursor) this.itemCursor.setVisible(false);
+                    if (this.crosshairCursor) {
+                        this.crosshairCursor.setVisible(true);
+                        this.crosshairCursor.setPosition(pointer.x, pointer.y);
+                    }
+                    // Check if hovering over settings UI elements
+                    this.updateSettingsMenuHover(pointer);
+                    return;
+                }
 
                 // Update crosshair position (screen coordinates - scrollFactor 0)
                 if (this.crosshairCursor && this.crosshairCursor.visible) {
