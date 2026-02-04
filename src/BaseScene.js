@@ -1848,6 +1848,14 @@
                 this.settingsReturnBtnBg = returnBtnBg;
                 this.settingsReturnBtnHovered = false;
 
+                // Version number at bottom of panel
+                const versionText = this.add.text(0, panelHeight/2 - 15, 'v0.1.7', {
+                    fontFamily: '"Press Start 2P", cursive',
+                    fontSize: '8px',
+                    color: '#666688'
+                }).setOrigin(0.5);
+                this.settingsPanel.add(versionText);
+
                 // Listen for fullscreen changes (user might exit via Escape or browser controls)
                 this.scale.on('fullscreenchange', () => {
                     this.updateFullscreenCheckbox();
