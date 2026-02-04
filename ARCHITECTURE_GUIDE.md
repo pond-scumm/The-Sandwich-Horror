@@ -21,7 +21,7 @@ This document captures all architecture decisions made during planning. Claude C
 - [x] Save/Load system (`src/SaveSystem.js`)
 - [x] BaseScene with player, movement, dialogue bubbles (`src/BaseScene.js`)
 - [x] RoomScene data-driven room renderer (`src/scenes/RoomScene.js`)
-- [x] Inventory UI (toggle, slots, verb coin on items, selection, item cursor)
+- [x] Inventory UI (button toggle, slots, selection, item cursor)
 - [x] Items data definitions (`src/data/items/items.js`)
 - [x] Combinations data definitions (`src/data/items/combinations.js`)
 - [x] Hotspot system with polygon support
@@ -29,7 +29,7 @@ This document captures all architecture decisions made during planning. Claude C
 - [x] actionTrigger for scene transitions
 - [x] Debug overlay with coordinate display, hotspot visualization, walkable polygon
 - [x] Polygon walkable areas with smart movement (nearest point projection)
-- [x] Verb coin system (hold to show, drag to select)
+- [x] 2-action interaction system (left-click Use/Talk, right-click Examine)
 - [x] Interior room data file with 18 hotspots and draft dialogue (`src/data/rooms/interior.js`)
 - [x] NPC conversation system (`enterConversation`, `showDialogueOptions`, `exitConversation`, `showConversationLine` in BaseScene.js)
 
@@ -309,7 +309,8 @@ src/
 - **Pixel art:** 4x4 minimum pixel size at 1280x720 (manual discipline, not true upscaling)
 - **Rendering:** Phaser.WEBGL with Light2D pipeline
 - **Hosting:** GitHub Pages (static files only)
-- **Mobile:** Touch input, verb coin UI, responsive scaling
+- **Mobile:** Touch input, 2-action system, responsive scaling
+- **Fonts:** LucasArts SCUMM Solid (.otf) for dialog and hotspot labels
 
 ---
 
@@ -349,39 +350,54 @@ src/
 
 ## 13. Interaction Systems
 
-### Verb Coin
-- **Left-click**: Walk to location
-- **Left-click and hold (0.2s) on hotspot**: Reveals verb coin
-- **Hold and drag** to action, release to select
-- **Three actions**: "Use" (includes Pick Up), "Look At", "Talk To"
-- **Right-click**: Open/close inventory
-- Verb coin appears at hotspot center with 70px radius
-- Minimum 60px touch targets for mobile
+### 2-Action System
+- **Left-click on background**: Walk to location
+- **Left-click on hotspot**: Run to hotspot, then Use (or Talk for NPCs)
+- **Right-click on hotspot**: Examine immediately (no walking)
+- **Right-click with item cursor**: Deselect item (clear cursor)
+- NPC detection: hotspots with `type: 'npc'` or `isNPC: true` get "Talk To" instead of "Use"
+
+### Inventory
+- **Inventory button**: Always visible in top-right corner
+- **Left-click button**: Toggle inventory panel open/closed
+- **Left-click item**: Select as cursor (for combining or using on hotspots)
+- **Right-click item**: Examine item (shows description)
+- **Left-click with item on another item**: Attempt combination
+- Item cursor persists after failed combinations (not cleared)
+- When item transforms via combination, both cursor and inventory slot update
+
+### Hotspot Labels
+- Labels follow cursor position (offset above cursor)
+- Show hotspot name when hovering
+- Show "Use [item] on [hotspot]" when hovering with item cursor
+- Labels hidden during dialog and when inventory is open
+- Labels reappear when dialog ends if cursor still over hotspot
 
 ### Movement
-- **Single click**: Walk at normal speed
-- **Double-click**: Run (2x speed)
-- **Click and hold while running**: Continuous running toward cursor
-- Character always walks to `interactX/Y` position before showing verb coin
+- **Single click on background**: Walk at normal speed (450 px/s)
+- **Click on hotspot**: Run to interact position (750 px/s)
+- **Click and hold**: Continuous running toward cursor
 - Walkable area constrains movement (polygon or minY/maxY bounds)
 
 ### Dialogue Display
-- Speech bubble appears above speaking character
+- **Font**: LucasArts SCUMM Solid (35px desktop, 60px mobile)
+- Speech bubble appears above Nate's head
+- When inventory is open, dialog appears at top of screen (text expands downward)
 - Multi-sentence dialogue auto-advances with timing
 - Click/tap or press period (.) to skip to next sentence
-- Dialogue pauses character movement
-- Bubble position updates to follow character if moving
+- Dialogue pauses character movement and hides cursor/labels
+- Cursor and hotspot labels restore when dialog ends
 
 ---
 
 ## 14. Conversation Mode
 
-When player uses "Talk To" on an NPC, the game enters conversation mode:
+When player left-clicks on an NPC, the game enters conversation mode:
 
 **Behavior:**
 - Character movement is frozen
-- Verb coin is disabled
-- Cursor becomes pointer (not crosshair)
+- Hotspot interactions disabled
+- Crosshair cursor remains visible (white)
 - Dialogue choice UI appears (bottom-left)
 - Player can only select dialogue options, not interact with world
 
@@ -428,10 +444,11 @@ When player uses "Talk To" on an NPC, the game enters conversation mode:
 ### Core Functionality
 - [ ] Character walks correctly within walkable area
 - [ ] Character cannot escape polygon bounds during movement
-- [ ] Verb coin appears on hotspot hold (0.2s)
-- [ ] All three verb actions work on each hotspot
-- [ ] Inventory opens/closes with right-click
+- [ ] Left-click on hotspot runs to it and triggers Use/Talk
+- [ ] Right-click on hotspot triggers Examine (no walking)
+- [ ] Inventory opens/closes with button click
 - [ ] Items can be selected and used on hotspots
+- [ ] Hotspot labels appear/hide correctly during dialog
 
 ### Scene Transitions
 - [ ] Transitions work in both directions
@@ -444,7 +461,7 @@ When player uses "Talk To" on an NPC, the game enters conversation mode:
 - [ ] Conversation mode locks movement appropriately
 
 ### Mobile
-- [ ] Touch interactions work (verb coin, inventory)
+- [ ] Touch interactions work (tap hotspots, inventory button)
 - [ ] Lighting looks acceptable (not too dark)
 - [ ] UI elements are large enough to tap
 - [ ] No context menu appears on long-press
