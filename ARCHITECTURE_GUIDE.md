@@ -1,7 +1,7 @@
 # The Sandwich Horror — Architecture Guide
 ## For Claude Code Implementation
 
-Last Updated: February 4, 2026
+Last Updated: February 4, 2026 (Settings Menu & Volume Controls)
 
 ---
 
@@ -35,7 +35,11 @@ This document captures all architecture decisions made during planning. Claude C
 - [x] Audio manager with channel-based music, SFX, volume categories (`src/AudioManager.js`)
 - [x] Room music integration with auto-preload and smart continuity (`RoomScene.js`)
 - [x] SFX registry with action hooks for inventory, items, UI (`src/data/audio/sfx.js`)
-- [x] Footstep system with left/right alternation, walking/running tempo, surface support
+- [x] Footstep system with walk/run variants, left/right alternation, randomized selection
+- [x] Settings menu with gear icon button, blur overlay, X close button
+- [x] Fullscreen toggle checkbox in settings menu
+- [x] Volume sliders (Master, Music, Effects) with mute buttons and percentage display
+- [x] Hotspot highlighting system (Shift key on desktop, long-press on mobile)
 
 ### TODO (Not Yet Implemented)
 - [x] **Item-on-item combinations** — Click item B while item A is selected to combine (`tryCombineItems` in BaseScene.js)
@@ -176,6 +180,21 @@ TSH.Rooms.laboratory = {
                     lookResponse: "All four components installed. Ready to go.",
                     useResponse: "TRIGGER_FINALE"
                 }
+            }
+        }
+    ],
+
+    // Dynamic item visuals that disappear when picked up
+    pickupOverlays: [
+        {
+            hotspotId: 'matches',     // Links to hotspot (destroyed when item picked up)
+            itemId: 'matches',        // Item ID (overlay hidden if player has this item)
+            x: 984, y: 0.365,         // Position (y is proportional)
+            depth: 55,                // Render depth
+            draw: (g, x, y, height) => {
+                // Custom graphics drawing function
+                g.fillStyle(0x8B4513, 1);
+                g.fillRect(x, y, 20, 12);
             }
         }
     ]
@@ -373,28 +392,28 @@ TSH.SFX.pickup = {
 3. Call `TSH.Audio.playSFX('name')` where needed
 
 ### Footsteps
-Footsteps play automatically when Nate walks or runs, alternating left/right.
+Footsteps play automatically when Nate walks or runs, alternating left/right with randomization.
 
-**Files needed:**
+**Files needed (8 variants):**
 ```
-assets/audio/sfx/footstep_left.wav
-assets/audio/sfx/footstep_right.wav
+assets/audio/sfx/stepwlkl1.wav    # Walk left variant 1
+assets/audio/sfx/stepwlkl2.wav    # Walk left variant 2
+assets/audio/sfx/stepwlkr1.wav    # Walk right variant 1
+assets/audio/sfx/stepwlkr2.wav    # Walk right variant 2
+assets/audio/sfx/steprunl1.wav    # Run left variant 1
+assets/audio/sfx/steprunl2.wav    # Run left variant 2
+assets/audio/sfx/steprunr1.wav    # Run right variant 1
+assets/audio/sfx/steprunr2.wav    # Run right variant 2
 ```
+
+**Selection Logic:**
+- Alternates left (l) and right (r) foot
+- 75% chance of variant 1, 25% chance of variant 2
+- Automatically uses walk (wlk) or run (run) based on movement speed
 
 **Timing:**
 - Walking: ~400ms between steps
 - Running: ~250ms between steps
-
-**Surface types (optional):**
-Rooms can specify a footstep surface in their data:
-```javascript
-TSH.Rooms.woods = {
-    // ...other properties
-    footstepSurface: 'stone'  // Uses footstep_stone_left.wav, footstep_stone_right.wav
-}
-```
-
-If `footstepSurface` is not set, uses default `footstep_left.wav` / `footstep_right.wav`.
 
 ### Legacy Scene Audio
 For non-data-driven scenes, call TSH.Audio directly:
@@ -528,7 +547,7 @@ src/
 - NPC detection: hotspots with `type: 'npc'` or `isNPC: true` get "Talk To" instead of "Use"
 
 ### Inventory
-- **Inventory button**: Always visible in top-right corner
+- **Inventory button**: Always visible in bottom-left corner (hollow when idle, filled on hover/open)
 - **Left-click button**: Toggle inventory panel open/closed
 - **Left-click item**: Select as cursor (for combining or using on hotspots)
 - **Right-click item**: Examine item (shows description)
@@ -609,7 +628,90 @@ When player left-clicks on an NPC, the game enters conversation mode:
 
 ---
 
-## 17. Testing Checklist
+## 17. Settings Menu
+
+The settings menu provides player options without leaving the game.
+
+### Opening/Closing
+- **Gear icon button**: Top-right corner (hollow when idle, filled on hover)
+- **X button**: Top-right of panel to close
+- **Return to Game button**: Bottom of panel to close
+- Menu blocked during dialogue or conversation
+
+### Fullscreen Toggle
+- Checkbox immediately enters/exits fullscreen mode
+- State syncs if user exits fullscreen via Escape or browser controls
+- Works on both desktop and mobile
+
+### Volume Controls
+Three sliders with labels above:
+| Slider | Audio Category | TSH.Audio Key |
+|--------|----------------|---------------|
+| Master | Global multiplier | `master` |
+| Music | Background music | `music` |
+| Effects | Sound effects | `sfx` |
+
+**Slider Features:**
+- Mute button (speaker icon) to left of each slider
+- Draggable handle with extended hit area at 0% and 100%
+- Percentage display (right-aligned)
+- Real-time volume changes as slider is dragged
+- Audio continues playing while menu is open (for preview)
+
+**Mute Behavior:**
+- Stores previous volume when muted
+- Restores previous volume when unmuted
+- Dragging slider above 0% auto-unmutes
+
+### Game State While Menu Open
+- Tweens paused (character animations)
+- Scene timers paused
+- Audio continues playing (not paused)
+- Hotspot interactions blocked
+- Crosshair cursor visible for menu navigation
+- Crosshair turns red when hovering over interactive elements
+
+### Implementation Notes
+- Panel size: 320x520 pixels, centered on screen
+- Uses manual click detection (not Phaser interactive) for camera scroll compatibility
+- All UI elements use `setScrollFactor(0)` to stay fixed on screen
+- Blur overlay covers entire screen behind panel
+
+---
+
+## 18. Hotspot Highlighting
+
+Helps players find interactive elements without pixel hunting.
+
+### Activation
+- **Desktop**: Hold Shift key to show highlights (instant on/off)
+- **Mobile**: Long-press for 1 second to show, release to hide
+
+### Visual Design
+- Small white circle centered on each hotspot
+- Semi-transparent with subtle outer ring
+- Appears/disappears instantly
+
+### Position Calculation
+- Rectangle hotspots: Center of bounding box
+- Polygon hotspots: Bounding box center (or manual `highlightX`/`highlightY` if specified)
+
+### Room Data Override
+For irregular polygon shapes where bounding box center is outside the shape:
+```javascript
+hotspots: [
+    {
+        id: 'chair',
+        polygon: [...],
+        highlightX: 150,      // Manual X position
+        highlightY: 0.65      // Manual Y position (proportional)
+    }
+]
+```
+
+---
+
+## 19. Testing Checklist
 
 ### Core Functionality
 - [ ] Character walks correctly within walkable area
