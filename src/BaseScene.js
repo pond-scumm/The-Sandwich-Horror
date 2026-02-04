@@ -833,13 +833,13 @@
                 this.arrowCursor.add(this.arrowGraphics);
 
                 // Larger text on mobile for readability
-                const fontSize = this.isMobile ? '24px' : '14px';
+                const fontSize = this.isMobile ? '60px' : '35px';
                 const strokeThickness = this.isMobile ? 5 : 3;
-                const bottomPadding = this.isMobile ? 45 : 25;
+                const bottomPadding = this.isMobile ? 200 : 160;
                 this.hotspotLabelY = height - bottomPadding;
 
                 this.hotspotLabel = this.add.text(width / 2, this.hotspotLabelY, '', {
-                    fontFamily: '"Press Start 2P", cursive',
+                    fontFamily: '"LucasArts SCUMM Solid", cursive',
                     fontSize: fontSize,
                     color: '#ffffff',
                     stroke: '#000000',
@@ -922,6 +922,12 @@
             setCrosshairHover(hotspot) {
                 this.currentHoveredHotspot = hotspot;
                 const selectedItem = this.selectedItem;
+
+                // Don't show hotspot labels while dialog is active or inventory is open
+                if (this.dialogActive || this.inventoryOpen) {
+                    this.hotspotLabel.setText('');
+                    return;
+                }
 
                 if (hotspot) {
                     this.drawCrosshair(0xff0000);
@@ -1304,6 +1310,8 @@
 
                 hitArea.on('pointerover', () => {
                     this.drawCrosshair(0xff0000);
+                    // Don't show labels while dialog is active
+                    if (this.dialogActive) return;
                     if (this.selectedItem && this.selectedItem.id !== newItem.id) {
                         this.hotspotLabel.setText(`Use ${this.selectedItem.name} on ${newItem.name}`);
                         this.showItemCursorHighlight();
@@ -1407,6 +1415,8 @@
 
                 hitArea.on('pointerover', () => {
                     this.drawCrosshair(0xff0000);
+                    // Don't show labels while dialog is active
+                    if (this.dialogActive) return;
                     if (this.selectedItem && this.selectedItem.id !== item.id) {
                         this.hotspotLabel.setText(`Use ${this.selectedItem.name} on ${item.name}`);
                         this.showItemCursorHighlight();
@@ -1472,16 +1482,16 @@
                 this.speechBubble.setVisible(false);
 
                 // Larger text on mobile for readability
-                const fontSize = this.isMobile ? '24px' : '14px';
+                const fontSize = this.isMobile ? '60px' : '35px';
                 const strokeThickness = this.isMobile ? 5 : 3;
-                const lineSpacing = this.isMobile ? 12 : 8;
+                const lineSpacing = this.isMobile ? 4 : 2;
 
                 this.dialogText = this.add.text(0, 0, '', {
-                    fontFamily: '"Press Start 2P", cursive',
+                    fontFamily: '"LucasArts SCUMM Solid", cursive',
                     fontSize: fontSize,
                     color: '#ffffff',
                     align: 'center',
-                    wordWrap: { width: width * 0.7 },
+                    wordWrap: { width: width * 0.85 },
                     lineSpacing: lineSpacing,
                     stroke: '#000000',
                     strokeThickness: strokeThickness
@@ -1521,6 +1531,7 @@
                 this.isWalking = false;
                 this.stopWalkAnimation();
                 if (this.crosshairCursor) this.crosshairCursor.setVisible(false);
+                if (this.hotspotLabel) this.hotspotLabel.setText('');
                 this.time.delayedCall(200, () => { this.dialogSkipReady = true; });
             }
 
@@ -1528,6 +1539,10 @@
                 this.dialogActive = false;
                 this.dialogSkipReady = false;
                 if (this.crosshairCursor && !this.selectedItem) this.crosshairCursor.setVisible(true);
+                // Refresh hotspot label if cursor is over a hotspot
+                if (this.currentHoveredHotspot) {
+                    this.setCrosshairHover(this.currentHoveredHotspot);
+                }
             }
 
             skipToNextDialog() {
@@ -1552,7 +1567,7 @@
             }
 
             showSingleDialog(text, isSequence = false) {
-                if (isSequence && !this.dialogActive) {
+                if (!this.dialogActive) {
                     this.startDialogSequence();
                 }
 
@@ -1567,7 +1582,7 @@
                     } else {
                         this.speechBubble.setVisible(false);
                         this.dialogText.setText('');
-                        if (isSequence) this.endDialogSequence();
+                        this.endDialogSequence();
                         // Call callback if provided
                         if (this.dialogCallback) {
                             const callback = this.dialogCallback;
@@ -1586,13 +1601,12 @@
 
                 // When inventory is open, position text at top of screen above the inventory box
                 if (this.inventoryOpen && this.inventoryPanelHeight) {
-                    const panelTop = height / 2 - this.inventoryPanelHeight / 2;
-                    const textY = panelTop / 2;  // Center in space above panel
+                    const textY = 30;  // Near top of screen
                     const textX = scrollX + width / 2;
 
-                    // Update word wrap to match inventory panel width
-                    this.dialogText.setWordWrapWidth(this.inventoryPanelWidth - 40);
-                    this.dialogText.setOrigin(0.5, 0.5);  // Center both horizontally and vertically
+                    // Wide word wrap - can extend past inventory box
+                    this.dialogText.setWordWrapWidth(width * 0.85);
+                    this.dialogText.setOrigin(0.5, 0);  // Top-center origin so text expands downward
 
                     this.speechBubble.setPosition(textX, textY);
                     return;
@@ -1600,11 +1614,11 @@
 
                 // Normal positioning: above the player
                 // Reset word wrap to default
-                this.dialogText.setWordWrapWidth(width * 0.7);
+                this.dialogText.setWordWrapWidth(width * 0.85);
                 this.dialogText.setOrigin(0.5, 0);
 
                 let textX = this.player.x;
-                let textY = this.player.y - 310;
+                let textY = this.player.y - 480;
 
                 const halfWidth = this.dialogText.width / 2;
                 const camLeft = scrollX + halfWidth + 10;
@@ -1968,7 +1982,7 @@
                 if (this.hotspotLabel) {
                     let labelX, labelY;
                     const p = 4; // Pixel size minimum
-                    const labelOffset = this.isMobile ? p*20 : p*12;
+                    const labelOffset = this.isMobile ? p*35 : p*25;
 
                     if (selectedItem && this.itemCursor && this.itemCursor.visible) {
                         // Position above item cursor
