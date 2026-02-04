@@ -100,6 +100,7 @@
                 this.settingsButtonHovered = false;
                 this.settingsBtnHollow = null;
                 this.settingsBtnFilled = null;
+                this.draggingVolumeSlider = null;
             }
 
             // ========== GAME STATE MANAGEMENT ==========
@@ -235,6 +236,18 @@
                             if (this.isClickOnSettingsReturnButton(pointer) || this.isClickOnSettingsCloseButton(pointer)) {
                                 this.closeSettingsMenu();
                             }
+                            // Check for fullscreen checkbox click
+                            else if (this.isClickOnFullscreenCheckbox(pointer)) {
+                                this.toggleFullscreen();
+                            }
+                            // Check for volume mute button clicks
+                            else if (this.isClickOnVolumeMuteButton(pointer)) {
+                                // Handled in the function
+                            }
+                            // Check for volume slider clicks (start dragging)
+                            else if (this.isClickOnVolumeSlider(pointer)) {
+                                // Handled in the function
+                            }
                         }
                         return;
                     }
@@ -292,6 +305,9 @@
                 });
 
                 this.input.on('pointerup', (pointer) => {
+                    // Stop any volume slider dragging
+                    this.stopVolumeSliderDrag();
+
                     this.handlePointerUp(pointer);
 
                     // Cancel long-press timer and hide highlights (mobile)
@@ -306,6 +322,11 @@
                 });
 
                 this.input.on('pointermove', (pointer) => {
+                    // Handle volume slider dragging
+                    if (this.settingsMenuOpen && this.draggingVolumeSlider) {
+                        this.updateVolumeSliderDrag(pointer);
+                    }
+
                     if (this.inventoryOpen && this.selectedItem) {
                         this.checkItemOutsideInventory(pointer);
                     }
@@ -1249,9 +1270,12 @@
                 this.settingsBlurOverlay.setScrollFactor(0);
                 this.settingsBlurOverlay.setVisible(false);
 
-                // Create settings panel (narrower and taller than inventory)
-                const panelWidth = 300;
-                const panelHeight = 400;
+                // Create settings panel
+                const panelWidth = 320;
+                const panelHeight = 520;
+                // Store for click detection
+                this.settingsPanelWidth = panelWidth;
+                this.settingsPanelHeight = panelHeight;
                 this.settingsPanel = this.add.container(width / 2, height / 2);
                 this.settingsPanel.setDepth(5600);
                 this.settingsPanel.setScrollFactor(0);
@@ -1294,6 +1318,77 @@
                 this.settingsCloseBtnHovered = false;
                 this.settingsCloseBtnArea = { x: closeX, y: closeY, size: closeSize };
 
+                // Full Screen checkbox
+                const checkboxSize = 24;
+                const checkboxX = -panelWidth/2 + 40;
+                const checkboxY = -panelHeight/2 + 100;
+
+                const fullscreenCheckboxBg = this.add.graphics();
+                this.drawCheckbox(fullscreenCheckboxBg, checkboxX, checkboxY, checkboxSize, false, false);
+                this.settingsPanel.add(fullscreenCheckboxBg);
+
+                const fullscreenLabel = this.add.text(checkboxX + checkboxSize/2 + 15, checkboxY, 'Full Screen', {
+                    fontFamily: '"Press Start 2P", cursive',
+                    fontSize: '12px',
+                    color: '#ffffff'
+                }).setOrigin(0, 0.5);
+                this.settingsPanel.add(fullscreenLabel);
+
+                this.fullscreenCheckboxBg = fullscreenCheckboxBg;
+                this.fullscreenCheckboxHovered = false;
+                this.fullscreenChecked = false;
+                this.fullscreenCheckboxArea = {
+                    x: checkboxX,
+                    y: checkboxY,
+                    width: checkboxSize + 15 + fullscreenLabel.width,
+                    height: checkboxSize
+                };
+
+                // ========== VOLUME SECTION ==========
+                const volumeSectionY = -panelHeight/2 + 150;
+
+                // Volume header
+                const volumeHeader = this.add.text(0, volumeSectionY, 'VOLUME', {
+                    fontFamily: '"Press Start 2P", cursive',
+                    fontSize: '14px',
+                    color: '#aaaacc'
+                }).setOrigin(0.5);
+                this.settingsPanel.add(volumeHeader);
+
+                // Slider configuration - labels above, controls below
+                const sliderConfig = {
+                    startX: -panelWidth/2 + 25,
+                    trackWidth: 180,
+                    trackHeight: 8,
+                    handleRadius: 12,
+                    rowHeight: 70,  // More space for label above
+                    muteSize: 28
+                };
+
+                // Initialize volume slider state
+                this.volumeSliders = {};
+                this.volumeMuted = {
+                    master: false,
+                    music: false,
+                    sfx: false
+                };
+                this.volumeBeforeMute = {
+                    master: 1.0,
+                    music: 0.7,
+                    sfx: 0.8
+                };
+
+                // Create sliders for each volume category
+                const volumeCategories = [
+                    { key: 'master', label: 'Master', y: volumeSectionY + 50 },
+                    { key: 'music', label: 'Music', y: volumeSectionY + 50 + sliderConfig.rowHeight },
+                    { key: 'sfx', label: 'Effects', y: volumeSectionY + 50 + sliderConfig.rowHeight * 2 }
+                ];
+
+                volumeCategories.forEach(cat => {
+                    this.createVolumeSlider(cat.key, cat.label, cat.y, sliderConfig, panelWidth);
+                });
+
                 // Return to Game button
                 const btnWidth = 220;
                 const btnHeight = 50;
@@ -1323,6 +1418,14 @@
                 this.settingsReturnBtn = returnBtn;
                 this.settingsReturnBtnBg = returnBtnBg;
                 this.settingsReturnBtnHovered = false;
+
+                // Listen for fullscreen changes (user might exit via Escape or browser controls)
+                this.scale.on('fullscreenchange', () => {
+                    this.updateFullscreenCheckbox();
+                });
+
+                // Initialize checkbox state
+                this.fullscreenChecked = this.scale.isFullscreen;
             }
 
             drawGearIcon(graphics, x, y, radius, filled) {
@@ -1375,6 +1478,225 @@
                 }
             }
 
+            drawCheckbox(graphics, x, y, size, checked, hovered) {
+                graphics.clear();
+
+                // Background
+                const bgColor = hovered ? 0x5a5a7a : 0x3a3a5a;
+                graphics.fillStyle(bgColor, 1);
+                graphics.fillRoundedRect(x - size/2, y - size/2, size, size, 4);
+
+                // Border
+                const borderColor = hovered ? 0x8a8aaa : 0x6a6a8a;
+                graphics.lineStyle(2, borderColor, 1);
+                graphics.strokeRoundedRect(x - size/2, y - size/2, size, size, 4);
+
+                // Checkmark if checked
+                if (checked) {
+                    graphics.lineStyle(3, 0x88ff88, 1);
+                    graphics.beginPath();
+                    graphics.moveTo(x - size/4, y);
+                    graphics.lineTo(x - size/12, y + size/4);
+                    graphics.lineTo(x + size/3, y - size/4);
+                    graphics.strokePath();
+                }
+            }
+
+            createVolumeSlider(key, label, y, config, panelWidth) {
+                const slider = {
+                    key: key,
+                    y: y,
+                    config: config,
+                    hovered: false,
+                    muteHovered: false,
+                    dragging: false
+                };
+
+                // Label above the controls (left-aligned)
+                const labelText = this.add.text(config.startX, y - 22, label, {
+                    fontFamily: '"Press Start 2P", cursive',
+                    fontSize: '10px',
+                    color: '#ffffff'
+                }).setOrigin(0, 0.5);
+                this.settingsPanel.add(labelText);
+                slider.label = labelText;
+
+                // Mute button (left side)
+                const muteX = config.startX + config.muteSize/2;
+                const muteBg = this.add.graphics();
+                this.drawMuteButton(muteBg, muteX, y, config.muteSize, false, false);
+                this.settingsPanel.add(muteBg);
+                slider.muteBg = muteBg;
+                slider.muteArea = { x: muteX, y: y, size: config.muteSize };
+
+                // Slider track (after mute button)
+                const trackX = config.startX + config.muteSize + 15;
+                const trackBg = this.add.graphics();
+                this.drawSliderTrack(trackBg, trackX, y, config.trackWidth, config.trackHeight, TSH.Audio.getVolume(key));
+                this.settingsPanel.add(trackBg);
+                slider.trackBg = trackBg;
+                slider.trackX = trackX;
+
+                // Slider handle
+                const handleBg = this.add.graphics();
+                const handleX = trackX + TSH.Audio.getVolume(key) * config.trackWidth;
+                this.drawSliderHandle(handleBg, handleX, y, config.handleRadius, false);
+                this.settingsPanel.add(handleBg);
+                slider.handleBg = handleBg;
+
+                // Percentage text (after track, right-aligned within panel)
+                const percentText = this.add.text(panelWidth/2 - 25, y, Math.round(TSH.Audio.getVolume(key) * 100) + '%', {
+                    fontFamily: '"Press Start 2P", cursive',
+                    fontSize: '10px',
+                    color: '#aaaaaa'
+                }).setOrigin(1, 0.5);  // Right-aligned
+                this.settingsPanel.add(percentText);
+                slider.percentText = percentText;
+
+                // Define hit areas - extend beyond track to include handle at edges
+                slider.trackArea = {
+                    x: trackX - config.handleRadius,
+                    y: y,
+                    width: config.trackWidth + config.handleRadius * 2,
+                    height: config.trackHeight + config.handleRadius * 2
+                };
+                // Store actual track bounds for value calculation
+                slider.trackBounds = {
+                    x: trackX,
+                    width: config.trackWidth
+                };
+
+                this.volumeSliders[key] = slider;
+            }
+
+            drawMuteButton(graphics, x, y, size, muted, hovered) {
+                graphics.clear();
+
+                // Background
+                const bgColor = hovered ? 0x5a5a7a : 0x3a3a5a;
+                graphics.fillStyle(bgColor, 1);
+                graphics.fillRoundedRect(x - size/2, y - size/2, size, size, 4);
+
+                // Border
+                const borderColor = hovered ? 0x8a8aaa : 0x6a6a8a;
+                graphics.lineStyle(2, borderColor, 1);
+                graphics.strokeRoundedRect(x - size/2, y - size/2, size, size, 4);
+
+                // Speaker icon
+                const iconColor = muted ? 0x888888 : 0xffffff;
+                graphics.fillStyle(iconColor, 1);
+
+                // Speaker body (rectangle)
+                graphics.fillRect(x - size/5, y - size/6, size/5, size/3);
+
+                // Speaker cone (triangle)
+                graphics.beginPath();
+                graphics.moveTo(x, y - size/6);
+                graphics.lineTo(x + size/4, y - size/3);
+                graphics.lineTo(x + size/4, y + size/3);
+                graphics.lineTo(x, y + size/6);
+                graphics.closePath();
+                graphics.fill();
+
+                // Sound waves or X for muted
+                if (muted) {
+                    // Draw X
+                    graphics.lineStyle(2, 0xff6666, 1);
+                    graphics.beginPath();
+                    graphics.moveTo(x - size/3, y - size/4);
+                    graphics.lineTo(x + size/3, y + size/4);
+                    graphics.moveTo(x + size/3, y - size/4);
+                    graphics.lineTo(x - size/3, y + size/4);
+                    graphics.strokePath();
+                }
+            }
+
+            drawSliderTrack(graphics, x, y, width, height, value) {
+                graphics.clear();
+
+                // Background track
+                graphics.fillStyle(0x2a2a4a, 1);
+                graphics.fillRoundedRect(x, y - height/2, width, height, height/2);
+
+                // Filled portion
+                const filledWidth = value * width;
+                if (filledWidth > 0) {
+                    graphics.fillStyle(0x6a8aaa, 1);
+                    graphics.fillRoundedRect(x, y - height/2, filledWidth, height, height/2);
+                }
+
+                // Border
+                graphics.lineStyle(1, 0x4a4a6a, 1);
+                graphics.strokeRoundedRect(x, y - height/2, width, height, height/2);
+            }
+
+            drawSliderHandle(graphics, x, y, radius, hovered) {
+                graphics.clear();
+
+                // Outer circle
+                const outerColor = hovered ? 0x8aaacc : 0x6a8aaa;
+                graphics.fillStyle(outerColor, 1);
+                graphics.fillCircle(x, y, radius);
+
+                // Inner circle
+                graphics.fillStyle(0xffffff, 1);
+                graphics.fillCircle(x, y, radius * 0.6);
+
+                // Border
+                graphics.lineStyle(1, 0x4a6a8a, 1);
+                graphics.strokeCircle(x, y, radius);
+            }
+
+            updateVolumeSlider(key, value, updateAudio = true) {
+                const slider = this.volumeSliders[key];
+                if (!slider) return;
+
+                const config = slider.config;
+
+                // Clamp value
+                value = Phaser.Math.Clamp(value, 0, 1);
+
+                // Update track fill
+                this.drawSliderTrack(slider.trackBg, slider.trackX, slider.y, config.trackWidth, config.trackHeight, value);
+
+                // Update handle position
+                const handleX = slider.trackX + value * config.trackWidth;
+                this.drawSliderHandle(slider.handleBg, handleX, slider.y, config.handleRadius, slider.hovered);
+
+                // Update percentage text
+                slider.percentText.setText(Math.round(value * 100) + '%');
+
+                // Update audio system
+                if (updateAudio) {
+                    TSH.Audio.setVolume(key, value);
+                }
+
+                // Update mute state if volume > 0
+                if (value > 0 && this.volumeMuted[key]) {
+                    this.volumeMuted[key] = false;
+                    this.drawMuteButton(slider.muteBg, slider.muteArea.x, slider.y, config.muteSize, false, false);
+                }
+            }
+
+            toggleVolumeMute(key) {
+                const slider = this.volumeSliders[key];
+                if (!slider) return;
+
+                if (this.volumeMuted[key]) {
+                    // Unmute - restore previous volume
+                    this.volumeMuted[key] = false;
+                    this.updateVolumeSlider(key, this.volumeBeforeMute[key]);
+                } else {
+                    // Mute - save current volume and set to 0
+                    this.volumeBeforeMute[key] = TSH.Audio.getVolume(key);
+                    this.volumeMuted[key] = true;
+                    this.updateVolumeSlider(key, 0);
+                }
+
+                // Redraw mute button
+                this.drawMuteButton(slider.muteBg, slider.muteArea.x, slider.y, slider.config.muteSize, this.volumeMuted[key], false);
+            }
+
             updateSettingsButtonState() {
                 const showFilled = this.settingsButtonHovered || this.settingsMenuOpen;
                 if (this.settingsBtnHollow) this.settingsBtnHollow.setVisible(!showFilled);
@@ -1395,7 +1717,7 @@
                 const panelX = width / 2;
                 const panelY = height / 2;
                 // Button is at bottom of panel
-                const panelHeight = 400;
+                const panelHeight = this.settingsPanelHeight || 520;
                 const btnY = panelY + (panelHeight / 2 - 50);
                 const btnWidth = 220;
                 const btnHeight = 50;
@@ -1421,6 +1743,135 @@
                 return dist <= closeBtn.size / 2;
             }
 
+            isClickOnFullscreenCheckbox(pointer) {
+                if (!this.fullscreenCheckboxArea || !this.settingsPanel) return false;
+                const { width, height } = this.scale;
+                // Panel is centered on screen
+                const panelX = width / 2;
+                const panelY = height / 2;
+                // Checkbox position relative to panel
+                const cb = this.fullscreenCheckboxArea;
+                const cbLeft = panelX + cb.x - cb.height/2;
+                const cbTop = panelY + cb.y - cb.height/2;
+
+                return pointer.x >= cbLeft && pointer.x <= cbLeft + cb.width &&
+                       pointer.y >= cbTop && pointer.y <= cbTop + cb.height;
+            }
+
+            toggleFullscreen() {
+                if (this.scale.isFullscreen) {
+                    this.scale.stopFullscreen();
+                    // Update checkbox immediately (don't wait for event)
+                    this.fullscreenChecked = false;
+                } else {
+                    this.scale.startFullscreen();
+                    // Update checkbox immediately (don't wait for event)
+                    this.fullscreenChecked = true;
+                }
+                // Redraw checkbox with new state
+                if (this.fullscreenCheckboxBg && this.fullscreenCheckboxArea) {
+                    const cb = this.fullscreenCheckboxArea;
+                    this.drawCheckbox(this.fullscreenCheckboxBg, cb.x, cb.y, 24, this.fullscreenChecked, this.fullscreenCheckboxHovered);
+                }
+            }
+
+            updateFullscreenCheckbox() {
+                this.fullscreenChecked = this.scale.isFullscreen;
+                if (this.fullscreenCheckboxBg && this.fullscreenCheckboxArea) {
+                    const cb = this.fullscreenCheckboxArea;
+                    this.drawCheckbox(this.fullscreenCheckboxBg, cb.x, cb.y, 24, this.fullscreenChecked, this.fullscreenCheckboxHovered);
+                }
+            }
+
+            isClickOnVolumeMuteButton(pointer) {
+                if (!this.volumeSliders || !this.settingsPanel) return false;
+                const { width, height } = this.scale;
+                const panelX = width / 2;
+                const panelY = height / 2;
+
+                for (const key of Object.keys(this.volumeSliders)) {
+                    const slider = this.volumeSliders[key];
+                    const muteArea = slider.muteArea;
+                    const btnX = panelX + muteArea.x;
+                    const btnY = panelY + muteArea.y;
+                    const halfSize = muteArea.size / 2;
+
+                    if (pointer.x >= btnX - halfSize && pointer.x <= btnX + halfSize &&
+                        pointer.y >= btnY - halfSize && pointer.y <= btnY + halfSize) {
+                        this.toggleVolumeMute(key);
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            isClickOnVolumeSlider(pointer) {
+                if (!this.volumeSliders || !this.settingsPanel) return false;
+                const { width, height } = this.scale;
+                const panelX = width / 2;
+                const panelY = height / 2;
+
+                for (const key of Object.keys(this.volumeSliders)) {
+                    const slider = this.volumeSliders[key];
+                    const track = slider.trackArea;
+                    const trackLeft = panelX + track.x;
+                    const trackTop = panelY + track.y - track.height / 2;
+
+                    if (pointer.x >= trackLeft && pointer.x <= trackLeft + track.width &&
+                        pointer.y >= trackTop && pointer.y <= trackTop + track.height) {
+                        // Start dragging
+                        this.draggingVolumeSlider = key;
+                        // Immediately update to clicked position
+                        this.updateVolumeSliderDrag(pointer);
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            updateVolumeSliderDrag(pointer) {
+                if (!this.draggingVolumeSlider) return;
+
+                const key = this.draggingVolumeSlider;
+                const slider = this.volumeSliders[key];
+                if (!slider) return;
+
+                const { width, height } = this.scale;
+                const panelX = width / 2;
+                // Use trackBounds for value calculation (actual track, not hit area)
+                const bounds = slider.trackBounds || slider.trackArea;
+                const trackLeft = panelX + bounds.x;
+                const trackWidth = bounds.width;
+
+                // Calculate value from pointer position
+                const relativeX = pointer.x - trackLeft;
+                const value = Phaser.Math.Clamp(relativeX / trackWidth, 0, 1);
+
+                this.updateVolumeSlider(key, value);
+            }
+
+            stopVolumeSliderDrag() {
+                this.draggingVolumeSlider = null;
+            }
+
+            syncVolumeSliders() {
+                if (!this.volumeSliders) return;
+
+                for (const key of Object.keys(this.volumeSliders)) {
+                    const currentVolume = TSH.Audio.getVolume(key);
+                    // Check if muted (volume is 0 but was previously set)
+                    if (currentVolume === 0 && !this.volumeMuted[key]) {
+                        // Assume it was muted externally
+                        this.volumeMuted[key] = true;
+                    }
+                    this.updateVolumeSlider(key, currentVolume, false);
+
+                    // Update mute button visual
+                    const slider = this.volumeSliders[key];
+                    this.drawMuteButton(slider.muteBg, slider.muteArea.x, slider.y, slider.config.muteSize, this.volumeMuted[key], false);
+                }
+            }
+
             openSettingsMenu() {
                 // Block if dialogue or conversation is active
                 if (this.dialogActive || this.conversationActive) return;
@@ -1443,6 +1894,12 @@
                     this.hotspotLabel.setVisible(false);
                     this.hotspotLabel.setText('');
                 }
+
+                // Sync fullscreen checkbox state
+                this.updateFullscreenCheckbox();
+
+                // Sync volume sliders with current audio volumes
+                this.syncVolumeSliders();
 
                 // Show overlay and panel (before pausing, so tween works)
                 this.settingsBlurOverlay.setVisible(true);
@@ -1557,6 +2014,81 @@
                     return;
                 }
 
+                // Check if hovering over fullscreen checkbox
+                let overFullscreen = false;
+                if (this.fullscreenCheckboxArea && this.settingsPanel && this.settingsPanel.visible) {
+                    const panel = this.settingsPanel;
+                    const cb = this.fullscreenCheckboxArea;
+                    // Convert pointer to panel-local coordinates
+                    const localX = pointer.x - panel.x;
+                    const localY = pointer.y - panel.y;
+
+                    overFullscreen = localX >= cb.x - cb.height/2 && localX <= cb.x - cb.height/2 + cb.width &&
+                                     localY >= cb.y - cb.height/2 && localY <= cb.y + cb.height/2;
+                }
+
+                // Update fullscreen checkbox visual state if hover changed
+                if (overFullscreen !== this.fullscreenCheckboxHovered) {
+                    this.fullscreenCheckboxHovered = overFullscreen;
+                    if (this.fullscreenCheckboxBg) {
+                        const cb = this.fullscreenCheckboxArea;
+                        this.drawCheckbox(this.fullscreenCheckboxBg, cb.x, cb.y, 24, this.fullscreenChecked, overFullscreen);
+                    }
+                }
+
+                if (overFullscreen) {
+                    this.drawCrosshair(0xff0000);
+                    return;
+                }
+
+                // Check if hovering over volume sliders or mute buttons
+                let overVolumeControl = false;
+                if (this.volumeSliders && this.settingsPanel && this.settingsPanel.visible) {
+                    const panel = this.settingsPanel;
+                    const localX = pointer.x - panel.x;
+                    const localY = pointer.y - panel.y;
+
+                    for (const key of Object.keys(this.volumeSliders)) {
+                        const slider = this.volumeSliders[key];
+
+                        // Check mute button
+                        const muteArea = slider.muteArea;
+                        const muteDx = localX - muteArea.x;
+                        const muteDy = localY - muteArea.y;
+                        const overMute = Math.abs(muteDx) <= muteArea.size/2 && Math.abs(muteDy) <= muteArea.size/2;
+
+                        // Check slider track
+                        const track = slider.trackArea;
+                        const overTrack = localX >= track.x && localX <= track.x + track.width &&
+                                          localY >= track.y - track.height/2 && localY <= track.y + track.height/2;
+
+                        const wasHovered = slider.hovered;
+                        slider.hovered = overMute || overTrack;
+
+                        // Update mute button visual if hover changed
+                        if (overMute !== slider.muteHovered) {
+                            slider.muteHovered = overMute;
+                            this.drawMuteButton(slider.muteBg, muteArea.x, slider.y, slider.config.muteSize, this.volumeMuted[key], overMute);
+                        }
+
+                        // Update slider handle visual if hover changed
+                        if (wasHovered !== slider.hovered) {
+                            const value = TSH.Audio.getVolume(key);
+                            const handleX = slider.trackX + value * slider.config.trackWidth;
+                            this.drawSliderHandle(slider.handleBg, handleX, slider.y, slider.config.handleRadius, slider.hovered);
+                        }
+
+                        if (overMute || overTrack) {
+                            overVolumeControl = true;
+                        }
+                    }
+                }
+
+                if (overVolumeControl) {
+                    this.drawCrosshair(0xff0000);
+                    return;
+                }
+
                 // Check settings button (gear icon)
                 if (this.settingsButtonArea) {
                     const btn = this.settingsButtonArea;
@@ -1573,8 +2105,8 @@
             }
 
             pauseGame() {
-                // Pause audio
-                TSH.Audio.pauseAll();
+                // Don't pause audio - let it play so volume changes can be heard
+                // TSH.Audio.pauseAll();
 
                 // Pause all tweens
                 this.tweens.pauseAll();
@@ -1584,8 +2116,8 @@
             }
 
             resumeGame() {
-                // Resume audio
-                TSH.Audio.resumeAll();
+                // Audio wasn't paused, so no need to resume
+                // TSH.Audio.resumeAll();
 
                 // Resume all tweens
                 this.tweens.resumeAll();
