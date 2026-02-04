@@ -563,6 +563,12 @@
                     this.hideHotspotHighlights();
                 }
 
+                // If a UI element was clicked in pointerdown, don't process as tap
+                if (this.clickedUI) {
+                    this.clickedUI = false;
+                    return;
+                }
+
                 // Stop continuous running if active
                 if (this.isRunningHold) {
                     this.isRunningHold = false;
