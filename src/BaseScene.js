@@ -396,21 +396,33 @@
             // ========== SETTINGS MENU INPUT ==========
 
             handleSettingsPointerDown(pointer) {
-                // Check if clicking X button or Return button
-                if (this.isClickOnSettingsXButton(pointer) || this.isClickOnSettingsReturnButton(pointer)) {
+                // Check if clicking X button or Return button (use hover states)
+                if (this.settingsCloseBtnHovered || this.settingsReturnBtnHovered) {
                     this.closeSettingsMenu();
                     return;
                 }
 
-                // Check volume slider interaction
-                this.checkVolumeSliderClick(pointer);
+                // Check fullscreen checkbox
+                if (this.fullscreenCheckboxHovered) {
+                    this.toggleFullscreen();
+                    return;
+                }
+
+                // Check volume slider interaction (mute buttons and slider tracks)
+                this.checkVolumeSliderClickByHover();
             }
 
             // ========== DESKTOP INPUT HANDLERS ==========
 
             handleDesktopPointerDown(pointer) {
-                // Check for settings button click
-                if (this.isClickOnSettingsButton(pointer)) {
+                // Click to skip dialogue (highest priority)
+                if (this.dialogActive) {
+                    this.skipToNextDialog();
+                    return;
+                }
+
+                // Check for settings button click (use hover state from update loop)
+                if (this.settingsButtonHovered) {
                     this.openSettingsMenu();
                     return;
                 }
@@ -766,10 +778,10 @@
             }
 
             // Find hotspot at pointer position (uses world coordinates)
+            // Note: hotspot coordinates are already in pixels (converted in RoomScene.createHotspotsFromData)
             getHotspotAtPointer(pointer) {
                 if (!this.hotspots || this.hotspots.length === 0) return null;
 
-                const { height } = this.scale;
                 const scrollX = this.cameras.main.scrollX || 0;
                 const scrollY = this.cameras.main.scrollY || 0;
                 const worldX = pointer.x + scrollX;
@@ -777,23 +789,18 @@
 
                 for (const hotspot of this.hotspots) {
                     if (hotspot.polygon && hotspot.polygon.length >= 3) {
-                        // Polygon hotspot - convert to pixel coordinates and test
-                        const points = hotspot.polygon.map(p => ({
-                            x: p.x,
-                            y: height * p.y
-                        }));
-                        if (this.pointInPolygon(worldX, worldY, points)) {
+                        // Polygon hotspot - coordinates already in pixels
+                        if (this.pointInPolygon(worldX, worldY, hotspot.polygon)) {
                             return hotspot;
                         }
                     } else {
-                        // Rectangle hotspot
+                        // Rectangle hotspot - coordinates already in pixels
                         const w = hotspot.w || 80;
-                        const h = (hotspot.h || 0.1) * height;
-                        const y = hotspot.y * height;
+                        const h = hotspot.h || 80;
                         const left = hotspot.x - w / 2;
                         const right = hotspot.x + w / 2;
-                        const top = y - h / 2;
-                        const bottom = y + h / 2;
+                        const top = hotspot.y - h / 2;
+                        const bottom = hotspot.y + h / 2;
 
                         if (worldX >= left && worldX <= right && worldY >= top && worldY <= bottom) {
                             return hotspot;
@@ -2252,6 +2259,28 @@
 
             stopVolumeSliderDrag() {
                 this.draggingVolumeSlider = null;
+            }
+
+            checkVolumeSliderClickByHover() {
+                if (!this.volumeSliders) return;
+
+                for (const key of Object.keys(this.volumeSliders)) {
+                    const slider = this.volumeSliders[key];
+
+                    // Check if mute button is hovered
+                    if (slider.muteHovered) {
+                        this.toggleVolumeMute(key);
+                        return;
+                    }
+
+                    // Check if slider track is hovered (start drag)
+                    if (slider.hovered && !slider.muteHovered) {
+                        this.draggingVolumeSlider = key;
+                        // Immediately update to clicked position using activePointer
+                        this.updateVolumeSliderDrag(this.input.activePointer);
+                        return;
+                    }
+                }
             }
 
             syncVolumeSliders() {
