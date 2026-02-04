@@ -436,8 +436,8 @@
                     }
                 }
 
-                // Check hotspots
-                const hotspot = this.getHotspotAtPointer(pointer);
+                // Check hotspots (use hover state set by zone pointerover)
+                const hotspot = this.currentHoveredHotspot;
                 if (hotspot) {
                     if (pointer.rightButtonDown()) {
                         this.clickedUI = true;
