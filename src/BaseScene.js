@@ -246,6 +246,12 @@
             setupInputHandlers() {
                 // ========== POINTER DOWN ==========
                 this.input.on('pointerdown', (pointer) => {
+                    // Tap/click to skip dialogue (highest priority, works on all platforms)
+                    if (this.dialogActive && !this.settingsMenuOpen) {
+                        this.skipToNextDialog();
+                        return;
+                    }
+
                     // Settings menu has its own handlers
                     if (this.settingsMenuOpen) {
                         this.handleSettingsPointerDown(pointer);
