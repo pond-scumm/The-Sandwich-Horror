@@ -487,6 +487,12 @@
                     gesture.longPressTimer = null;
                 }
 
+                // Tap to skip dialogue (highest priority)
+                if (this.dialogActive) {
+                    this.skipToNextDialog();
+                    return;
+                }
+
                 // Check for settings button
                 if (this.isClickOnSettingsButton(pointer)) {
                     this.openSettingsMenu();
