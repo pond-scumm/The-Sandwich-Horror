@@ -241,6 +241,9 @@
                     TSH.State.on('uiStateChanged', this.onUIStateChanged.bind(this));
                 }
 
+                // Listen for dialog requests from UIScene
+                TSH.State.on('showDialog', this.onShowDialogEvent.bind(this));
+
                 // Fade in
                 this.cameras.main.fadeIn(500, 0, 0, 0);
             }
@@ -266,6 +269,13 @@
                     } else {
                         this.hideSettingsPanel();
                     }
+                }
+            }
+
+            // Handle showDialog events from UIScene (for inventory combinations, etc.)
+            onShowDialogEvent(data) {
+                if (data && data.text) {
+                    this.showDialog(data.text, data.speaker);
                 }
             }
 
@@ -1867,7 +1877,7 @@
                 this.settingsReturnBtnHovered = false;
 
                 // Version number above Return button
-                const versionText = this.add.text(0, btnY - 45, 'v0.1.17', {
+                const versionText = this.add.text(0, btnY - 45, 'v0.1.18', {
                     fontFamily: '"Press Start 2P", cursive',
                     fontSize: '14px',
                     color: '#ffffff'
@@ -2665,63 +2675,38 @@
                 // itemA = selected item (cursor), itemB = clicked item (in slot)
                 console.log('[Inventory] Trying to combine:', itemA.id, '+', itemB.id);
 
-                // Try the combination
-                const result = TSH.Combinations.tryCombine(itemA.id, itemB.id);
+                // Execute combination via TSH.Combinations (handles state changes)
+                const result = TSH.Combinations.executeCombine(itemA.id, itemB.id);
 
-                if (!result) {
-                    // No combination exists - keep cursor, just show message
-                    TSH.Audio.playSFX('item_fail');
-                    this.showDialog(`I can't combine the ${itemA.name} with the ${itemB.name}.`);
-                    return;
+                // Play the sound effect
+                if (result.sfx) {
+                    TSH.Audio.playSFX(result.sfx);
                 }
 
-                if (!result.success) {
-                    // Combination exists but condition not met - keep cursor
-                    TSH.Audio.playSFX('item_fail');
-                    this.showDialog(result.dialogue || "Something's missing...");
-                    return;
-                }
+                // Update cursor selection based on result
+                if (result.success) {
+                    const itemAConsumed = result.consumes.includes(itemA.id);
+                    const itemBConsumed = result.consumes.includes(itemB.id);
+                    const producedItem = result.produces ? TSH.Items[result.produces] : null;
 
-                // Successful combination!
-                TSH.Audio.playSFX('item_combine');
-
-                // Determine what happens to each item
-                const itemAConsumed = result.consumes.includes(itemA.id);
-                const itemBConsumed = result.consumes.includes(itemB.id);
-                const producedItem = result.produces ? TSH.Items[result.produces] : null;
-
-                // Update game state - UIScene will update display via inventoryChanged events
-                for (const consumedId of result.consumes) {
-                    TSH.State.removeItem(consumedId);
-                }
-                if (result.produces) {
-                    TSH.State.addItem(result.produces);
-                }
-                if (result.setFlags) {
-                    for (const [path, value] of Object.entries(result.setFlags)) {
-                        TSH.State.setFlag(path, value);
-                    }
-                }
-
-                // Update selection state
-                if (itemAConsumed && itemBConsumed) {
-                    // Both consumed: clear cursor
-                    this.deselectItem();
-                } else if (itemAConsumed) {
-                    // Selected item (cursor) consumed: cursor becomes produced item
-                    if (producedItem) {
-                        this.selectedItem = producedItem;
-                        TSH.State.setSelectedItem(producedItem.id);
-                    } else {
+                    if (itemAConsumed && itemBConsumed) {
+                        // Both consumed: clear cursor
                         this.deselectItem();
+                    } else if (itemAConsumed) {
+                        // Selected item (cursor) consumed: cursor becomes produced item
+                        if (producedItem) {
+                            this.selectedItem = producedItem;
+                            TSH.State.setSelectedItem(producedItem.id);
+                        } else {
+                            this.deselectItem();
+                        }
                     }
+                    // If itemB consumed but not itemA, cursor stays the same
+                    console.log('[Inventory] Combination successful! Produced:', result.produces);
                 }
-                // If itemB consumed but not itemA, cursor stays the same
 
-                // Show success dialogue
+                // Show dialogue
                 this.showDialog(result.dialogue);
-
-                console.log('[Inventory] Combination successful! Produced:', result.produces);
             }
 
             selectItem(item) {

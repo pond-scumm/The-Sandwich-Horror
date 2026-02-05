@@ -1,7 +1,7 @@
 # The Sandwich Horror — Architecture Guide
 ## For Claude Code Implementation
 
-Last Updated: February 5, 2026 (UIScene + Inventory Panel - Phase 4b)
+Last Updated: February 5, 2026 (UIScene + Combinations - Phase 4d)
 
 ---
 
@@ -55,6 +55,7 @@ When resuming after compaction, re-read this guide and check `git log --oneline 
 - [x] UIScene with cursor management (Phase 3 of UIScene refactor)
 - [x] UIScene with inventory/settings buttons (Phase 4a of UIScene refactor)
 - [x] UIScene with inventory panel (Phase 4b of UIScene refactor)
+- [x] Combination logic in TSH.Combinations with showDialog event (Phase 4d of UIScene refactor)
 
 ### TODO (Not Yet Implemented)
 - [x] **Item-on-item combinations** — Click item B while item A is selected to combine (`tryCombineItems` in BaseScene.js)
@@ -342,11 +343,29 @@ BaseScene's walkTo(), showDialog(), and playAnimation() methods should all retur
 Defined as data in `src/data/items/combinations.js`. Keys are alphabetically sorted: `'item_a+item_b'`.
 
 ```javascript
-TSH.Combinations.tryCombine('spring', 'satellite_shoes')  // Check if valid
-TSH.Combinations.executeCombine('spring', 'satellite_shoes')  // Do it
+// Always returns a result object - never null
+const result = TSH.Combinations.executeCombine('candle', 'matches');
+// result = { success: true/false, dialogue: "...", sfx: "item_combine", consumes?: [...], produces?: "..." }
+
+// Check if recipe exists without executing
+TSH.Combinations.hasRecipe('candle', 'matches')  // → true/false
 ```
 
-Each recipe specifies what's consumed, what's produced, what flags are set, and what Nate says.
+Each recipe specifies what's consumed, what's produced, what flags are set, what Nate says, and optionally a custom sound effect.
+
+**Recipe fields:**
+| Field | Required | Description |
+|-------|----------|-------------|
+| `consumes` | Yes | Array of item IDs to remove from inventory |
+| `produces` | No | Item ID to add to inventory |
+| `dialogue` | Yes | What Nate says on success |
+| `setFlags` | No | Flags to set when combination happens |
+| `sfx` | No | Sound effect on success (default: `'item_combine'`) |
+| `condition` | No | Function that must return true for combination to work |
+| `failDialogue` | No | What Nate says if condition fails |
+| `sfxFail` | No | Sound effect on condition fail (default: `'item_fail'`) |
+
+**Event-driven dialog:** UIScene emits `TSH.State.emit('showDialog', { text })` after combinations. BaseScene listens and displays the dialog. This keeps UIScene decoupled from BaseScene.
 
 ---
 

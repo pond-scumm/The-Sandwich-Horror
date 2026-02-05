@@ -592,11 +592,37 @@ class UIScene extends Phaser.Scene {
     }
 
     tryCombineItems(itemA, itemB) {
-        // Get the active game scene for combination logic
-        const gameScene = this.getActiveGameScene();
-        if (gameScene && gameScene.tryCombineItems) {
-            gameScene.tryCombineItems(itemA, itemB);
+        // Execute combination via TSH.Combinations (handles state changes)
+        const result = TSH.Combinations.executeCombine(itemA.id, itemB.id);
+
+        // Play the sound effect
+        if (result.sfx) {
+            TSH.Audio.playSFX(result.sfx);
         }
+
+        // Update cursor selection based on result
+        if (result.success) {
+            const itemAConsumed = result.consumes.includes(itemA.id);
+            const itemBConsumed = result.consumes.includes(itemB.id);
+            const producedItem = result.produces ? TSH.Items[result.produces] : null;
+
+            if (itemAConsumed && itemBConsumed) {
+                // Both consumed: clear cursor
+                this.deselectItem();
+            } else if (itemAConsumed) {
+                // Selected item (cursor) consumed: cursor becomes produced item
+                if (producedItem) {
+                    this.selectedItem = producedItem;
+                    TSH.State.setSelectedItem(producedItem.id);
+                } else {
+                    this.deselectItem();
+                }
+            }
+            // If itemB consumed but not itemA, cursor stays the same
+        }
+
+        // Show dialog via event (BaseScene listens and displays)
+        TSH.State.emit('showDialog', { text: result.dialogue });
     }
 
     // ── Panel Show/Hide ─────────────────────────────────────────────────────

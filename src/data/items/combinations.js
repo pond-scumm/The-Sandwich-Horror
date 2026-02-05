@@ -3,13 +3,17 @@
 // ============================================================================
 // Defines what happens when player uses one item on another.
 // Keys are sorted alphabetically: 'item_a+item_b' (a < b)
-// 
+//
 // Each combination specifies:
-//   consumes  - array of item IDs to remove from inventory
-//   produces  - item ID to add to inventory (or null)
-//   setFlags  - flags to set when combination happens
-//   dialogue  - what Nate says
-//   action    - optional action ID for special behavior
+//   consumes    - array of item IDs to remove from inventory
+//   produces    - item ID to add to inventory (or null)
+//   setFlags    - flags to set when combination happens
+//   dialogue    - what Nate says on success
+//   sfx         - sound effect on success (default: 'item_combine')
+//   condition   - optional function that must return true
+//   failDialogue - what Nate says if condition fails
+//   sfxFail     - sound effect on condition fail (default: 'item_fail')
+//   action      - optional action ID for special behavior
 // ============================================================================
 
 (function() {
@@ -106,55 +110,61 @@
     
     TSH.Combinations = {
         _recipes: combinations,
-        
-        // Try to combine two items. Returns result object or null.
-        tryCombine(itemA, itemB) {
-            const key = makeKey(itemA, itemB);
+
+        // Execute a combination and modify state.
+        // Always returns a result object: { success, dialogue, sfx, consumes?, produces? }
+        executeCombine(itemAId, itemBId) {
+            const key = makeKey(itemAId, itemBId);
             const recipe = combinations[key];
-            
-            if (!recipe) return null;
-            
-            // Check additional conditions
-            if (recipe.condition && !recipe.condition()) {
-                return { 
-                    success: false, 
-                    dialogue: recipe.failDialogue || "Something's still missing..." 
+
+            // No recipe exists for this combination
+            if (!recipe) {
+                const itemA = TSH.Items[itemAId];
+                const itemB = TSH.Items[itemBId];
+                const nameA = itemA ? itemA.name : itemAId;
+                const nameB = itemB ? itemB.name : itemBId;
+                return {
+                    success: false,
+                    dialogue: `I can't combine the ${nameA} with the ${nameB}.`,
+                    sfx: 'item_fail'
                 };
             }
-            
-            return {
-                success: true,
-                consumes: recipe.consumes,
-                produces: recipe.produces,
-                dialogue: recipe.dialogue,
-                setFlags: recipe.setFlags,
-                action: recipe.action || null
-            };
-        },
-        
-        // Execute a combination (modify state)
-        executeCombine(itemA, itemB) {
-            const result = this.tryCombine(itemA, itemB);
-            if (!result || !result.success) return result;
-            
-            // Remove consumed items
-            for (const itemId of result.consumes) {
+
+            // Recipe exists but condition not met
+            if (recipe.condition && !recipe.condition()) {
+                return {
+                    success: false,
+                    dialogue: recipe.failDialogue || "Something's still missing...",
+                    sfx: recipe.sfxFail || 'item_fail'
+                };
+            }
+
+            // Success - modify state
+            for (const itemId of recipe.consumes) {
                 TSH.State.removeItem(itemId);
             }
-            
-            // Add produced item
-            if (result.produces) {
-                TSH.State.addItem(result.produces);
+            if (recipe.produces) {
+                TSH.State.addItem(recipe.produces);
             }
-            
-            // Set flags
-            if (result.setFlags) {
-                for (const [path, value] of Object.entries(result.setFlags)) {
+            if (recipe.setFlags) {
+                for (const [path, value] of Object.entries(recipe.setFlags)) {
                     TSH.State.setFlag(path, value);
                 }
             }
-            
-            return result;
+
+            return {
+                success: true,
+                dialogue: recipe.dialogue,
+                sfx: recipe.sfx || 'item_combine',
+                consumes: recipe.consumes,
+                produces: recipe.produces
+            };
+        },
+
+        // Check if a combination exists (without executing it)
+        hasRecipe(itemAId, itemBId) {
+            const key = makeKey(itemAId, itemBId);
+            return !!combinations[key];
         }
     };
     
