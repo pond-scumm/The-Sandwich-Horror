@@ -233,7 +233,12 @@
                 inventoryOpen: false,    // Is inventory panel expanded?
                 dialogActive: false,     // Is an examine/action dialog showing?
                 conversationActive: false, // Is NPC conversation in progress?
-                settingsOpen: false      // Is settings menu open?
+                settingsOpen: false,     // Is settings menu open?
+
+                // Cursor state (managed by UIScene)
+                edgeZone: null,          // 'left', 'right', or null (for arrow cursor)
+                itemCursorHighlight: false, // Show red highlight on item cursor
+                crosshairColor: 0xffffff // Crosshair color (white default, red on hover)
             },
 
             // ── Save Metadata ───────────────────────────────────────────

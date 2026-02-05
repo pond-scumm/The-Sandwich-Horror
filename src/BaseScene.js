@@ -208,16 +208,35 @@
                     g.destroy();
                 }
 
-                // Hide browser cursor
+                // Hide browser cursor (UIScene also does this, but be safe)
                 this.game.canvas.style.cursor = 'none';
 
                 // Setup input handlers
                 this.setupInputHandlers();
 
+                // Check if UIScene exists (it handles cursors when present)
+                // Use scene.get() instead of isActive() because UIScene may not be fully active yet
+                const uiScene = this.scene.get('UIScene');
+                this.uiSceneActive = uiScene !== null;
+                console.log('[BaseScene] UIScene check:', {
+                    uiSceneExists: uiScene !== null,
+                    uiSceneActive: this.uiSceneActive,
+                    sceneKey: this.scene.key
+                });
+
                 // Create UI systems
-                this.createCrosshairCursor(width, height);
+                // Skip cursor creation if UIScene is handling it
+                if (!this.uiSceneActive) {
+                    console.log('[BaseScene] Creating cursors (UIScene not found)');
+                    this.createCrosshairCursor(width, height);
+                    this.createItemCursor();
+                } else {
+                    console.log('[BaseScene] Skipping cursor creation (UIScene handling)');
+                }
+
+                // Always create hotspot label (it's not a cursor, just UI text)
+                this.createHotspotLabel(width, height);
                 this.createInventoryUI(width, height);
-                this.createItemCursor();
                 this.createDialogUI(width, height);
                 this.createConversationUI(width, height);
                 this.createSettingsUI(width, height);
@@ -347,6 +366,13 @@
             handleBackgroundPress(pointer) {
                 if (this.clickedUI) return;
 
+                // Right-click with item selected = deselect (works even when inventory is open)
+                if (this.selectedItem && pointer.rightButtonDown()) {
+                    console.log('[BaseScene] Right-click with item selected, deselecting:', this.selectedItem.id);
+                    this.deselectItem();
+                    return;
+                }
+
                 // Close inventory if clicking outside panel
                 if (this.inventoryOpen) {
                     const { width, height } = this.scale;
@@ -366,6 +392,7 @@
 
                 // Left-click on background with item selected = deselect
                 if (this.selectedItem) {
+                    console.log('[BaseScene] Left-click with item selected, deselecting:', this.selectedItem.id);
                     this.deselectItem();
                     return;
                 }
@@ -471,7 +498,14 @@
                 if (hotspot) {
                     if (pointer.rightButtonDown()) {
                         this.clickedUI = true;
-                        this.examineHotspot(hotspot);
+                        // Right-click with item selected = deselect item
+                        if (this.selectedItem) {
+                            console.log('[BaseScene] Right-click on hotspot with item, deselecting');
+                            this.deselectItem();
+                        } else {
+                            // Right-click without item = examine hotspot
+                            this.examineHotspot(hotspot);
+                        }
                     } else {
                         this.handleHotspotPress(hotspot, pointer);
                     }
@@ -1419,6 +1453,9 @@
                 this.arrowGraphics = this.add.graphics();
                 this.arrowCursor.add(this.arrowGraphics);
 
+            }
+
+            createHotspotLabel(width, height) {
                 // Larger text on mobile for readability
                 const fontSize = this.isMobile ? '60px' : '35px';
                 const strokeThickness = this.isMobile ? 5 : 3;
@@ -1436,6 +1473,12 @@
             }
 
             drawCrosshair(color) {
+                // Delegate to UIScene via state when active
+                if (this.uiSceneActive) {
+                    TSH.State.setUIState('crosshairColor', color);
+                    return;
+                }
+
                 this.crosshairGraphics.clear();
                 // Larger crosshair on mobile
                 const scale = this.isMobile ? 2 : 1;
@@ -1492,6 +1535,12 @@
 
             // Show arrow cursor (hide crosshair)
             showArrowCursor(direction) {
+                // Delegate to UIScene via state when active
+                if (this.uiSceneActive) {
+                    TSH.State.setUIState('edgeZone', direction);
+                    return;
+                }
+
                 this.drawArrowCursor(direction);
                 this.crosshairCursor.setVisible(false);
                 this.arrowCursor.setVisible(true);
@@ -1499,6 +1548,12 @@
 
             // Hide arrow cursor (show crosshair)
             hideArrowCursor() {
+                // Delegate to UIScene via state when active
+                if (this.uiSceneActive) {
+                    TSH.State.setUIState('edgeZone', null);
+                    return;
+                }
+
                 this.arrowCursor.setVisible(false);
                 if (!this.selectedItem && !this.isMobile) {
                     this.crosshairCursor.setVisible(true);
@@ -1534,11 +1589,23 @@
             }
 
             showItemCursorHighlight() {
+                // Delegate to UIScene via state when active
+                if (this.uiSceneActive) {
+                    TSH.State.setUIState('itemCursorHighlight', true);
+                    return;
+                }
+
                 if (!this.itemCursorHighlight) return;
                 this.itemCursorHighlight.setVisible(true);
             }
 
             hideItemCursorHighlight() {
+                // Delegate to UIScene via state when active
+                if (this.uiSceneActive) {
+                    TSH.State.setUIState('itemCursorHighlight', false);
+                    return;
+                }
+
                 if (!this.itemCursorHighlight) return;
                 this.itemCursorHighlight.setVisible(false);
             }
@@ -2344,6 +2411,7 @@
                 if (this.settingsMenuOpen) return;
 
                 this.settingsMenuOpen = true;
+                TSH.State.setUIState('settingsOpen', true);
                 this.updateSettingsButtonState();
 
                 // Close inventory if open
@@ -2381,6 +2449,7 @@
                 if (!this.settingsMenuOpen) return;
 
                 this.settingsMenuOpen = false;
+                TSH.State.setUIState('settingsOpen', false);
                 this.updateSettingsButtonState();
 
                 // Hide overlay and panel
@@ -2890,6 +2959,16 @@
 
             updateItemCursor(item) {
                 // Update the cursor to show a new item (when selected item transforms)
+
+                // Notify TSH.State (triggers UIScene to update cursor)
+                TSH.State.setSelectedItem(item.id);
+
+                // When UIScene is handling cursors, we're done
+                if (this.uiSceneActive) {
+                    return;
+                }
+
+                // Legacy cursor handling (when UIScene not active)
                 this.itemCursor.removeAll(true);
 
                 // Draw item icon at cursor size (50px)
@@ -3003,6 +3082,15 @@
 
                 this.selectedItem = item;
 
+                // Notify TSH.State (triggers UIScene to update cursor)
+                TSH.State.setSelectedItem(item.id);
+
+                // When UIScene is handling cursors, we're done
+                if (this.uiSceneActive) {
+                    return;
+                }
+
+                // Legacy cursor handling (when UIScene not active)
                 this.crosshairCursor.setVisible(false);
 
                 // Draw item icon as cursor (50px size)
@@ -3021,8 +3109,20 @@
             }
 
             deselectItem() {
+                console.log('[BaseScene] deselectItem called');
                 this.selectedItem = null;
 
+                // Notify TSH.State (triggers UIScene to update cursor)
+                TSH.State.clearSelectedItem();
+
+                // When UIScene is handling cursors, just clear state
+                if (this.uiSceneActive) {
+                    this.selectedSlotHighlight.setVisible(false);
+                    this.hotspotLabel.setText('');
+                    return;
+                }
+
+                // Legacy cursor handling (when UIScene not active)
                 this.itemCursor.setVisible(false);
                 this.itemCursor.removeAll(true);
                 this.selectedSlotHighlight.setVisible(false);
@@ -3085,6 +3185,7 @@
 
             startDialogSequence() {
                 this.dialogActive = true;
+                TSH.State.setUIState('dialogActive', true);
                 this.dialogSkipReady = false;
                 if (this.walkTween) { this.walkTween.stop(); this.walkTween = null; }
                 this.isWalking = false;
@@ -3096,6 +3197,7 @@
 
             endDialogSequence() {
                 this.dialogActive = false;
+                TSH.State.setUIState('dialogActive', false);
                 this.dialogSkipReady = false;
                 if (this.crosshairCursor && !this.selectedItem && !this.isMobile) {
                     this.crosshairCursor.setVisible(true);
@@ -3225,6 +3327,7 @@
                 console.log('[Conversation] dialogueTree:', dialogueTree);
 
                 this.conversationActive = true;
+                TSH.State.setUIState('conversationActive', true);
                 this.conversationNPC = npcData;
                 this.conversationData = dialogueTree;
                 this.conversationState = 'start';
@@ -3245,6 +3348,7 @@
 
             exitConversation() {
                 this.conversationActive = false;
+                TSH.State.setUIState('conversationActive', false);
                 this.conversationNPC = null;
                 this.conversationData = null;
                 this.conversationState = null;

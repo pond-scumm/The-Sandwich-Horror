@@ -1,7 +1,7 @@
 # The Sandwich Horror — Architecture Guide
 ## For Claude Code Implementation
 
-Last Updated: February 5, 2026 (UI State System - Phase 2)
+Last Updated: February 5, 2026 (UIScene + Cursors - Phase 3)
 
 ---
 
@@ -44,6 +44,7 @@ This document captures all architecture decisions made during planning. Claude C
 - [x] Procedural item icons system (`src/data/items/icons.js`) with p=4 chunky pixel style
 - [x] Event emitter system in TSH.State (Phase 1 of UIScene refactor)
 - [x] UI state management in TSH.State (Phase 2 of UIScene refactor)
+- [x] UIScene with cursor management (Phase 3 of UIScene refactor)
 
 ### TODO (Not Yet Implemented)
 - [x] **Item-on-item combinations** — Click item B while item A is selected to combine (`tryCombineItems` in BaseScene.js)
@@ -183,8 +184,28 @@ TSH.State.resetTransientUIState()
 | `dialogActive` | No | Is examine/action dialog showing? |
 | `conversationActive` | No | Is NPC conversation in progress? |
 | `settingsOpen` | No | Is settings menu open? |
+| `edgeZone` | No | Edge zone direction ('left', 'right', or null) |
+| `itemCursorHighlight` | No | Show red highlight on item cursor |
+| `crosshairColor` | No | Crosshair color (hex, default 0xffffff) |
 
 *Persistent state survives room transitions. Transient state may reset on room change.*
+
+### UIScene (Persistent UI Layer):
+UIScene runs parallel to game scenes and manages persistent UI elements. It listens to TSH.State events and updates reactively.
+
+```javascript
+// UIScene is launched automatically by RoomScene
+// It handles: crosshair cursor, arrow cursor, item cursor
+
+// Game scenes communicate with UIScene via TSH.State:
+TSH.State.setSelectedItem('key');           // Shows item as cursor
+TSH.State.clearSelectedItem();              // Returns to crosshair
+TSH.State.setUIState('edgeZone', 'left');   // Shows arrow cursor
+TSH.State.setUIState('edgeZone', null);     // Hides arrow cursor
+TSH.State.setUIState('crosshairColor', 0xff0000);  // Red crosshair
+```
+
+UIScene automatically hides cursors when `dialogActive`, `conversationActive`, or `settingsOpen` are true.
 
 ### Migration note:
 The old approach used Phaser's registry (`this.registry.get('gameState')`). All scenes should be migrated to use `TSH.State` instead.

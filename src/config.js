@@ -12,7 +12,8 @@ const config = {
     },
     backgroundColor: '#1a1a2e',
     // RoomScene first - loads 'interior' by default, uses data-driven layers
-    scene: [RoomScene, FrontOfHouseScene, InteriorScene, WoodsScene, LaboratoryScene, BackyardScene, EarlsYardScene, AlienRoomScene],
+    // UIScene runs in parallel for persistent UI (cursors, inventory, etc.)
+    scene: [RoomScene, UIScene, FrontOfHouseScene, InteriorScene, WoodsScene, LaboratoryScene, BackyardScene, EarlsYardScene, AlienRoomScene],
     input: { activePointers: 1 }
 };
 

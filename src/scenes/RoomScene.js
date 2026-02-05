@@ -161,6 +161,12 @@ class RoomScene extends BaseScene {
 
         console.log('[RoomScene] Creating room:', this.roomId);
 
+        // Launch UIScene in parallel if not already running
+        if (!this.scene.isActive('UIScene')) {
+            this.scene.launch('UIScene');
+            this.scene.bringToTop('UIScene');
+        }
+
         // Camera setup for scrolling rooms
         this.cameras.main.setBounds(0, 0, this.worldWidth, height);
 
