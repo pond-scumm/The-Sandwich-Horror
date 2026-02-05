@@ -523,11 +523,12 @@
                     }
                 }
 
-                // Check if touching an inventory item (for long-press pickup)
+                // Check if touching an inventory item (for long-press pickup or tap to examine)
                 if (this.inventoryOpen) {
                     const clickedItem = this.getInventoryItemAtPointer(pointer);
                     if (clickedItem) {
-                        this.clickedUI = true;
+                        // Don't set clickedUI here - we handle inventory items explicitly
+                        // via touchedInventoryItem in pointerup
                         gesture.touchedInventoryItem = clickedItem;
 
                         // Start long-press timer for item pickup
@@ -1856,7 +1857,7 @@
                 this.settingsReturnBtnHovered = false;
 
                 // Version number above Return button
-                const versionText = this.add.text(0, btnY - 45, 'v0.1.10', {
+                const versionText = this.add.text(0, btnY - 45, 'v0.1.11', {
                     fontFamily: '"Press Start 2P", cursive',
                     fontSize: '14px',
                     color: '#ffffff'
