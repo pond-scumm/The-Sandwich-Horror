@@ -38,15 +38,11 @@
                 // Device detection (set in create)
                 this.isMobile = false;
 
-                // Inventory UI
-                this.inventoryPanel = null;
+                // Inventory UI state (synced from TSH.State, UIScene owns the panel)
                 this.inventoryOpen = false;
-                this.inventorySlots = [];
-                this.selectedSlotHighlight = null;
-                this.itemOutsideInventoryTimer = null;
                 this.itemCursor = null;
 
-                // Selected item for "use on" actions (scene-local, not persisted)
+                // Selected item for "use on" actions (synced from TSH.State)
                 this.selectedItem = null;
 
                 // Cursor
@@ -187,9 +183,9 @@
                 const { width, height } = this.scale;
 
                 // Reset scene-specific state (constructor doesn't re-run on scene.start())
-                this.inventorySlots = [];
                 this.hotspots = [];
-                this.inventoryOpen = false;
+                this.inventoryOpen = TSH.State.isInventoryOpen();
+                this.selectedItem = TSH.State.getSelectedItem() ? TSH.Items[TSH.State.getSelectedItem()] : null;
                 this.dialogActive = false;
                 this.dialogQueue = [];
                 this.isWalking = false;
@@ -214,7 +210,7 @@
                 // Setup input handlers
                 this.setupInputHandlers();
 
-                // Check if UIScene exists (it handles cursors when present)
+                // Check if UIScene exists (it handles cursors and inventory panel)
                 // Use scene.get() instead of isActive() because UIScene may not be fully active yet
                 const uiScene = this.scene.get('UIScene');
                 this.uiSceneActive = uiScene !== null;
@@ -236,15 +232,11 @@
 
                 // Always create hotspot label (it's not a cursor, just UI text)
                 this.createHotspotLabel(width, height);
-                this.createInventoryUI(width, height);
                 this.createDialogUI(width, height);
                 this.createConversationUI(width, height);
                 this.createSettingsUI(width, height);
 
-                // Restore inventory from game state
-                this.rebuildInventoryFromState();
-
-                // Listen to UI state changes (when UIScene handles buttons)
+                // Listen to UI state changes (sync local state from TSH.State)
                 if (this.uiSceneActive) {
                     TSH.State.on('uiStateChanged', this.onUIStateChanged.bind(this));
                 }
@@ -257,12 +249,16 @@
                 const { key, value } = data;
 
                 if (key === 'inventoryOpen') {
-                    // Toggle inventory panel visibility
+                    // Sync local state (UIScene manages the panel)
+                    this.inventoryOpen = value;
                     if (value) {
-                        this.showInventoryPanel();
-                    } else {
-                        this.hideInventoryPanel();
+                        // Stop character movement when inventory opens
+                        this.stopCharacterMovement();
+                        this.setCrosshairHover(null);
                     }
+                } else if (key === 'selectedItem') {
+                    // Sync selected item from state
+                    this.selectedItem = value ? TSH.Items[value] : null;
                 } else if (key === 'settingsOpen') {
                     // Toggle settings panel visibility
                     if (value) {
@@ -271,81 +267,6 @@
                         this.hideSettingsPanel();
                     }
                 }
-            }
-
-            showInventoryPanel() {
-                // Sync local state with TSH.State
-                this.inventoryOpen = true;
-
-                // Stop character movement when inventory opens
-                this.stopCharacterMovement();
-                this.setCrosshairHover(null);
-
-                // Play inventory open sound
-                TSH.Audio.playSFX('inventory_open');
-
-                // Position panel at center of screen (accounting for scroll)
-                const { width, height } = this.scale;
-                const scrollX = this.cameras.main.scrollX || 0;
-                const scrollY = this.cameras.main.scrollY || 0;
-                this.inventoryPanel.setPosition(scrollX + width / 2, scrollY + height / 2);
-
-                // Animate panel open
-                this.inventoryPanel.setVisible(true);
-                this.inventoryPanel.setScale(0.8);
-                this.inventoryPanel.setAlpha(0);
-                this.tweens.add({
-                    targets: this.inventoryPanel,
-                    scale: 1,
-                    alpha: 1,
-                    duration: 150,
-                    ease: 'Back.out'
-                });
-            }
-
-            hideInventoryPanel() {
-                // Sync local state with TSH.State
-                this.inventoryOpen = false;
-
-                // Play inventory close sound
-                TSH.Audio.playSFX('inventory_close');
-
-                // Hide slot highlight
-                if (this.selectedSlotHighlight) {
-                    this.selectedSlotHighlight.setVisible(false);
-                }
-
-                // Clear any pending item press timer
-                if (this.inventoryItemPressTimer) {
-                    this.inventoryItemPressTimer.remove();
-                    this.inventoryItemPressTimer = null;
-                }
-
-                // Clear pressed item state
-                this.pressedInventoryItem = null;
-                this.pressedInventorySlot = null;
-
-                // Clear item outside timer
-                if (this.itemOutsideInventoryTimer) {
-                    this.itemOutsideInventoryTimer.remove();
-                    this.itemOutsideInventoryTimer = null;
-                }
-
-                // Reset crosshair and hotspot label
-                this.drawCrosshair(0xffffff);
-                if (this.hotspotLabel) {
-                    this.hotspotLabel.setText('');
-                }
-
-                // Animate panel close
-                this.tweens.add({
-                    targets: this.inventoryPanel,
-                    scale: 0.8,
-                    alpha: 0,
-                    duration: 100,
-                    ease: 'Power2',
-                    onComplete: () => this.inventoryPanel.setVisible(false)
-                });
             }
 
             showSettingsPanel() {
@@ -404,34 +325,6 @@
                 this.resumeGame();
             }
 
-            rebuildInventoryFromState() {
-                const items = this.getInventoryItems();
-
-                console.log('[' + this.scene.key + '] Rebuilding inventory from TSH.State:', {
-                    inventory: items.map(i => i.id),
-                    slotsAvailable: this.inventorySlots.length
-                });
-
-                if (items.length === 0) {
-                    console.log('[' + this.scene.key + '] No items in inventory to restore');
-                    return;
-                }
-
-                // Re-add each item to inventory UI (slots are fresh, so just add to UI)
-                items.forEach(item => {
-                    // Check if slot already has this item (shouldn't happen but be safe)
-                    const existingSlot = this.inventorySlots.find(s => s.item && s.item.id === item.id);
-                    if (!existingSlot) {
-                        console.log('[' + this.scene.key + '] Adding item to slot:', item.id);
-                        this.addItemToSlot(item);
-                    } else {
-                        console.log('[' + this.scene.key + '] Item already in slot:', item.id);
-                    }
-                });
-
-                // Note: selectedItem is scene-local and doesn't persist across scene transitions
-            }
-
             // ========== INPUT HANDLERS ==========
 
             setupInputHandlers() {
@@ -486,12 +379,8 @@
                     // Mobile vs Desktop handling
                     if (this.isMobile) {
                         this.handleMobilePointerMove(pointer);
-                    } else {
-                        // Desktop: check item outside inventory during drag
-                        if (this.inventoryOpen && this.selectedItem) {
-                            this.checkItemOutsideInventory(pointer);
-                        }
                     }
+                    // Note: UIScene handles checking if item is dragged outside inventory panel
                 });
 
                 // Period key for dialogue skip
@@ -511,12 +400,10 @@
                 this.game.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
             }
 
-            // Check if pointer is on the mobile inventory button (screen coordinates)
+            // Check if pointer is on the inventory button (delegates to UIScene)
             isClickOnInventoryButton(pointer) {
-                if (!this.inventoryButtonArea) return false;
-                const btn = this.inventoryButtonArea;
-                return pointer.x >= btn.x - btn.size/2 && pointer.x <= btn.x + btn.size/2 &&
-                       pointer.y >= btn.y - btn.size/2 && pointer.y <= btn.y + btn.size/2;
+                const uiScene = this.scene.get('UIScene');
+                return uiScene ? uiScene.isClickOnInventoryButton(pointer) : false;
             }
 
             handleBackgroundPress(pointer) {
@@ -539,16 +426,8 @@
 
                 // Close inventory if clicking outside panel
                 if (this.inventoryOpen) {
-                    const { width, height } = this.scale;
-                    const panelWidth = this.inventoryPanelWidth || (width - 300);
-                    const panelHeight = this.inventoryPanelHeight || (height - 240);
-                    const panelLeft = (width - panelWidth) / 2;
-                    const panelRight = panelLeft + panelWidth;
-                    const panelTop = (height - panelHeight) / 2;
-                    const panelBottom = panelTop + panelHeight;
-
-                    if (pointer.x < panelLeft || pointer.x > panelRight ||
-                        pointer.y < panelTop || pointer.y > panelBottom) {
+                    const uiScene = this.scene.get('UIScene');
+                    if (uiScene && !uiScene.isClickOnInventoryPanel(pointer)) {
                         this.toggleInventory();
                     }
                     return;
@@ -736,18 +615,20 @@
                     return;
                 }
 
-                // Check inventory button (legacy, when UIScene not active)
-                if (this.inventoryButtonArea) {
-                    const btn = this.inventoryButtonArea;
-                    if (pointer.x >= btn.x - btn.size/2 && pointer.x <= btn.x + btn.size/2 &&
-                        pointer.y >= btn.y - btn.size/2 && pointer.y <= btn.y + btn.size/2) {
+                // Note: UIScene handles inventory button clicks
+
+                // When inventory is open, block any interaction on the panel area
+                if (TSH.State.isInventoryOpen()) {
+                    const uiScene = this.scene.get('UIScene');
+                    if (uiScene && uiScene.isClickOnInventoryPanel(pointer)) {
+                        // UIScene handles inventory panel interactions
                         this.clickedUI = true;
-                        this.toggleInventory();
                         return;
                     }
                 }
 
                 // Check if touching an inventory item (for long-press pickup or tap to examine)
+                // Note: This is legacy code when UIScene is not active
                 if (this.inventoryOpen) {
                     const clickedItem = this.getInventoryItemAtPointer(pointer);
                     if (clickedItem) {
@@ -797,7 +678,6 @@
             }
 
             handleMobilePointerUp(pointer) {
-                console.log('[DEBUG] pointerUp - clickedUI:', this.clickedUI);
                 const gesture = this.mobileGesture;
                 const touchDuration = Date.now() - gesture.startTime;
 
@@ -813,10 +693,12 @@
                 }
 
                 // If a UI element was clicked in pointerdown, don't process as tap
-                if (this.clickedUI) {
+                // UNLESS we're in drag-with-item mode (UIScene may have started a drag)
+                if (this.clickedUI && !(gesture.dragWithItem && gesture.draggedItem)) {
                     this.clickedUI = false;
                     return;
                 }
+                this.clickedUI = false;
 
                 // When UIScene is active, check if tap was on UIScene buttons and skip processing
                 if (this.uiSceneActive) {
@@ -846,9 +728,18 @@
                     this.clickedUI = false;
 
                     // If inventory is open, check for inventory item drop first (for combining)
-                    if (this.inventoryOpen) {
-                        const targetItem = this.getInventoryItemAtPointer(pointer);
-                        if (targetItem && targetItem !== draggedItem) {
+                    if (TSH.State.isInventoryOpen()) {
+                        let targetItem = this.getInventoryItemAtPointer(pointer);
+
+                        // Mobile fallback: if release position is on empty slot, use last hovered item
+                        if (!targetItem && this.isMobile) {
+                            const uiScene = this.scene.get('UIScene');
+                            if (uiScene && uiScene.getLastHoveredInventoryItem) {
+                                targetItem = uiScene.getLastHoveredInventoryItem();
+                            }
+                        }
+
+                        if (targetItem && targetItem.id !== draggedItem.id) {
                             this.combineItems(draggedItem, targetItem);
                         }
                         // Clear selection immediately on release (mobile UX)
@@ -927,6 +818,21 @@
                                         gesture.lastTapPos &&
                                         this.getDistance(pointer, gesture.lastTapPos) < 30;
 
+                    // When inventory is open, tapping outside panel ONLY closes inventory
+                    // No other action should be processed until user taps again
+                    if (this.inventoryOpen) {
+                        const uiScene = this.scene.get('UIScene');
+                        if (uiScene && !uiScene.isClickOnInventoryPanel(pointer)) {
+                            this.toggleInventory();
+                        }
+                        // Store tap info but don't process any action
+                        gesture.lastTapTime = currentTime;
+                        gesture.lastTapPos = { x: pointer.x, y: pointer.y };
+                        gesture.isDragging = false;
+                        gesture.isLongPress = false;
+                        return;
+                    }
+
                     // Check what was tapped
                     const hotspot = this.getHotspotAtPointer(pointer);
 
@@ -957,22 +863,8 @@
                             }
                         }
                     } else {
-                        // Tapped on background
-                        if (this.inventoryOpen) {
-                            // Check if outside inventory panel to close it
-                            const { width, height } = this.scale;
-                            const panelWidth = this.inventoryPanelWidth || (width - 300);
-                            const panelHeight = this.inventoryPanelHeight || (height - 240);
-                            const panelLeft = (width - panelWidth) / 2;
-                            const panelRight = panelLeft + panelWidth;
-                            const panelTop = (height - panelHeight) / 2;
-                            const panelBottom = panelTop + panelHeight;
-
-                            if (pointer.x < panelLeft || pointer.x > panelRight ||
-                                pointer.y < panelTop || pointer.y > panelBottom) {
-                                this.toggleInventory();
-                            }
-                        } else if (this.selectedItem) {
+                        // Tapped on background (inventory already closed above if it was open)
+                        if (this.selectedItem) {
                             // Tap background with item = deselect
                             this.deselectItem();
                         } else {
@@ -1021,22 +913,11 @@
 
                 // Handle drag-with-item (moving item cursor)
                 if (gesture.dragWithItem && gesture.draggedItem) {
-                    // Update item cursor position
-                    if (this.itemCursor) {
-                        this.itemCursor.setPosition(pointer.x, pointer.y);
-                    }
+                    // Note: Item cursor position is handled by UIScene
 
-                    // If inventory is open, show "Use X on Y" when over another item
+                    // If inventory is open, check if over another inventory item
                     if (this.inventoryOpen) {
-                        this.checkItemOutsideInventory(pointer);
-
-                        // Check if over another inventory item for combine label
-                        const targetItem = this.getInventoryItemAtPointer(pointer);
-                        if (targetItem && targetItem !== gesture.draggedItem) {
-                            this.hotspotLabel.setText(`Use ${gesture.draggedItem.name} on ${targetItem.name}`);
-                        } else {
-                            this.hotspotLabel.setText('');
-                        }
+                        // UIScene handles item-outside-inventory detection and combine labels
                         return;
                     }
 
@@ -1102,28 +983,13 @@
                 return null;
             }
 
-            // Find inventory item at pointer position
+            // Find inventory item at pointer position (delegates to UIScene)
             getInventoryItemAtPointer(pointer) {
-                if (!this.inventoryOpen || !this.inventorySlots || !this.inventoryPanel) return null;
-
-                // Convert pointer world coords to panel-local coords
-                // inventoryPanel is positioned in world space, slot coords are relative to panel center
-                const panelX = this.inventoryPanel.x;
-                const panelY = this.inventoryPanel.y;
-                const localX = pointer.worldX - panelX;
-                const localY = pointer.worldY - panelY;
-
-                for (const slot of this.inventorySlots) {
-                    if (!slot.item) continue;
-
-                    const halfSize = slot.size / 2;
-                    if (localX >= slot.x - halfSize && localX <= slot.x + halfSize &&
-                        localY >= slot.y - halfSize && localY <= slot.y + halfSize) {
-                        return slot.item;
-                    }
-                }
-
-                return null;
+                if (!TSH.State.isInventoryOpen()) return null;
+                const uiScene = this.scene.get('UIScene');
+                if (!uiScene) return null;
+                const slot = uiScene.getSlotAtPointer(pointer);
+                return slot ? slot.item : null;
             }
 
             // Examine a hotspot (show look description)
@@ -1810,126 +1676,6 @@
                 this.itemCursor.setVisible(false);
             }
 
-            // ========== INVENTORY ==========
-
-            createInventoryUI(width, height) {
-                this.inventoryPanel = this.add.container(width / 2, height / 2);
-                this.inventoryPanel.setVisible(false);
-                this.inventoryPanel.setDepth(2500);
-
-                // Grid configuration
-                const gridCols = 5, gridRows = 3;
-                const slotPadding = 20;
-                const titleSpace = 60;  // Space for title at top
-                const edgeBuffer = 40;  // Buffer around edges (40px on each side)
-
-                // Calculate slot size based on available HEIGHT (keep height fixed)
-                const panelHeight = height - 240;
-                const availableHeight = panelHeight - titleSpace - edgeBuffer * 2;
-                const slotSize = Math.floor((availableHeight - (gridRows - 1) * slotPadding) / gridRows);
-
-                // Calculate grid dimensions
-                const gridWidth = gridCols * slotSize + (gridCols - 1) * slotPadding;
-                const gridHeight = gridRows * slotSize + (gridRows - 1) * slotPadding;
-
-                // Panel width = grid width + 40px buffer on each side
-                const panelWidth = gridWidth + edgeBuffer * 2;
-
-                // Store panel dimensions for boundary checks
-                this.inventoryPanelWidth = panelWidth;
-                this.inventoryPanelHeight = panelHeight;
-
-                const panelBg = this.add.graphics();
-                panelBg.fillStyle(0x1a1a2e, 0.95);
-                panelBg.fillRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 15);
-                panelBg.lineStyle(3, 0x4a4a6a, 1);
-                panelBg.strokeRoundedRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 15);
-                this.inventoryPanel.add(panelBg);
-
-                const title = this.add.text(0, -panelHeight / 2 + 30, 'INVENTORY', {
-                    fontFamily: '"Press Start 2P", cursive',
-                    fontSize: '20px',
-                    color: '#ffffff'
-                }).setOrigin(0.5);
-                this.inventoryPanel.add(title);
-
-                // Position grid
-                const startX = -gridWidth / 2 + slotSize / 2;
-                const startY = -gridHeight / 2 + slotSize / 2 + titleSpace / 2;
-
-                for (let row = 0; row < gridRows; row++) {
-                    for (let col = 0; col < gridCols; col++) {
-                        const slotX = startX + col * (slotSize + slotPadding);
-                        const slotY = startY + row * (slotSize + slotPadding);
-
-                        const slotBg = this.add.graphics();
-                        slotBg.fillStyle(0x2a2a4a, 1);
-                        slotBg.fillRoundedRect(slotX - slotSize / 2, slotY - slotSize / 2, slotSize, slotSize, 6);
-                        slotBg.lineStyle(2, 0x4a4a6a, 1);
-                        slotBg.strokeRoundedRect(slotX - slotSize / 2, slotY - slotSize / 2, slotSize, slotSize, 6);
-                        this.inventoryPanel.add(slotBg);
-
-                        const display = this.add.container(slotX, slotY);
-                        this.inventoryPanel.add(display);
-
-                        this.inventorySlots.push({ x: slotX, y: slotY, size: slotSize, display, item: null });
-                    }
-                }
-
-                this.selectedSlotHighlight = this.add.graphics();
-                this.selectedSlotHighlight.setDepth(2501);
-                this.selectedSlotHighlight.setVisible(false);
-
-                // Skip button creation if UIScene handles it
-                if (this.uiSceneActive) return;
-
-                // Inventory button (bottom left corner) - legacy, when UIScene not active
-                const btnSize = 90;
-                this.inventoryButtonArea = { x: btnSize/2 + 15, y: height - btnSize/2 - 15, size: btnSize };
-
-                this.inventoryButton = this.add.container(this.inventoryButtonArea.x, this.inventoryButtonArea.y);
-                this.inventoryButton.setDepth(4000);
-                this.inventoryButton.setScrollFactor(0);
-
-                // Create hollow (outline) version - shown by default
-                this.inventoryBtnHollow = this.add.graphics();
-                this.inventoryBtnHollow.lineStyle(3, 0x8b6914, 0.7);
-                this.inventoryBtnHollow.strokeRoundedRect(-btnSize/2, -btnSize/2, btnSize, btnSize, 12);
-                // Hollow backpack icon (outline only)
-                this.inventoryBtnHollow.lineStyle(2, 0xc9a227, 0.7);
-                this.inventoryBtnHollow.strokeRoundedRect(-24, -10, 48, 36, 8);
-                this.inventoryBtnHollow.strokeRoundedRect(-18, -22, 36, 16, 5);
-                this.inventoryBtnHollow.strokeCircle(0, -8, 7);
-                this.inventoryButton.add(this.inventoryBtnHollow);
-
-                // Create filled version - shown on hover/open
-                this.inventoryBtnFilled = this.add.graphics();
-                this.inventoryBtnFilled.fillStyle(0x4a3728, 0.9);
-                this.inventoryBtnFilled.fillRoundedRect(-btnSize/2, -btnSize/2, btnSize, btnSize, 12);
-                this.inventoryBtnFilled.lineStyle(4, 0x8b6914, 1);
-                this.inventoryBtnFilled.strokeRoundedRect(-btnSize/2, -btnSize/2, btnSize, btnSize, 12);
-                // Filled backpack icon
-                this.inventoryBtnFilled.fillStyle(0xc9a227, 1);
-                this.inventoryBtnFilled.fillRoundedRect(-24, -10, 48, 36, 8);
-                this.inventoryBtnFilled.fillRoundedRect(-18, -22, 36, 16, 5);
-                this.inventoryBtnFilled.fillStyle(0x8b6914, 1);
-                this.inventoryBtnFilled.fillCircle(0, -8, 7);
-                this.inventoryBtnFilled.fillStyle(0x4a3728, 1);
-                this.inventoryBtnFilled.fillCircle(0, -8, 3);
-                this.inventoryBtnFilled.setVisible(false);
-                this.inventoryButton.add(this.inventoryBtnFilled);
-
-                // Track hover state
-                this.inventoryButtonHovered = false;
-            }
-
-            updateInventoryButtonState() {
-                // Show filled when hovered OR inventory is open
-                const showFilled = this.inventoryButtonHovered || this.inventoryOpen;
-                if (this.inventoryBtnHollow) this.inventoryBtnHollow.setVisible(!showFilled);
-                if (this.inventoryBtnFilled) this.inventoryBtnFilled.setVisible(showFilled);
-            }
-
             // ========== SETTINGS MENU ==========
 
             createSettingsUI(width, height) {
@@ -2121,7 +1867,7 @@
                 this.settingsReturnBtnHovered = false;
 
                 // Version number above Return button
-                const versionText = this.add.text(0, btnY - 45, 'v0.1.16', {
+                const versionText = this.add.text(0, btnY - 45, 'v0.1.17', {
                     fontFamily: '"Press Start 2P", cursive',
                     fontSize: '14px',
                     color: '#ffffff'
@@ -2875,96 +2621,10 @@
             }
 
             toggleInventory(silent = false) {
-                // When UIScene is active and not doing silent close, use state-driven approach
-                if (this.uiSceneActive && !silent) {
-                    const newState = !TSH.State.isInventoryOpen();
-                    TSH.State.setInventoryOpen(newState);
-                    return;
-                }
-
-                // Legacy path (or silent close which needs direct control)
-                this.inventoryOpen = !this.inventoryOpen;
-                TSH.State._state.ui.inventoryOpen = this.inventoryOpen; // Keep state in sync
-                this.updateInventoryButtonState();
-
-                if (this.inventoryOpen) {
-                    // Stop character movement when inventory opens
-                    this.stopCharacterMovement();
-                    this.setCrosshairHover(null);
-
-                    // Play inventory open sound
-                    if (!silent) TSH.Audio.playSFX('inventory_open');
-
-                    const { width, height } = this.scale;
-                    const scrollX = this.cameras.main.scrollX || 0;
-                    const scrollY = this.cameras.main.scrollY || 0;
-                    this.inventoryPanel.setPosition(scrollX + width / 2, scrollY + height / 2);
-
-                    this.inventoryPanel.setVisible(true);
-                    this.inventoryPanel.setScale(0.8);
-                    this.inventoryPanel.setAlpha(0);
-                    this.tweens.add({
-                        targets: this.inventoryPanel,
-                        scale: 1,
-                        alpha: 1,
-                        duration: 150,
-                        ease: 'Back.out'
-                    });
-                } else {
-                    // Play inventory close sound (unless silent close, e.g. dragging item out)
-                    if (!silent) TSH.Audio.playSFX('inventory_close');
-                    this.selectedSlotHighlight.setVisible(false);
-                    if (this.inventoryItemPressTimer) {
-                        this.inventoryItemPressTimer.remove();
-                        this.inventoryItemPressTimer = null;
-                    }
-                    this.pressedInventoryItem = null;
-                    this.pressedInventorySlot = null;
-                    if (this.itemOutsideInventoryTimer) {
-                        this.itemOutsideInventoryTimer.remove();
-                        this.itemOutsideInventoryTimer = null;
-                    }
-
-                    this.drawCrosshair(0xffffff);
-                    this.hotspotLabel.setText('');
-
-                    this.tweens.add({
-                        targets: this.inventoryPanel,
-                        scale: 0.8,
-                        alpha: 0,
-                        duration: 100,
-                        ease: 'Power2',
-                        onComplete: () => this.inventoryPanel.setVisible(false)
-                    });
-                }
-            }
-
-            checkItemOutsideInventory(pointer) {
-                const { width, height } = this.scale;
-                const panelWidth = this.inventoryPanelWidth || (width - 300);
-                const panelHeight = this.inventoryPanelHeight || (height - 240);
-                const panelLeft = (width - panelWidth) / 2;
-                const panelRight = panelLeft + panelWidth;
-                const panelTop = (height - panelHeight) / 2;
-                const panelBottom = panelTop + panelHeight;
-
-                const isOutside = pointer.x < panelLeft || pointer.x > panelRight ||
-                                  pointer.y < panelTop || pointer.y > panelBottom;
-
-                if (isOutside) {
-                    if (!this.itemOutsideInventoryTimer) {
-                        this.itemOutsideInventoryTimer = this.time.delayedCall(100, () => {
-                            // Close silently (no sound) when dragging item out
-                            if (this.inventoryOpen && this.selectedItem) this.toggleInventory(true);
-                            this.itemOutsideInventoryTimer = null;
-                        });
-                    }
-                } else {
-                    if (this.itemOutsideInventoryTimer) {
-                        this.itemOutsideInventoryTimer.remove();
-                        this.itemOutsideInventoryTimer = null;
-                    }
-                }
+                // State-driven approach - UIScene handles the panel
+                const newState = !TSH.State.isInventoryOpen();
+                TSH.State.setInventoryOpen(newState);
+                // Local state is synced via onUIStateChanged
             }
 
             addToInventory(item) {
@@ -2974,15 +2634,10 @@
                     return false;
                 }
 
-                // Add to TSH.State (stores just the ID)
+                // Add to TSH.State - UIScene updates display via inventoryChanged event
                 TSH.State.addItem(item.id);
 
                 console.log('[' + this.scene.key + '] Added to inventory:', item.id, 'Total items:', TSH.State.getInventory().length);
-
-                this.addItemToSlot(item);
-
-                // Note: No sound here - pickup sounds can be added to specific hotspots
-                // The 'item_select' SFX plays when clicking items in inventory
 
                 return true;
             }
@@ -2994,12 +2649,13 @@
             removeFromInventory(itemId) {
                 if (!TSH.State.hasItem(itemId)) return false;
 
+                // Remove from TSH.State - UIScene updates display via inventoryChanged event
                 TSH.State.removeItem(itemId);
 
-                const slot = this.inventorySlots.find(s => s.item && s.item.id === itemId);
-                if (slot) {
-                    slot.display.removeAll(true);
-                    slot.item = null;
+                // If this was the selected item, clear selection
+                if (this.selectedItem && this.selectedItem.id === itemId) {
+                    this.selectedItem = null;
+                    TSH.State.clearSelectedItem();
                 }
 
                 return true;
@@ -3029,16 +2685,12 @@
                 // Successful combination!
                 TSH.Audio.playSFX('item_combine');
 
-                // Find slots containing both items
-                const slotA = this.inventorySlots.find(s => s.item && s.item.id === itemA.id);
-                const slotB = this.inventorySlots.find(s => s.item && s.item.id === itemB.id);
-
                 // Determine what happens to each item
                 const itemAConsumed = result.consumes.includes(itemA.id);
                 const itemBConsumed = result.consumes.includes(itemB.id);
                 const producedItem = result.produces ? TSH.Items[result.produces] : null;
 
-                // Update game state
+                // Update game state - UIScene will update display via inventoryChanged events
                 for (const consumedId of result.consumes) {
                     TSH.State.removeItem(consumedId);
                 }
@@ -3051,46 +2703,20 @@
                     }
                 }
 
-                // Update UI in-place
+                // Update selection state
                 if (itemAConsumed && itemBConsumed) {
-                    // Both consumed: clear cursor, put produced item in slotB (or slotA if slotB doesn't exist)
+                    // Both consumed: clear cursor
                     this.deselectItem();
-                    const targetSlot = slotB || slotA;
-                    if (targetSlot && producedItem) {
-                        this.updateSlotItem(targetSlot, producedItem);
-                    }
-                    // Clear the other slot if it exists
-                    if (slotA && slotB) {
-                        slotA.display.removeAll(true);
-                        slotA.item = null;
-                    }
                 } else if (itemAConsumed) {
-                    // Selected item (cursor) consumed: cursor becomes produced item, update slotA too
+                    // Selected item (cursor) consumed: cursor becomes produced item
                     if (producedItem) {
                         this.selectedItem = producedItem;
-                        this.updateItemCursor(producedItem);
-                        // Also update the slot that held itemA
-                        if (slotA) {
-                            this.updateSlotItem(slotA, producedItem);
-                        }
+                        TSH.State.setSelectedItem(producedItem.id);
                     } else {
                         this.deselectItem();
-                        if (slotA) {
-                            slotA.display.removeAll(true);
-                            slotA.item = null;
-                        }
-                    }
-                } else if (itemBConsumed) {
-                    // Clicked item consumed: its slot becomes produced item, cursor stays unchanged
-                    if (slotB && producedItem) {
-                        this.updateSlotItem(slotB, producedItem);
-                    } else if (slotB) {
-                        // Just clear the slot
-                        slotB.display.removeAll(true);
-                        slotB.item = null;
                     }
                 }
-                // If neither consumed, both stay where they are (produced goes to new slot)
+                // If itemB consumed but not itemA, cursor stays the same
 
                 // Show success dialogue
                 this.showDialog(result.dialogue);
@@ -3098,236 +2724,18 @@
                 console.log('[Inventory] Combination successful! Produced:', result.produces);
             }
 
-            // Helper: Draw item icon (custom graphic or fallback colored square)
-            drawItemIcon(item, size) {
-                const itemGraphic = this.add.graphics();
-
-                // Check for custom icon drawing function
-                if (TSH.ItemIcons && TSH.ItemIcons[item.id]) {
-                    TSH.ItemIcons[item.id](itemGraphic, 0, 0, size);
-                } else {
-                    // Fallback: colored rounded rectangle
-                    itemGraphic.fillStyle(item.color || 0xffd700, 1);
-                    itemGraphic.fillRoundedRect(-size / 2, -size / 2, size, size, 10);
-                    itemGraphic.lineStyle(2, 0x000000, 0.3);
-                    itemGraphic.strokeRoundedRect(-size / 2, -size / 2, size, size, 10);
-                }
-
-                return itemGraphic;
-            }
-
-            updateSlotItem(slot, newItem) {
-                // Update a slot's item in-place (preserves slot position)
-                slot.display.removeAll(true);
-                slot.item = newItem;
-
-                // Icon size is 70% of slot size
-                const itemSize = Math.floor(slot.size * 0.7);
-                const itemGraphic = this.drawItemIcon(newItem, itemSize);
-                slot.display.add(itemGraphic);
-
-                const slotSize = slot.size;
-                const hitArea = this.add.rectangle(0, 0, slotSize - 4, slotSize - 4, 0x000000, 0).setInteractive();
-
-                hitArea.on('pointerdown', (pointer) => {
-                    // On mobile, we handle inventory items via gesture detection in handleMobilePointerDown
-                    if (this.isMobile) return;
-
-                    this.clickedUI = true;
-
-                    // Right-click = deselect item if holding one, otherwise examine
-                    if (pointer.rightButtonDown()) {
-                        if (this.selectedItem) {
-                            this.deselectItem();
-                        } else {
-                            const description = newItem.description || `It's a ${newItem.name}.`;
-                            this.showDialog(description);
-                        }
-                        return;
-                    }
-
-                    // Left-click = select or combine
-                    if (pointer.leftButtonDown()) {
-                        if (this.selectedItem && this.selectedItem.id !== newItem.id) {
-                            this.tryCombineItems(this.selectedItem, newItem);
-                        } else {
-                            this.selectItem(newItem, slot);
-                        }
-                    }
-                });
-
-                hitArea.on('pointerover', () => {
-                    // Skip hover effects on mobile (no mouse cursor)
-                    if (this.isMobile) return;
-                    this.drawCrosshair(0xff0000);
-                    // Don't show labels while dialog is active
-                    if (this.dialogActive) return;
-                    if (this.selectedItem && this.selectedItem.id !== newItem.id) {
-                        this.hotspotLabel.setText(`Use ${this.selectedItem.name} on ${newItem.name}`);
-                        this.showItemCursorHighlight();
-                    } else {
-                        this.hotspotLabel.setText(newItem.name);
-                    }
-                });
-
-                hitArea.on('pointerout', () => {
-                    this.drawCrosshair(0xffffff);
-                    this.hotspotLabel.setText('');
-                    this.hideItemCursorHighlight();
-                });
-
-                slot.display.add(hitArea);
-            }
-
-            updateItemCursor(item) {
-                // Update the cursor to show a new item (when selected item transforms)
-
-                // Notify TSH.State (triggers UIScene to update cursor)
-                TSH.State.setSelectedItem(item.id);
-
-                // When UIScene is handling cursors, we're done
-                if (this.uiSceneActive) {
-                    return;
-                }
-
-                // Legacy cursor handling (when UIScene not active)
-                this.itemCursor.removeAll(true);
-
-                // Draw item icon at cursor size (50px)
-                const cursorIcon = this.drawItemIcon(item, 50);
-                this.itemCursor.add(cursorIcon);
-
-                this.itemCursorHighlight = this.add.graphics();
-                this.itemCursorHighlight.lineStyle(4, 0xff0000, 1);
-                this.itemCursorHighlight.strokeRoundedRect(-29, -29, 58, 58, 10);
-                this.itemCursorHighlight.setVisible(false);
-                this.itemCursor.add(this.itemCursorHighlight);
-            }
-
-            refreshInventoryUI() {
-                // Clear all slots
-                this.inventorySlots.forEach(slot => {
-                    slot.display.removeAll(true);
-                    slot.item = null;
-                });
-
-                // Rebuild from state
-                const items = this.getInventoryItems();
-                items.forEach(item => {
-                    const emptySlot = this.inventorySlots.find(slot => slot.item === null);
-                    if (emptySlot) {
-                        this.addItemToSlot(item, emptySlot);
-                    }
-                });
-            }
-
-            addItemToSlot(item, slot = null) {
-                // Find an empty slot if none provided
-                if (!slot) {
-                    slot = this.inventorySlots.find(s => s.item === null);
-                    if (!slot) {
-                        console.warn('[Inventory] No empty slot for item:', item.id);
-                        return false;
-                    }
-                }
-
-                slot.item = item;
-                slot.display.removeAll(true);
-
-                // Icon size is 70% of slot size
-                const itemSize = Math.floor(slot.size * 0.7);
-                const itemGraphic = this.drawItemIcon(item, itemSize);
-                slot.display.add(itemGraphic);
-
-                const slotSize = slot.size;
-                const hitArea = this.add.rectangle(0, 0, slotSize - 4, slotSize - 4, 0x000000, 0).setInteractive();
-
-                hitArea.on('pointerdown', (pointer) => {
-                    // On mobile, we handle inventory items via gesture detection in handleMobilePointerDown
-                    if (this.isMobile) return;
-
-                    this.clickedUI = true;
-
-                    // Right-click = deselect item if holding one, otherwise examine
-                    if (pointer.rightButtonDown()) {
-                        if (this.selectedItem) {
-                            this.deselectItem();
-                        } else {
-                            const description = item.description || `It's a ${item.name}.`;
-                            this.showDialog(description);
-                        }
-                        return;
-                    }
-
-                    // Left-click = select or combine
-                    if (pointer.leftButtonDown()) {
-                        if (this.selectedItem && this.selectedItem.id !== item.id) {
-                            this.tryCombineItems(this.selectedItem, item);
-                        } else {
-                            this.selectItem(item, slot);
-                        }
-                    }
-                });
-
-                hitArea.on('pointerover', () => {
-                    // Skip hover effects on mobile (no mouse cursor)
-                    if (this.isMobile) return;
-                    this.drawCrosshair(0xff0000);
-                    // Don't show labels while dialog is active
-                    if (this.dialogActive) return;
-                    if (this.selectedItem && this.selectedItem.id !== item.id) {
-                        this.hotspotLabel.setText(`Use ${this.selectedItem.name} on ${item.name}`);
-                        this.showItemCursorHighlight();
-                    } else {
-                        this.hotspotLabel.setText(item.name);
-                    }
-                });
-
-                hitArea.on('pointerout', () => {
-                    this.drawCrosshair(0xffffff);
-                    this.hotspotLabel.setText('');
-                    this.hideItemCursorHighlight();
-                });
-
-                slot.display.add(hitArea);
-            }
-
-            selectItem(item, slot) {
+            selectItem(item) {
                 // Toggle off if clicking the same item
                 if (this.selectedItem && this.selectedItem.id === item.id) {
                     this.deselectItem();
                     return;
                 }
 
-                // Play item select sound
-                TSH.Audio.playSFX('item_select');
-
+                // Update local state
                 this.selectedItem = item;
 
                 // Notify TSH.State (triggers UIScene to update cursor)
                 TSH.State.setSelectedItem(item.id);
-
-                // When UIScene is handling cursors, we're done
-                if (this.uiSceneActive) {
-                    return;
-                }
-
-                // Legacy cursor handling (when UIScene not active)
-                this.crosshairCursor.setVisible(false);
-
-                // Draw item icon as cursor (50px size)
-                this.itemCursor.removeAll(true);
-                const cursorIcon = this.drawItemIcon(item, 50);
-                this.itemCursor.add(cursorIcon);
-
-                // Red outline highlight (shown when over hotspot)
-                this.itemCursorHighlight = this.add.graphics();
-                this.itemCursorHighlight.lineStyle(4, 0xff0000, 1);
-                this.itemCursorHighlight.strokeRoundedRect(-29, -29, 58, 58, 10);
-                this.itemCursorHighlight.setVisible(false);
-                this.itemCursor.add(this.itemCursorHighlight);
-
-                this.itemCursor.setVisible(true);
             }
 
             deselectItem() {
@@ -3337,22 +2745,10 @@
                 // Notify TSH.State (triggers UIScene to update cursor)
                 TSH.State.clearSelectedItem();
 
-                // When UIScene is handling cursors, just clear state
-                if (this.uiSceneActive) {
-                    this.selectedSlotHighlight.setVisible(false);
+                // Clear hotspot label
+                if (this.hotspotLabel) {
                     this.hotspotLabel.setText('');
-                    return;
                 }
-
-                // Legacy cursor handling (when UIScene not active)
-                this.itemCursor.setVisible(false);
-                this.itemCursor.removeAll(true);
-                this.selectedSlotHighlight.setVisible(false);
-                if (!this.isMobile) {
-                    this.crosshairCursor.setVisible(true);
-                }
-                this.hotspotLabel.setText('');
-                this.hideItemCursorHighlight();
             }
 
             // ========== DIALOGUE ==========
@@ -3441,6 +2837,11 @@
                 } else {
                     this.speechBubble.setVisible(false);
                     this.dialogText.setText('');
+                    // Hide UIScene's dialog overlay too
+                    const uiScene = this.scene.get('UIScene');
+                    if (uiScene && uiScene.hideDialogOverlay) {
+                        uiScene.hideDialogOverlay();
+                    }
                     this.endDialogSequence();
                     // Call callback if provided
                     if (this.dialogCallback) {
@@ -3456,9 +2857,19 @@
                     this.startDialogSequence();
                 }
 
-                this.dialogText.setText(text);
-                this.updateSpeechBubblePosition();
-                this.speechBubble.setVisible(true);
+                // When inventory is open, use UIScene's dialog overlay (renders above inventory)
+                const uiScene = this.scene.get('UIScene');
+                if (TSH.State.isInventoryOpen() && uiScene && uiScene.showDialogOverlay) {
+                    uiScene.showDialogOverlay(text);
+                    this.speechBubble.setVisible(false);
+                } else {
+                    if (uiScene && uiScene.hideDialogOverlay) {
+                        uiScene.hideDialogOverlay();
+                    }
+                    this.dialogText.setText(text);
+                    this.updateSpeechBubblePosition();
+                    this.speechBubble.setVisible(true);
+                }
 
                 const displayTime = Math.max(1500, text.length * 40);
                 this.dialogTimer = this.time.delayedCall(displayTime, () => {
@@ -3467,6 +2878,11 @@
                     } else {
                         this.speechBubble.setVisible(false);
                         this.dialogText.setText('');
+                        // Hide UIScene's dialog overlay too
+                        const uiScene = this.scene.get('UIScene');
+                        if (uiScene && uiScene.hideDialogOverlay) {
+                            uiScene.hideDialogOverlay();
+                        }
                         this.endDialogSequence();
                         // Call callback if provided
                         if (this.dialogCallback) {
@@ -3485,7 +2901,7 @@
                 const scrollX = this.cameras.main.scrollX || 0;
 
                 // When inventory is open, position text at top of screen above the inventory box
-                if (this.inventoryOpen && this.inventoryPanelHeight) {
+                if (this.inventoryOpen) {
                     const textY = 30;  // Near top of screen
                     const textX = scrollX + width / 2;
 
@@ -3938,20 +3354,8 @@
                 const scrollX = this.cameras.main.scrollX || 0;
                 const scrollY = this.cameras.main.scrollY || 0;
 
-                // Check inventory button hover (screen coordinates)
-                if (this.inventoryButtonArea) {
-                    const btn = this.inventoryButtonArea;
-                    const wasHovered = this.inventoryButtonHovered;
-                    this.inventoryButtonHovered =
-                        pointer.x >= btn.x - btn.size/2 && pointer.x <= btn.x + btn.size/2 &&
-                        pointer.y >= btn.y - btn.size/2 && pointer.y <= btn.y + btn.size/2;
-
-                    if (wasHovered !== this.inventoryButtonHovered) {
-                        this.updateInventoryButtonState();
-                    }
-                }
-
-                // Check settings button hover (screen coordinates)
+                // Note: UIScene handles inventory button hover
+                // Check settings button hover (screen coordinates) - only used when UIScene not active
                 if (this.settingsButtonArea) {
                     const btn = this.settingsButtonArea;
                     const wasHovered = this.settingsButtonHovered;

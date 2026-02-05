@@ -1,7 +1,7 @@
 # The Sandwich Horror — Architecture Guide
 ## For Claude Code Implementation
 
-Last Updated: February 5, 2026 (UIScene + Buttons - Phase 4a)
+Last Updated: February 5, 2026 (UIScene + Inventory Panel - Phase 4b)
 
 ---
 
@@ -54,6 +54,7 @@ When resuming after compaction, re-read this guide and check `git log --oneline 
 - [x] UI state management in TSH.State (Phase 2 of UIScene refactor)
 - [x] UIScene with cursor management (Phase 3 of UIScene refactor)
 - [x] UIScene with inventory/settings buttons (Phase 4a of UIScene refactor)
+- [x] UIScene with inventory panel (Phase 4b of UIScene refactor)
 
 ### TODO (Not Yet Implemented)
 - [x] **Item-on-item combinations** — Click item B while item A is selected to combine (`tryCombineItems` in BaseScene.js)
@@ -204,7 +205,7 @@ UIScene runs parallel to game scenes and manages persistent UI elements. It list
 
 ```javascript
 // UIScene is launched automatically by RoomScene
-// It handles: crosshair cursor, arrow cursor, item cursor
+// It handles: crosshair cursor, arrow cursor, item cursor, inventory panel
 
 // Game scenes communicate with UIScene via TSH.State:
 TSH.State.setSelectedItem('key');           // Shows item as cursor
@@ -212,9 +213,18 @@ TSH.State.clearSelectedItem();              // Returns to crosshair
 TSH.State.setUIState('edgeZone', 'left');   // Shows arrow cursor
 TSH.State.setUIState('edgeZone', null);     // Hides arrow cursor
 TSH.State.setUIState('crosshairColor', 0xff0000);  // Red crosshair
+TSH.State.setInventoryOpen(true);           // Opens inventory panel
 ```
 
 UIScene automatically hides cursors when `dialogActive`, `conversationActive`, or `settingsOpen` are true.
+
+**Inventory Panel Features:**
+- Reactive slot display (syncs with TSH.State inventory via `inventoryChanged` event)
+- Desktop: Click item to select, right-click to examine
+- Mobile: Quick tap to examine, long-press (300ms) to pick up and drag
+- Mobile drag-to-combine with tolerance for finger position
+- Hotspot label follows cursor with word wrap and bounds clamping
+- Dialog overlay shows speech text above inventory panel when open
 
 ### Migration note:
 The old approach used Phaser's registry (`this.registry.get('gameState')`). All scenes should be migrated to use `TSH.State` instead.
@@ -718,7 +728,7 @@ src/
 ### Inventory (Mobile)
 - **Tap inventory button**: Toggle inventory panel open/closed
 - **Quick tap item**: Examine item (shows description)
-- **Long-press item (500ms)**: Pick up item as cursor for dragging
+- **Long-press item (300ms)**: Pick up item as cursor for dragging
 - **Drag item to another item**: Shows "Use X on Y" label, release to combine
 - **Drag item outside inventory**: Inventory closes, continue dragging to hotspot
 - **Release on hotspot**: Uses item on hotspot, then clears cursor immediately
@@ -741,7 +751,7 @@ src/
 ### Dialogue Display
 - **Font**: LucasArts SCUMM Solid (35px desktop, 60px mobile)
 - Speech bubble appears above Nate's head
-- When inventory is open, dialog appears at top of screen (text expands downward)
+- When inventory is open, dialog appears at top of screen via UIScene's dialog overlay (above inventory panel)
 - Multi-sentence dialogue auto-advances with timing
 - Click/tap or press period (.) to skip to next sentence
 - Dialogue pauses character movement and hides cursor/labels
