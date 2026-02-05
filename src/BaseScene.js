@@ -181,7 +181,9 @@
                 this.isWalking = false;
 
                 // Detect mobile/touch device
-                this.isMobile = this.sys.game.device.input.touch;
+                // Use pointer: coarse to detect if primary input is touch (not just touch-capable)
+                // This correctly identifies touchscreen laptops as desktop when using mouse
+                this.isMobile = window.matchMedia('(pointer: coarse)').matches;
 
                 // Create pixel texture for player if needed
                 if (!this.textures.exists('pixel')) {
@@ -447,19 +449,8 @@
                     return;
                 }
 
-                // Check inventory panel interaction
-                if (this.inventoryOpen) {
-                    const clickedItem = this.getInventoryItemAtPointer(pointer);
-                    if (clickedItem) {
-                        this.clickedUI = true;
-                        if (pointer.rightButtonDown()) {
-                            this.examineItem(clickedItem);
-                        } else {
-                            this.selectItem(clickedItem);
-                        }
-                        return;
-                    }
-                }
+                // Inventory item clicks are handled by the slot hitArea handlers (setInteractive)
+                // Don't duplicate here
 
                 // Check hotspots (use hover state set by zone pointerover)
                 const hotspot = this.currentHoveredHotspot;
@@ -573,6 +564,7 @@
             }
 
             handleMobilePointerUp(pointer) {
+                console.log('[DEBUG] pointerUp - clickedUI:', this.clickedUI);
                 const gesture = this.mobileGesture;
                 const touchDuration = Date.now() - gesture.startTime;
 
@@ -603,28 +595,42 @@
 
                 // Handle drag-with-item release
                 if (gesture.dragWithItem && gesture.draggedItem) {
-                    const hotspot = this.getHotspotAtPointer(pointer);
-                    if (hotspot) {
-                        // Use item on hotspot
-                        if (this.isPlayerNearHotspot(hotspot)) {
-                            this.useItemOnHotspot(gesture.draggedItem, hotspot);
-                        } else {
-                            this.walkTo(hotspot.interactX, hotspot.interactY, () => {
-                                this.useItemOnHotspot(gesture.draggedItem, hotspot);
-                            }, true);
-                        }
-                    } else {
-                        // Check if dropping on another inventory item (combine)
-                        const targetItem = this.getInventoryItemAtPointer(pointer);
-                        if (targetItem && targetItem !== gesture.draggedItem) {
-                            this.combineItems(gesture.draggedItem, targetItem);
-                        }
-                    }
-                    // Reset drag state
+                    // Capture item before resetting gesture state (needed for walkTo callback)
+                    const draggedItem = gesture.draggedItem;
+
+                    // Reset drag state immediately
                     gesture.dragWithItem = false;
                     gesture.draggedItem = null;
                     gesture.touchedInventoryItem = null;
                     this.clickedUI = false;
+
+                    // If inventory is open, check for inventory item drop first (for combining)
+                    if (this.inventoryOpen) {
+                        const targetItem = this.getInventoryItemAtPointer(pointer);
+                        if (targetItem && targetItem !== draggedItem) {
+                            this.combineItems(draggedItem, targetItem);
+                        }
+                        // Clear selection immediately on release (mobile UX)
+                        this.deselectItem();
+                        return;
+                    }
+
+                    // Inventory is closed - check for hotspot
+                    const hotspot = this.getHotspotAtPointer(pointer);
+
+                    // Clear selection immediately on release (mobile UX)
+                    this.deselectItem();
+
+                    if (hotspot) {
+                        // Use item on hotspot
+                        if (this.isPlayerNearHotspot(hotspot)) {
+                            this.useItemOnHotspot(draggedItem, hotspot);
+                        } else {
+                            this.walkTo(hotspot.interactX, hotspot.interactY, () => {
+                                this.useItemOnHotspot(draggedItem, hotspot);
+                            }, true);
+                        }
+                    }
                     return;
                 }
 
@@ -779,9 +785,18 @@
                         this.itemCursor.setPosition(pointer.x, pointer.y);
                     }
 
-                    // Close inventory if dragging item outside panel (same as desktop)
+                    // If inventory is open, show "Use X on Y" when over another item
                     if (this.inventoryOpen) {
                         this.checkItemOutsideInventory(pointer);
+
+                        // Check if over another inventory item for combine label
+                        const targetItem = this.getInventoryItemAtPointer(pointer);
+                        if (targetItem && targetItem !== gesture.draggedItem) {
+                            this.hotspotLabel.setText(`Use ${gesture.draggedItem.name} on ${targetItem.name}`);
+                        } else {
+                            this.hotspotLabel.setText('');
+                        }
+                        return;
                     }
 
                     // Check hotspot under finger for visual feedback
@@ -846,16 +861,23 @@
                 return null;
             }
 
-            // Find inventory item at pointer position (screen coordinates)
+            // Find inventory item at pointer position
             getInventoryItemAtPointer(pointer) {
-                if (!this.inventoryOpen || !this.inventorySlots) return null;
+                if (!this.inventoryOpen || !this.inventorySlots || !this.inventoryPanel) return null;
+
+                // Convert pointer world coords to panel-local coords
+                // inventoryPanel is positioned in world space, slot coords are relative to panel center
+                const panelX = this.inventoryPanel.x;
+                const panelY = this.inventoryPanel.y;
+                const localX = pointer.worldX - panelX;
+                const localY = pointer.worldY - panelY;
 
                 for (const slot of this.inventorySlots) {
                     if (!slot.item) continue;
 
                     const halfSize = slot.size / 2;
-                    if (pointer.x >= slot.x - halfSize && pointer.x <= slot.x + halfSize &&
-                        pointer.y >= slot.y - halfSize && pointer.y <= slot.y + halfSize) {
+                    if (localX >= slot.x - halfSize && localX <= slot.x + halfSize &&
+                        localY >= slot.y - halfSize && localY <= slot.y + halfSize) {
                         return slot.item;
                     }
                 }
@@ -1862,7 +1884,7 @@
                 this.settingsReturnBtnHovered = false;
 
                 // Version number above Return button
-                const versionText = this.add.text(0, btnY - 45, 'v0.1.12', {
+                const versionText = this.add.text(0, btnY - 45, 'v0.1.13', {
                     fontFamily: '"Press Start 2P", cursive',
                     fontSize: '14px',
                     color: '#ffffff'
@@ -2832,6 +2854,9 @@
                 const hitArea = this.add.rectangle(0, 0, slotSize - 4, slotSize - 4, 0x000000, 0).setInteractive();
 
                 hitArea.on('pointerdown', (pointer) => {
+                    // On mobile, we handle inventory items via gesture detection in handleMobilePointerDown
+                    if (this.isMobile) return;
+
                     this.clickedUI = true;
 
                     // Right-click = deselect item if holding one, otherwise examine
@@ -2856,6 +2881,8 @@
                 });
 
                 hitArea.on('pointerover', () => {
+                    // Skip hover effects on mobile (no mouse cursor)
+                    if (this.isMobile) return;
                     this.drawCrosshair(0xff0000);
                     // Don't show labels while dialog is active
                     if (this.dialogActive) return;
@@ -2937,6 +2964,9 @@
                 const hitArea = this.add.rectangle(0, 0, slotSize - 4, slotSize - 4, 0x000000, 0).setInteractive();
 
                 hitArea.on('pointerdown', (pointer) => {
+                    // On mobile, we handle inventory items via gesture detection in handleMobilePointerDown
+                    if (this.isMobile) return;
+
                     this.clickedUI = true;
 
                     // Right-click = deselect item if holding one, otherwise examine
@@ -2961,6 +2991,8 @@
                 });
 
                 hitArea.on('pointerover', () => {
+                    // Skip hover effects on mobile (no mouse cursor)
+                    if (this.isMobile) return;
                     this.drawCrosshair(0xff0000);
                     // Don't show labels while dialog is active
                     if (this.dialogActive) return;

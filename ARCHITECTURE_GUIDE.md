@@ -546,14 +546,25 @@ src/
 - **Right-click with item cursor**: Deselect item (clear cursor)
 - NPC detection: hotspots with `type: 'npc'` or `isNPC: true` get "Talk To" instead of "Use"
 
-### Inventory
+### Inventory (Desktop)
 - **Inventory button**: Always visible in bottom-left corner (hollow when idle, filled on hover/open)
 - **Left-click button**: Toggle inventory panel open/closed
 - **Left-click item**: Select as cursor (for combining or using on hotspots)
 - **Right-click item**: Examine item (shows description)
 - **Left-click with item on another item**: Attempt combination
 - Item cursor persists after failed combinations (not cleared)
+- Item cursor persists after using on hotspot (can reuse)
 - When item transforms via combination, both cursor and inventory slot update
+
+### Inventory (Mobile)
+- **Tap inventory button**: Toggle inventory panel open/closed
+- **Quick tap item**: Examine item (shows description)
+- **Long-press item (500ms)**: Pick up item as cursor for dragging
+- **Drag item to another item**: Shows "Use X on Y" label, release to combine
+- **Drag item outside inventory**: Inventory closes, continue dragging to hotspot
+- **Release on hotspot**: Uses item on hotspot, then clears cursor immediately
+- **Release on empty space**: Clears cursor (deselects item)
+- Item cursor clears immediately on release (different from desktop)
 
 ### Hotspot Labels
 - Labels follow cursor position (offset above cursor)
@@ -616,8 +627,14 @@ When player left-clicks on an NPC, the game enters conversation mode:
 - Use Phaser.Scale.FIT with CENTER_BOTH
 - Test on actual mobile devices, not just desktop resize
 
+### Mobile Detection
+- Uses `window.matchMedia('(pointer: coarse)').matches` to detect mobile
+- This checks if primary input is touch (not just touch-capable)
+- Correctly identifies touchscreen laptops as desktop when using mouse
+- Set in `BaseScene.create()` as `this.isMobile`
+
 ### Cursor Behavior
-- Crosshair cursor: Hidden on touch devices, visible on desktop
+- Crosshair cursor: Hidden on mobile (`this.isMobile`), visible on desktop
 - Disable default context menus: `canvas.addEventListener('contextmenu', e => e.preventDefault())`
 
 ### Performance
@@ -737,3 +754,45 @@ hotspots: [
 - [ ] Lighting looks acceptable (not too dark)
 - [ ] UI elements are large enough to tap
 - [ ] No context menu appears on long-press
+
+---
+
+## 20. Development Workflow
+
+### Version Number
+
+**IMPORTANT:** Increment the version number in the settings menu on every commit.
+
+**Location:** `src/BaseScene.js` in `openSettingsMenu()` method
+```javascript
+const versionText = this.add.text(0, btnY - 45, 'v0.1.13', {  // ← Update this
+    fontFamily: '"Press Start 2P", cursive',
+    fontSize: '14px',
+    color: '#ffffff'
+}).setOrigin(0.5);
+```
+
+**Why:** The version number helps verify which build is running, especially on mobile where caching and deploy delays can make it unclear if the latest code is active.
+
+**Format:** `v0.X.Y` where:
+- `0` = Pre-release (changes to `1` at launch)
+- `X` = Feature/milestone number
+- `Y` = Increments with each commit
+
+### Commit Guidelines
+- Always test on desktop before committing
+- Push to trigger GitHub Pages deploy for mobile testing
+- Version number in settings menu confirms deploy is live
+
+### Incremental Implementation
+
+**IMPORTANT:** When there is a list of multiple features to implement or bugs to fix, do NOT implement them all at once.
+
+**Process:**
+1. Implement ONE feature/fix
+2. Let user test locally (do NOT commit/push unless asked)
+3. Wait for user to confirm it works
+4. Only then proceed to the next item
+5. User will request commits/pushes when ready
+
+**Why:** This makes it easier to isolate issues. If multiple changes are bundled together and something breaks, it's harder to identify which change caused the problem. One change at a time = easier debugging.
