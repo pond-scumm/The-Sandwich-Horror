@@ -85,7 +85,7 @@
             from_laboratory: { x: 2200, y: 0.82 },
             from_outside: { x: 250, y: 0.82 },
             from_front_of_house: { x: 250, y: 0.82 },
-            from_backyard: { x: 1280, y: 0.82 },
+            from_backyard: { x: 2338, y: 0.869 },
             from_attic: { x: 1280, y: 0.82 },
             from_alien_room: { x: 1280, y: 0.82 }
         },

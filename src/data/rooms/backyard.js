@@ -47,9 +47,9 @@
             ambient: 0x4a5068,
             ambientMobile: 0x6a7088,
             sources: [
-                // Moonlight from above
-                { id: 'moon_main', x: 400, y: 0.10, radius: 500, color: 0xaabbdd, intensity: 0.8 },
-                { id: 'moon_secondary', x: 1400, y: 0.15, radius: 450, color: 0x99aacc, intensity: 0.6 },
+                // Moonlight from above (positioned far right, not blocked by house)
+                { id: 'moon_main', x: 2100, y: 0.10, radius: 500, color: 0xaabbdd, intensity: 0.8 },
+                { id: 'moon_secondary', x: 2200, y: 0.15, radius: 450, color: 0x99aacc, intensity: 0.6 },
                 // String lights glow along fence
                 { id: 'string_1', x: 400, y: 0.55, radius: 150, color: 0xff6666, intensity: 0.4 },
                 { id: 'string_2', x: 700, y: 0.54, radius: 150, color: 0x66ff66, intensity: 0.4 },
@@ -63,7 +63,9 @@
                 { id: 'tiki_glow_2', x: 1400, y: 0.60, radius: 200, color: 0xff9955, intensity: 0.5 },
                 { id: 'tiki_glow_3', x: 2000, y: 0.60, radius: 200, color: 0xffaa66, intensity: 0.5 },
                 // Window glow from house
-                { id: 'window_glow', x: 300, y: 0.40, radius: 120, color: 0xffe0a0, intensity: 0.4 }
+                { id: 'window_glow', x: 300, y: 0.40, radius: 120, color: 0xffe0a0, intensity: 0.4 },
+                // Back door light
+                { id: 'door_light', x: 200, y: 0.65, radius: 100, color: 0xffe0a0, intensity: 0.3 }
             ]
         },
 
@@ -94,22 +96,14 @@
         ],
 
         spawns: {
-            default: { x: 250, y: 0.82 },
-            from_interior: { x: 250, y: 0.82 },
+            default: { x: 200, y: 0.82 },
+            from_interior: { x: 200, y: 0.82 },
             from_basement: { x: 650, y: 0.82 },
             from_earls_yard: { x: 1400, y: 0.82 },
             from_shed: { x: 2300, y: 0.82 }
         },
 
-        exits: [
-            {
-                edge: 'left',
-                x: 0,
-                width: 60,
-                target: 'interior',
-                spawnPoint: 'from_backyard'
-            }
-        ],
+        exits: [],
 
         npcs: [],
 
@@ -153,16 +147,32 @@
                     action: "Yep, that's a wall alright. Solid."
                 }
             },
+            {
+                id: 'back_door',
+                x: 120, y: 0.42, w: 140, h: 0.42,
+                interactX: 120, interactY: 0.82,
+                name: 'Back Door',
+                verbs: { action: 'Open', look: 'Examine' },
+                responses: {
+                    look: "A sturdy wooden door leading back into the house. Two steps lead up to it, and a warm light glows above the entrance.",
+                    action: null
+                },
+                actionTrigger: {
+                    type: 'transition',
+                    target: 'interior',
+                    spawnPoint: 'from_backyard'
+                }
+            },
 
-            // === BULKHEAD (attached to end of house) ===
+            // === BULKHEAD (bottom right corner of house) ===
             {
                 id: 'bulkhead_basement',
-                x: 620, y: 0.65, w: 100, h: 0.12,
-                interactX: 650, interactY: 0.82,
+                x: 720, y: 0.66, w: 220, h: 0.22,
+                interactX: 720, interactY: 0.82,
                 name: 'Basement Bulkhead',
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
-                    look: "Metal bulkhead doors leading down to the basement. They look heavy but not locked.",
+                    look: "Large metal bulkhead doors leading down to the basement. They look heavy but not locked.",
                     action: null
                 },
                 actionTrigger: {
@@ -188,7 +198,7 @@
             },
             {
                 id: 'garden_wild',
-                x: 1100, y: 0.62, w: 180, h: 0.15,
+                x: 1100, y: 0.62, w: 400, h: 0.20,
                 interactX: 1100, interactY: 0.82,
                 name: 'Overgrown Garden',
                 verbs: { action: 'Search', look: 'Examine' },
@@ -199,7 +209,7 @@
             },
             {
                 id: 'doghouse',
-                x: 1000, y: 0.64, w: 70, h: 0.12,
+                x: 1000, y: 0.64, w: 160, h: 0.20,
                 interactX: 1000, interactY: 0.82,
                 name: 'Doghouse',
                 verbs: { action: 'Look inside', look: 'Examine' },
@@ -210,7 +220,7 @@
             },
             {
                 id: 'gnome',
-                x: 1300, y: 0.66, w: 40, h: 0.10,
+                x: 1300, y: 0.66, w: 100, h: 0.18,
                 interactX: 1300, interactY: 0.82,
                 name: 'Garden Gnome',
                 verbs: { action: 'Pick up', look: 'Examine' },
@@ -221,7 +231,7 @@
             },
             {
                 id: 'telescope',
-                x: 1500, y: 0.58, w: 60, h: 0.16,
+                x: 1500, y: 0.58, w: 120, h: 0.28,
                 interactX: 1500, interactY: 0.82,
                 name: 'Telescope',
                 verbs: { action: 'Look through', look: 'Examine' },
@@ -232,7 +242,7 @@
             },
             {
                 id: 'trash_cans',
-                x: 1700, y: 0.66, w: 80, h: 0.10,
+                x: 1700, y: 0.66, w: 180, h: 0.18,
                 interactX: 1700, interactY: 0.82,
                 name: 'Garbage Cans',
                 verbs: { action: 'Search', look: 'Examine' },
@@ -269,14 +279,13 @@
                 }
             },
             {
-                id: 'door_fence_hidden',
-                x: 1400, y: 0.56, w: 60, h: 0.20,
-                interactX: 1400, interactY: 0.82,
-                name: 'Gate',
-                visible: false,
-                verbs: { action: 'Go through', look: 'Examine' },
+                id: 'fence_gate',
+                x: 2000, y: 0.53, w: 130, h: 0.24,
+                interactX: 2000, interactY: 0.82,
+                name: 'Fence Gate',
+                verbs: { action: 'Open', look: 'Examine' },
                 responses: {
-                    look: "A hidden gate in the fence! Earl must have opened it from his side.",
+                    look: "A wooden gate in the fence leading to Earl's yard. I can hear music and smell BBQ from the other side.",
                     action: null
                 },
                 actionTrigger: {
@@ -284,7 +293,6 @@
                     target: 'earls_yard',
                     spawnPoint: 'from_backyard'
                 }
-                // TODO: State-driven visibility - only appears after Earl invites Nate over
             },
 
             // === SHED (perpendicular, mostly off-screen right) ===
@@ -389,6 +397,10 @@
         WOOD_LIGHT: 0x6a5030,
         WOOD_HIGHLIGHT: 0x8a6840,
 
+        // Door
+        DOOR_DARK: 0x3a2515,
+        DOOR_MID: 0x5a3a25,
+
         // Metal
         METAL_DARK: 0x3a3a3a,
         METAL_MID: 0x5a5a5a,
@@ -486,6 +498,97 @@
         }
     }
 
+    function drawBackDoor(g, x, y, floorY) {
+        // Matching interior door exactly (scaled for p=2 vs p=4)
+        const doorWidth = p * 70;  // Same as interior (140px)
+        const doorHeight = floorY - y;
+        const frameWidth = p * 3;
+
+        // Steps leading up to door (2 steps)
+        const stepWidth = doorWidth + p*20;
+        const stepHeight = p*8;
+        const stepDepth = p*12;
+
+        // Bottom step
+        g.fillStyle(COLORS.WOOD_MID);
+        g.fillRect(x - stepWidth/2, floorY + stepDepth, stepWidth, stepHeight);
+        g.fillStyle(COLORS.WOOD_DARK);
+        g.fillRect(x - stepWidth/2, floorY + stepDepth, stepWidth, p*2);
+
+        // Top step
+        g.fillStyle(COLORS.WOOD_MID);
+        g.fillRect(x - stepWidth/2, floorY, stepWidth, stepHeight);
+        g.fillStyle(COLORS.WOOD_DARK);
+        g.fillRect(x - stepWidth/2, floorY, stepWidth, p*2);
+
+        // Door frame
+        g.fillStyle(COLORS.WOOD_DARK);
+        g.fillRect(x - doorWidth/2 - frameWidth, y - p*5, doorWidth + frameWidth*2, doorHeight + p*5);
+
+        // Frame highlights
+        g.fillStyle(COLORS.WOOD_MID);
+        g.fillRect(x - doorWidth/2 - frameWidth, y - p*5, p*2, doorHeight + p*5);
+        g.fillRect(x + doorWidth/2 + p, y - p*5, p*2, doorHeight + p*5);
+        g.fillRect(x - doorWidth/2 - frameWidth, y - p*5, doorWidth + frameWidth*2, p*2);
+
+        // Door panel (main body)
+        g.fillStyle(COLORS.DOOR_DARK);
+        g.fillRect(x - doorWidth/2, y, doorWidth, doorHeight);
+
+        // Door panels (two columns, centered and properly aligned)
+        const panelInset = p*8;  // More centered
+        const panelWidth = p*24;  // Wider panels
+        const panelGap = p*6;
+        const topPanelHeight = p*35;
+        const bottomPanelHeight = p*45;
+        const topPanelY = y + p*8;
+        const bottomPanelY = y + p*50;
+
+        // Calculate center position for two columns
+        const leftPanelX = x - panelWidth - panelGap/2;
+        const rightPanelX = x + panelGap/2;
+
+        // Draw panels with highlights
+        g.fillStyle(COLORS.DOOR_MID);
+        // Top panels
+        g.fillRect(leftPanelX, topPanelY, panelWidth, topPanelHeight);
+        g.fillRect(rightPanelX, topPanelY, panelWidth, topPanelHeight);
+        // Bottom panels
+        g.fillRect(leftPanelX, bottomPanelY, panelWidth, bottomPanelHeight);
+        g.fillRect(rightPanelX, bottomPanelY, panelWidth, bottomPanelHeight);
+
+        // Panel highlights (on all four panels)
+        g.fillStyle(COLORS.WOOD_LIGHT);
+        // Top left
+        g.fillRect(leftPanelX, topPanelY, panelWidth, p);
+        g.fillRect(leftPanelX, topPanelY, p, topPanelHeight);
+        // Top right
+        g.fillRect(rightPanelX, topPanelY, panelWidth, p);
+        g.fillRect(rightPanelX, topPanelY, p, topPanelHeight);
+
+        // Door knob
+        g.fillStyle(COLORS.BRASS);
+        g.fillRect(x + doorWidth/2 - p*8, y + doorHeight/2, p*3, p*4);
+
+        // Light above door with glow
+        const lightX = x;
+        const lightY = y - p*14;
+
+        // Glow effect (multiple layers)
+        g.fillStyle(0xffe0a0);
+        g.globalAlpha = 0.3;
+        g.fillRect(lightX - p*12, lightY - p*6, p*24, p*20);
+        g.globalAlpha = 0.5;
+        g.fillRect(lightX - p*8, lightY - p*2, p*16, p*14);
+        g.globalAlpha = 1.0;
+
+        // Light fixture
+        g.fillStyle(COLORS.WINDOW_GLOW);
+        g.fillRect(lightX - p*6, lightY, p*12, p*8);
+        g.fillStyle(COLORS.WOOD_DARK);
+        g.fillRect(lightX - p*7, lightY - p, p*14, p*2);
+    }
+
     function drawWindow(g, x, y, w, h) {
         // Window frame
         g.fillStyle(COLORS.WOOD_DARK);
@@ -541,32 +644,54 @@
     }
 
     function drawBulkhead(g, x, floorY) {
-        const bulkheadWidth = p * 55;
-        const bulkheadHeight = p * 28;
+        const bulkheadWidth = p * 110;  // Much bigger
+        const bulkheadHeight = p * 55;  // Much bigger
 
-        // Metal frame
+        // Metal frame (larger, at bottom right corner of house)
         g.fillStyle(COLORS.METAL_DARK);
         g.fillRect(x - bulkheadWidth/2, floorY - bulkheadHeight, bulkheadWidth, bulkheadHeight);
 
         // Door panels (angled into ground)
         g.fillStyle(COLORS.METAL_MID);
-        g.fillRect(x - bulkheadWidth/2 + p*3, floorY - bulkheadHeight + p*3, bulkheadWidth/2 - p*4, bulkheadHeight - p*5);
-        g.fillRect(x + p*2, floorY - bulkheadHeight + p*3, bulkheadWidth/2 - p*4, bulkheadHeight - p*5);
+        g.fillRect(x - bulkheadWidth/2 + p*4, floorY - bulkheadHeight + p*4, bulkheadWidth/2 - p*6, bulkheadHeight - p*6);
+        g.fillRect(x + p*3, floorY - bulkheadHeight + p*4, bulkheadWidth/2 - p*6, bulkheadHeight - p*6);
 
         // Highlights
         g.fillStyle(COLORS.METAL_LIGHT);
-        g.fillRect(x - bulkheadWidth/2 + p*4, floorY - bulkheadHeight + p*4, bulkheadWidth/2 - p*6, p*2);
-        g.fillRect(x + p*3, floorY - bulkheadHeight + p*4, bulkheadWidth/2 - p*6, p*2);
+        g.fillRect(x - bulkheadWidth/2 + p*5, floorY - bulkheadHeight + p*5, bulkheadWidth/2 - p*8, p*2);
+        g.fillRect(x + p*4, floorY - bulkheadHeight + p*5, bulkheadWidth/2 - p*8, p*2);
 
-        // Handle
+        // Handle (larger)
         g.fillStyle(COLORS.METAL_DARK);
-        g.fillRect(x - p*4, floorY - bulkheadHeight/2 - p*3, p*8, p*5);
+        g.fillRect(x - p*5, floorY - bulkheadHeight/2 - p*4, p*10, p*6);
+
+        // Rust/weathering
+        g.fillStyle(0x8b4513);
+        g.fillRect(x - bulkheadWidth/2 + p*2, floorY - p*8, p*2, p*3);
+        g.fillRect(x + bulkheadWidth/2 - p*4, floorY - p*12, p*2, p*4);
     }
 
     function drawFence(g, x, floorY, width, height) {
         const fenceTop = floorY - height;
 
-        // Fence posts
+        // Horizontal rails (draw first, behind everything)
+        g.fillStyle(COLORS.WOOD_DARK);
+        g.fillRect(x, fenceTop + p*12, width, p*5);
+        g.fillRect(x, floorY - p*25, width, p*5);
+
+        // Fence slats (solid - fully continuous, no gaps)
+        const slatWidth = p * 11;
+        const slatSpacing = p * 10;  // Overlapping to fill completely
+        for (let sx = x; sx < x + width; sx += slatSpacing) {
+            g.fillStyle(COLORS.WOOD_MID);
+            g.fillRect(sx, fenceTop, slatWidth, height);
+            g.fillStyle(COLORS.WOOD_LIGHT);
+            g.fillRect(sx + p, fenceTop + p*3, p, height - p*6);
+            g.fillStyle(COLORS.WOOD_DARK);
+            g.fillRect(sx + slatWidth - p*2, fenceTop + p*3, p, height - p*6);
+        }
+
+        // Fence posts (draw on top of slats)
         const postWidth = p * 8;
         const postSpacing = p * 50;
         for (let px = x; px < x + width; px += postSpacing) {
@@ -579,26 +704,52 @@
             g.fillRect(px, fenceTop - p*16, postWidth, p*5);
             g.fillRect(px + p*2, fenceTop - p*18, p*4, p*3);
         }
+    }
 
-        // Fence slats
-        const slatWidth = p * 10;
-        const slatSpacing = p * 12;
-        for (let sx = x + postWidth; sx < x + width - postWidth; sx += slatSpacing) {
-            // Skip if we're at a post position
-            if (Math.abs((sx - x) % postSpacing) < postWidth + p*2) continue;
+    function drawFenceGate(g, x, floorY, fenceHeight) {
+        const fenceTop = floorY - fenceHeight;
+        const gateWidth = p * 65;  // Wider, more normal door-sized
+        const gateHeight = fenceHeight - p*5;
 
-            g.fillStyle(COLORS.WOOD_MID);
-            g.fillRect(sx, fenceTop, slatWidth, height);
+        // Gate posts (darker/sturdier than fence posts)
+        const postWidth = p * 10;
+        g.fillStyle(COLORS.WOOD_DARK);
+        g.fillRect(x - gateWidth/2 - postWidth, fenceTop - p*12, postWidth, fenceHeight + p*12);
+        g.fillRect(x + gateWidth/2, fenceTop - p*12, postWidth, fenceHeight + p*12);
+
+        // Post caps
+        g.fillRect(x - gateWidth/2 - postWidth, fenceTop - p*16, postWidth, p*5);
+        g.fillRect(x + gateWidth/2, fenceTop - p*16, postWidth, p*5);
+        g.fillRect(x - gateWidth/2 - postWidth + p*2, fenceTop - p*18, p*6, p*3);
+        g.fillRect(x + gateWidth/2 + p*2, fenceTop - p*18, p*6, p*3);
+
+        // Gate frame
+        g.fillStyle(COLORS.WOOD_MID);
+        g.fillRect(x - gateWidth/2, fenceTop + p*2, gateWidth, gateHeight);
+
+        // Gate slats (vertical)
+        g.fillStyle(COLORS.WOOD_DARK);
+        const slatWidth = p * 6;
+        const slatSpacing = p * 8;
+        for (let sx = x - gateWidth/2 + p*3; sx < x + gateWidth/2 - p*3; sx += slatSpacing) {
+            g.fillRect(sx, fenceTop + p*4, slatWidth, gateHeight - p*4);
             g.fillStyle(COLORS.WOOD_LIGHT);
-            g.fillRect(sx + p, fenceTop + p*3, p, height - p*6);
+            g.fillRect(sx + p, fenceTop + p*5, p, gateHeight - p*6);
             g.fillStyle(COLORS.WOOD_DARK);
-            g.fillRect(sx + slatWidth - p*2, fenceTop + p*3, p, height - p*6);
         }
 
-        // Horizontal rails
+        // Gate cross-brace (diagonal)
         g.fillStyle(COLORS.WOOD_DARK);
-        g.fillRect(x, fenceTop + p*12, width, p*5);
-        g.fillRect(x, floorY - p*25, width, p*5);
+        g.fillRect(x - gateWidth/2 + p*4, fenceTop + gateHeight/2 - p*2, gateWidth - p*8, p*4);
+
+        // Handle/latch
+        g.fillStyle(COLORS.METAL_DARK);
+        g.fillRect(x + gateWidth/2 - p*10, floorY - fenceHeight/2, p*4, p*8);
+
+        // Hinges
+        g.fillStyle(COLORS.METAL_DARK);
+        g.fillRect(x - gateWidth/2 - p*2, fenceTop + p*15, p*6, p*4);
+        g.fillRect(x - gateWidth/2 - p*2, floorY - p*30, p*6, p*4);
     }
 
     function drawStringLights(g, x, y, width) {
@@ -674,10 +825,10 @@
     }
 
     function drawDoghouse(g, x, floorY) {
-        const houseWidth = p * 40;
-        const houseHeight = p * 30;
+        const houseWidth = p * 80;  // Much larger
+        const houseHeight = p * 60;  // Much larger
         const houseTop = floorY - houseHeight;
-        const roofHeight = p * 14;
+        const roofHeight = p * 28;
 
         // Base
         g.fillStyle(COLORS.WOOD_DARK);
@@ -689,7 +840,7 @@
 
         // Entrance hole
         g.fillStyle(0x0a0a0a);
-        g.fillRect(x - p*10, floorY - p*22, p*20, p*20);
+        g.fillRect(x - p*20, floorY - p*44, p*40, p*40);
 
         // Roof
         g.fillStyle(COLORS.WOOD_DARK);
@@ -699,55 +850,55 @@
 
         // "FLUFFY" text representation
         g.fillStyle(0xffffff);
-        g.fillRect(x - p*12, houseTop + roofHeight + p*5, p*24, p*4);
+        g.fillRect(x - p*24, houseTop + roofHeight + p*8, p*48, p*6);
     }
 
     function drawTelescope(g, x, floorY) {
-        const legHeight = p * 38;
-        const tubeLength = p * 30;
+        const legHeight = p * 76;  // Much larger
+        const tubeLength = p * 60;  // Much larger
 
         // Tripod legs
         g.fillStyle(COLORS.BRASS);
-        g.fillRect(x - p*12, floorY - legHeight, p*3, legHeight);
-        g.fillRect(x + p*10, floorY - legHeight, p*3, legHeight);
-        g.fillRect(x - p, floorY - legHeight + p*8, p*3, legHeight - p*8);
+        g.fillRect(x - p*24, floorY - legHeight, p*6, legHeight);
+        g.fillRect(x + p*20, floorY - legHeight, p*6, legHeight);
+        g.fillRect(x - p*2, floorY - legHeight + p*16, p*6, legHeight - p*16);
 
         // Telescope tube
         g.fillStyle(COLORS.BRASS);
-        g.fillRect(x - p*3, floorY - legHeight - p*6, tubeLength, p*8);
+        g.fillRect(x - p*6, floorY - legHeight - p*12, tubeLength, p*16);
         g.fillStyle(COLORS.GOLD);
-        g.fillRect(x, floorY - legHeight - p*5, tubeLength - p*5, p*6);
+        g.fillRect(x, floorY - legHeight - p*10, tubeLength - p*10, p*12);
 
         // Eyepiece
         g.fillStyle(0x1a1a1a);
-        g.fillRect(x - p*6, floorY - legHeight - p*4, p*4, p*3);
+        g.fillRect(x - p*12, floorY - legHeight - p*8, p*8, p*6);
 
         // Lens
         g.fillStyle(0x4a6a8a);
-        g.fillRect(x + tubeLength - p*3, floorY - legHeight - p*5, p*4, p*6);
+        g.fillRect(x + tubeLength - p*6, floorY - legHeight - p*10, p*8, p*12);
     }
 
     function drawGnome(g, x, floorY) {
-        const gnomeHeight = p * 22;
+        const gnomeHeight = p * 50;  // Much larger
 
         // Body
         g.fillStyle(0x4a3a6a);
-        g.fillRect(x - p*5, floorY - gnomeHeight + p*10, p*10, p*12);
+        g.fillRect(x - p*12, floorY - gnomeHeight + p*22, p*24, p*28);
 
         // Head
         g.fillStyle(0xd8c0a0);
-        g.fillRect(x - p*4, floorY - gnomeHeight + p*5, p*8, p*6);
+        g.fillRect(x - p*10, floorY - gnomeHeight + p*10, p*20, p*14);
 
         // Hat (pointy red)
         g.fillStyle(0x8a2020);
-        g.fillRect(x - p*4, floorY - gnomeHeight, p*8, p*6);
-        g.fillRect(x - p*3, floorY - gnomeHeight - p*3, p*6, p*3);
-        g.fillRect(x - p*2, floorY - gnomeHeight - p*5, p*4, p*3);
-        g.fillRect(x - p, floorY - gnomeHeight - p*6, p*2, p*2);
+        g.fillRect(x - p*10, floorY - gnomeHeight, p*20, p*12);
+        g.fillRect(x - p*8, floorY - gnomeHeight - p*6, p*16, p*6);
+        g.fillRect(x - p*6, floorY - gnomeHeight - p*10, p*12, p*6);
+        g.fillRect(x - p*3, floorY - gnomeHeight - p*14, p*6, p*5);
 
         // Beard
         g.fillStyle(0xd8d8d8);
-        g.fillRect(x - p*3, floorY - gnomeHeight + p*10, p*6, p*5);
+        g.fillRect(x - p*8, floorY - gnomeHeight + p*22, p*16, p*12);
     }
 
     function drawClothesline(g, x1, x2, y, floorY) {
@@ -784,11 +935,11 @@
     }
 
     function drawTrashCans(g, x, floorY) {
-        const canWidth = p * 16;
-        const canHeight = p * 24;
+        const canWidth = p * 36;  // Much larger
+        const canHeight = p * 52;  // Much larger
 
         for (let i = 0; i < 2; i++) {
-            const cx = x + i * (canWidth + p*5);
+            const cx = x + i * (canWidth + p*10);
             g.fillStyle(COLORS.METAL_DARK);
             g.fillRect(cx, floorY - canHeight, canWidth, canHeight);
             g.fillStyle(COLORS.METAL_MID);
@@ -803,10 +954,10 @@
 
         // Overflowing papers
         g.fillStyle(0xd8d0c0);
-        g.fillRect(x + p*3, floorY - canHeight - p*8, p*10, p*5);
-        g.fillRect(x + canWidth + p*8, floorY - canHeight - p*5, p*8, p*4);
+        g.fillRect(x + p*6, floorY - canHeight - p*16, p*20, p*10);
+        g.fillRect(x + canWidth + p*16, floorY - canHeight - p*10, p*16, p*8);
         g.fillStyle(0xe0d8c8);
-        g.fillRect(x + p*5, floorY - canHeight - p*6, p*6, p*3);
+        g.fillRect(x + p*10, floorY - canHeight - p*12, p*12, p*6);
     }
 
     function drawGarden(g, x, floorY, width) {
@@ -851,26 +1002,25 @@
         const floorY = height * 0.72; // MEDIUM camera
         const skyHeight = floorY;
 
-        // === NIGHT SKY ===
+        // === NIGHT SKY (single dark color) ===
         g.fillStyle(COLORS.SKY_DARK);
-        g.fillRect(0, 0, worldWidth, skyHeight * 0.4);
-        g.fillStyle(COLORS.SKY_MID);
-        g.fillRect(0, skyHeight * 0.4, worldWidth, skyHeight * 0.4);
-        g.fillStyle(COLORS.SKY_HORIZON);
-        g.fillRect(0, skyHeight * 0.8, worldWidth, skyHeight * 0.2);
+        g.fillRect(0, 0, worldWidth, skyHeight);
 
         // Stars
         drawStars(g, worldWidth, skyHeight);
 
-        // Moon
-        drawMoon(g, 200, height * 0.08);
+        // Moon (positioned far right, not blocked by house)
+        drawMoon(g, 2100, height * 0.08);
 
-        // === FENCE (spans full width, behind everything) ===
-        const fenceHeight = p * 85;
+        // === FENCE (spans full width, behind everything - taller to reach eye level) ===
+        const fenceHeight = p * 115;
         drawFence(g, 0, floorY, worldWidth, fenceHeight);
 
         // === STRING LIGHTS (above fence) ===
         drawStringLights(g, 50, floorY - fenceHeight - p*15, worldWidth - 100);
+
+        // === FENCE GATE (to Earl's yard) ===
+        drawFenceGate(g, p*1000, floorY, fenceHeight);
 
         // === GROUND/GRASS ===
         g.fillStyle(COLORS.GRASS_DARK);
@@ -896,19 +1046,22 @@
         const houseWidth = p * 280;
         drawHouseExterior(g, 0, floorY, houseWidth, floorY);
 
+        // Back door on house (matching interior door size exactly, with steps)
+        drawBackDoor(g, p*60, height * 0.30, floorY);
+
         // Window on house
-        drawWindow(g, p*120, height * 0.28, p*50, p*40);
+        drawWindow(g, p*170, height * 0.28, p*50, p*40);
 
         // Clock HIGH on wall
         drawClock(g, p*220, height * 0.15);
 
-        // === BULKHEAD (attached to end of house) ===
-        drawBulkhead(g, houseWidth + p*40, floorY);
+        // === BULKHEAD (bottom right corner of house, larger) ===
+        drawBulkhead(g, houseWidth - p*55, floorY);
 
         // === YARD ITEMS (middle section) ===
         drawClothesline(g, p*350, p*420, height * 0.38, floorY);
         drawDoghouse(g, p*500, floorY);
-        drawGarden(g, p*550, floorY, p*90);
+        drawGarden(g, p*550, floorY, p*200);  // Much wider garden
         drawGnome(g, p*680, floorY);
         drawTelescope(g, p*780, floorY);
         drawTrashCans(g, p*880, floorY);
