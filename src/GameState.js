@@ -20,6 +20,7 @@
 //   TSH.State.on('flagChanged', (data) => { ... })
 //   TSH.State.on('npcStateChanged', (data) => { ... })
 //   TSH.State.on('roomChanged', (data) => { ... })
+//   TSH.State.on('uiStateChanged', (data) => { ... })
 //   TSH.State.off('inventoryChanged', callback)  → remove listener
 //
 // Event Data:
@@ -27,6 +28,17 @@
 //   flagChanged:      { path, value }
 //   npcStateChanged:  { npcId, state, previousState }
 //   roomChanged:      { from, to }
+//   uiStateChanged:   { key, value, previousValue }
+//
+// UI State (for reactive UI):
+//   TSH.State.getUIState('selectedItem')         → item ID or null
+//   TSH.State.setUIState('selectedItem', 'key')
+//   TSH.State.getSelectedItem()                  → convenience getter
+//   TSH.State.setSelectedItem('key')             → convenience setter
+//   TSH.State.clearSelectedItem()
+//   TSH.State.isInventoryOpen()
+//   TSH.State.setInventoryOpen(true)
+//   TSH.State.resetTransientUIState()            → clears dialogs/settings
 // ============================================================================
 
 (function() {
@@ -210,6 +222,20 @@
             // ── Rooms Visited ───────────────────────────────────────────
             visitedRooms: [],
             
+            // ── UI State ───────────────────────────────────────────────────
+            // Tracks UI-related state that needs to be consistent across scenes.
+            // Persistent state survives room transitions; transient state resets.
+            ui: {
+                // Persistent UI state (survives room changes)
+                selectedItem: null,      // Currently selected inventory item ID
+
+                // Transient UI state (may reset on room change)
+                inventoryOpen: false,    // Is inventory panel expanded?
+                dialogActive: false,     // Is an examine/action dialog showing?
+                conversationActive: false, // Is NPC conversation in progress?
+                settingsOpen: false      // Is settings menu open?
+            },
+
             // ── Save Metadata ───────────────────────────────────────────
             playtime: 0,
             saveTimestamp: null,
@@ -366,7 +392,51 @@
                 this._state.visitedRooms.push(roomId);
             }
         },
-        
+
+        // ── UI State Methods ────────────────────────────────────────────
+        // For tracking UI state that needs to be consistent across scenes.
+        // This enables the future UIScene to react to state changes.
+
+        getUIState(key) {
+            return this._state.ui[key];
+        },
+
+        setUIState(key, value) {
+            const previousValue = this._state.ui[key];
+            if (previousValue === value) return; // No change
+            this._state.ui[key] = value;
+            this.emit('uiStateChanged', { key, value, previousValue });
+        },
+
+        // Convenience methods for common UI state operations
+        getSelectedItem() {
+            return this._state.ui.selectedItem;
+        },
+
+        setSelectedItem(itemId) {
+            this.setUIState('selectedItem', itemId);
+        },
+
+        clearSelectedItem() {
+            this.setUIState('selectedItem', null);
+        },
+
+        isInventoryOpen() {
+            return this._state.ui.inventoryOpen;
+        },
+
+        setInventoryOpen(open) {
+            this.setUIState('inventoryOpen', open);
+        },
+
+        // Reset transient UI state (called on room transitions, etc.)
+        resetTransientUIState() {
+            this.setUIState('dialogActive', false);
+            this.setUIState('conversationActive', false);
+            this.setUIState('settingsOpen', false);
+            // Note: selectedItem and inventoryOpen persist across room changes
+        },
+
         // ── Dialogue Methods ────────────────────────────────────────────
         
         hasSeenDialogue(dialogueId) {

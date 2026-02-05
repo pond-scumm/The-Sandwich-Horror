@@ -1,7 +1,7 @@
 # The Sandwich Horror — Architecture Guide
 ## For Claude Code Implementation
 
-Last Updated: February 5, 2026 (Item Icons System)
+Last Updated: February 5, 2026 (UI State System - Phase 2)
 
 ---
 
@@ -42,6 +42,8 @@ This document captures all architecture decisions made during planning. Claude C
 - [x] Hotspot highlighting system (Shift key on desktop, long-press on mobile)
 - [x] Character placeholder sprites with camera preset scaling (`nate_placeholder.png`, `hector_placeholder.png`)
 - [x] Procedural item icons system (`src/data/items/icons.js`) with p=4 chunky pixel style
+- [x] Event emitter system in TSH.State (Phase 1 of UIScene refactor)
+- [x] UI state management in TSH.State (Phase 2 of UIScene refactor)
 
 ### TODO (Not Yet Implemented)
 - [x] **Item-on-item combinations** — Click item B while item A is selected to combine (`tryCombineItems` in BaseScene.js)
@@ -152,6 +154,37 @@ TSH.State.off('inventoryChanged', myCallback);
 | `flagChanged` | `{ path, value }` | `setFlag()` |
 | `npcStateChanged` | `{ npcId, state, previousState }` | `setNPCState()` |
 | `roomChanged` | `{ from, to }` | `setCurrentRoom()` |
+| `uiStateChanged` | `{ key, value, previousValue }` | `setUIState()`, `setSelectedItem()`, etc. |
+
+### UI State:
+UI-related state is tracked separately from game state, enabling reactive UI updates.
+
+```javascript
+// Persistent UI state (survives room transitions)
+TSH.State.getSelectedItem()           // → item ID or null
+TSH.State.setSelectedItem('key')
+TSH.State.clearSelectedItem()
+TSH.State.isInventoryOpen()           // → true/false
+TSH.State.setInventoryOpen(true)
+
+// Generic getter/setter for any UI state
+TSH.State.getUIState('dialogActive')  // → true/false
+TSH.State.setUIState('dialogActive', true)
+
+// Reset transient UI state (dialogs, settings, conversations)
+TSH.State.resetTransientUIState()
+```
+
+**UI State Keys:**
+| Key | Persistent? | Description |
+|-----|-------------|-------------|
+| `selectedItem` | Yes | Currently selected inventory item ID |
+| `inventoryOpen` | Yes | Is inventory panel expanded? |
+| `dialogActive` | No | Is examine/action dialog showing? |
+| `conversationActive` | No | Is NPC conversation in progress? |
+| `settingsOpen` | No | Is settings menu open? |
+
+*Persistent state survives room transitions. Transient state may reset on room change.*
 
 ### Migration note:
 The old approach used Phaser's registry (`this.registry.get('gameState')`). All scenes should be migrated to use `TSH.State` instead.
