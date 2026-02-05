@@ -188,6 +188,9 @@ class RoomScene extends BaseScene {
         // Create exit zones
         this.createExitZones(height);
 
+        // Create NPC sprites from room data
+        this.createNPCs(height);
+
         // Spawn player at correct position
         this.spawnPlayer(height);
 
@@ -684,6 +687,52 @@ class RoomScene extends BaseScene {
             zone.on('pointerout', () => {
                 this.hideArrowCursor();
             });
+        });
+    }
+
+    // ========== NPC SPRITES ==========
+
+    createNPCs(height) {
+        const room = this.roomData;
+        if (!room.npcs || room.npcs.length === 0) return;
+
+        this.npcSprites = {};
+
+        room.npcs.forEach(npc => {
+            // Check condition if specified
+            if (npc.condition && typeof npc.condition === 'function') {
+                if (!npc.condition(TSH.State.flags)) return;
+            }
+
+            const x = npc.position.x;
+            const y = typeof npc.position.y === 'number' && npc.position.y <= 1
+                ? height * npc.position.y
+                : npc.position.y;
+
+            // Get scale from camera preset
+            const baseScale = BaseScene.PLAYER_SCALES[this.roomData.cameraPreset] ||
+                              BaseScene.PLAYER_SCALES[this.cameraPreset] ||
+                              BaseScene.PLAYER_SCALES.MEDIUM;
+
+            // Check if sprite texture exists
+            const spriteKey = npc.sprite || `${npc.id}_placeholder`;
+            if (this.textures.exists(spriteKey)) {
+                const sprite = this.add.sprite(x, y, spriteKey);
+                sprite.setOrigin(0.5, 1);  // Bottom-center anchor (feet on ground)
+                sprite.setScale(baseScale);
+                sprite.setPipeline('Light2D');
+                sprite.setDepth(100);  // Above background, same as player
+
+                // Adjust scale if NPC has specific height ratio
+                if (npc.heightRatio) {
+                    sprite.setScale(baseScale * npc.heightRatio);
+                }
+
+                this.npcSprites[npc.id] = sprite;
+                console.log('[RoomScene] Created NPC sprite:', npc.id, 'at', x, y);
+            } else {
+                console.warn('[RoomScene] NPC sprite not found:', spriteKey);
+            }
         });
     }
 

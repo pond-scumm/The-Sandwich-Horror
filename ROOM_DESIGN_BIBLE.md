@@ -319,7 +319,7 @@ Adjust proportionally for FAR and CLOSE cameras. Wainscoting should always reach
 ### Doors
 
 - Height: ~1.5x Nate's height at current camera distance (FAR: ~338px, MEDIUM: ~473px, CLOSE: ~608px)
-- Width: `p * 70` (140px) at MEDIUM
+- Width: **~140px** (realistic door proportions, not sized to Nate). Reference the interior room doors for correct sizing. Doors should look like real doors that a person walks through, not narrow slits sized exactly to the character sprite width
 - Frame: `p * 6` (12px) border in WOOD_DARK
 - 4-panel design with highlight/shadow edges
 - Brass handle with keyhole detail
