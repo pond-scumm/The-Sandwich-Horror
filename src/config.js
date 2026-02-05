@@ -14,7 +14,8 @@ const config = {
     // RoomScene first - loads 'interior' by default, uses data-driven layers
     // UIScene runs in parallel for persistent UI (cursors, inventory, etc.)
     // BackyardScene removed - now data-driven via backyard.js
-    scene: [RoomScene, UIScene, FrontOfHouseScene, InteriorScene, WoodsScene, EarlsYardScene, AlienRoomScene],
+    // EarlsYardScene removed - now data-driven via earls_yard.js
+    scene: [RoomScene, UIScene, FrontOfHouseScene, InteriorScene, WoodsScene, AlienRoomScene],
     input: { activePointers: 1 }
 };
 

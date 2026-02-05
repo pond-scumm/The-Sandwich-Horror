@@ -412,6 +412,105 @@
         },
 
         /**
+         * Apply a "radio" effect to a music channel (tinny, vintage sound)
+         * @param {string} channel - Channel name to apply effect to
+         */
+        applyRadioEffect(channel) {
+            const sound = this.channels[channel];
+            if (!sound || !sound.isPlaying) {
+                if (TSH.debug) console.warn(`Cannot apply radio effect: channel "${channel}" not playing`);
+                return;
+            }
+
+            // Check if we're using Web Audio (not HTML5 Audio)
+            if (!this._game.sound.context) {
+                if (TSH.debug) console.warn('Web Audio not available, cannot apply radio effect');
+                return;
+            }
+
+            try {
+                const context = this._game.sound.context;
+
+                // Get the sound's source node
+                // In Phaser 3, the sound's source is accessible but we need to tap into it
+                // We'll create a filter chain and connect it
+
+                // Create high-pass filter (removes bass, creates tinny sound)
+                const highPass = context.createBiquadFilter();
+                highPass.type = 'highpass';
+                highPass.frequency.value = 300;  // Cut frequencies below 300Hz
+                highPass.Q.value = 0.7;
+
+                // Create low-pass filter (removes harsh highs, creates muffled vintage sound)
+                const lowPass = context.createBiquadFilter();
+                lowPass.type = 'lowpass';
+                lowPass.frequency.value = 3000;  // Cut frequencies above 3000Hz
+                lowPass.Q.value = 0.7;
+
+                // Create a slight band-pass boost for that "radio speaker" mid-range
+                const midBoost = context.createBiquadFilter();
+                midBoost.type = 'peaking';
+                midBoost.frequency.value = 1200;  // Boost around 1200Hz
+                midBoost.Q.value = 1.5;
+                midBoost.gain.value = 3;  // +3dB boost
+
+                // Store filters on the sound object so we can access them later
+                sound._radioFilters = {
+                    highPass: highPass,
+                    lowPass: lowPass,
+                    midBoost: midBoost
+                };
+
+                // Connect the filter chain: source -> highPass -> midBoost -> lowPass -> destination
+                // Note: Phaser manages the audio graph, but we can insert our filters
+                // We need to disconnect and reconnect the sound's audio node
+
+                if (sound.source && sound.source.connect) {
+                    // Disconnect from destination
+                    sound.source.disconnect();
+
+                    // Connect through our filter chain
+                    sound.source.connect(highPass);
+                    highPass.connect(midBoost);
+                    midBoost.connect(lowPass);
+                    lowPass.connect(sound.volumeNode || context.destination);
+
+                    if (TSH.debug) {
+                        console.log(`TSH.Audio: Applied radio effect to channel "${channel}"`);
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to apply radio effect:', e);
+            }
+        },
+
+        /**
+         * Remove radio effect from a channel
+         * @param {string} channel - Channel name to remove effect from
+         */
+        removeRadioEffect(channel) {
+            const sound = this.channels[channel];
+            if (!sound || !sound._radioFilters) return;
+
+            try {
+                // Reconnect directly without filters
+                if (sound.source && sound.source.connect) {
+                    const context = this._game.sound.context;
+                    sound.source.disconnect();
+                    sound.source.connect(sound.volumeNode || context.destination);
+                }
+
+                delete sound._radioFilters;
+
+                if (TSH.debug) {
+                    console.log(`TSH.Audio: Removed radio effect from channel "${channel}"`);
+                }
+            } catch (e) {
+                console.error('Failed to remove radio effect:', e);
+            }
+        },
+
+        /**
          * Duck music volume temporarily (for dialogue)
          * @param {number} duration - Duck duration in ms
          * @param {number} duckLevel - Volume multiplier during duck (default: 0.3)

@@ -199,14 +199,14 @@ class UIScene extends Phaser.Scene {
             g.fillRect(-5 * p + so, -2 * p + so, p, 4 * p);
             g.fillRect(-4 * p + so, -3 * p + so, p, 6 * p);
             g.fillRect(-3 * p + so, -4 * p + so, p, 8 * p);
-            g.fillRect(2 * p + so, -2 * p + so, 6 * p, 4 * p);  // Shaft
+            g.fillRect(-3 * p + so, -2 * p + so, 6 * p, 4 * p);  // Shaft connects to triangle base
         } else {
             // Right-pointing arrow shadow
             g.fillRect(5 * p + so, -1 * p + so, p, 2 * p);
             g.fillRect(4 * p + so, -2 * p + so, p, 4 * p);
             g.fillRect(3 * p + so, -3 * p + so, p, 6 * p);
             g.fillRect(2 * p + so, -4 * p + so, p, 8 * p);
-            g.fillRect(-4 * p + so, -2 * p + so, 6 * p, 4 * p);  // Shaft
+            g.fillRect(-3 * p + so, -2 * p + so, 6 * p, 4 * p);  // Shaft connects to triangle base
         }
 
         // Draw main arrow (white with red tint for exit indicator)
@@ -218,14 +218,14 @@ class UIScene extends Phaser.Scene {
             g.fillRect(-5 * p, -2 * p, p, 4 * p);
             g.fillRect(-4 * p, -3 * p, p, 6 * p);
             g.fillRect(-3 * p, -4 * p, p, 8 * p);
-            g.fillRect(2 * p, -2 * p, 6 * p, 4 * p);  // Shaft
+            g.fillRect(-3 * p, -2 * p, 6 * p, 4 * p);  // Shaft connects to triangle base
         } else {
             // Right-pointing arrow
             g.fillRect(5 * p, -1 * p, p, 2 * p);
             g.fillRect(4 * p, -2 * p, p, 4 * p);
             g.fillRect(3 * p, -3 * p, p, 6 * p);
             g.fillRect(2 * p, -4 * p, p, 8 * p);
-            g.fillRect(-4 * p, -2 * p, 6 * p, 4 * p);  // Shaft
+            g.fillRect(-3 * p, -2 * p, 6 * p, 4 * p);  // Shaft connects to triangle base
         }
     }
 

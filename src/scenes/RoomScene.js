@@ -793,7 +793,7 @@ class RoomScene extends BaseScene {
 
         // Handle main music track
         if (room.audio.music) {
-            const { key, volume = 0.7, fade = 1000 } = room.audio.music;
+            const { key, volume = 0.7, fade = 1000, effects = [] } = room.audio.music;
 
             if (shouldContinueMusic) {
                 // Music continues - just adjust volume if needed
@@ -801,6 +801,9 @@ class RoomScene extends BaseScene {
                     console.log(`[RoomScene] Music "${key}" continues from ${previousRoom}`);
                 }
                 TSH.Audio.setChannelVolume('main', volume);
+
+                // Apply effects even if continuing (in case they weren't applied before)
+                this.applyMusicEffects('main', effects);
             } else {
                 // Start new music (or switch tracks)
                 TSH.Audio.playMusic(key, {
@@ -808,6 +811,13 @@ class RoomScene extends BaseScene {
                     volume: volume,
                     fade: fade
                 });
+
+                // Apply audio effects after a short delay (let the sound initialize)
+                if (effects.length > 0) {
+                    this.time.delayedCall(100, () => {
+                        this.applyMusicEffects('main', effects);
+                    });
+                }
             }
         } else {
             // No music defined for this room - stop main channel
@@ -861,6 +871,18 @@ class RoomScene extends BaseScene {
             console.log(`[RoomScene] Audio setup complete for ${this.roomId}`);
             TSH.Audio.dump();
         }
+    }
+
+    // Apply audio effects to a music channel
+    applyMusicEffects(channel, effects) {
+        if (!effects || effects.length === 0) return;
+
+        effects.forEach(effect => {
+            if (effect === 'radio' && TSH.Audio.applyRadioEffect) {
+                TSH.Audio.applyRadioEffect(channel);
+            }
+            // Add more effects here as needed
+        });
     }
 
     // ========== DEFAULT DATA ==========
