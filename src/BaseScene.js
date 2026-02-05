@@ -249,6 +249,7 @@
                     // Tap/click to skip dialogue (highest priority, works on all platforms)
                     if (this.dialogActive && !this.settingsMenuOpen) {
                         this.skipToNextDialog();
+                        this.clickedUI = true;  // Prevent pointerup from processing as hotspot click
                         return;
                     }
 
@@ -1849,7 +1850,7 @@
                 this.settingsReturnBtnHovered = false;
 
                 // Version number above Return button
-                const versionText = this.add.text(0, btnY - 45, 'v0.1.8', {
+                const versionText = this.add.text(0, btnY - 45, 'v0.1.9', {
                     fontFamily: '"Press Start 2P", cursive',
                     fontSize: '14px',
                     color: '#ffffff'
