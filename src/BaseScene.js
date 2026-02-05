@@ -403,20 +403,26 @@
             // ========== SETTINGS MENU INPUT ==========
 
             handleSettingsPointerDown(pointer) {
-                // Check if clicking X button or Return button (use hover states)
-                if (this.settingsCloseBtnHovered || this.settingsReturnBtnHovered) {
+                // Use both hover states (desktop) and direct coordinate checks (mobile quick taps)
+
+                // Check if clicking X button or Return button
+                if (this.settingsCloseBtnHovered || this.settingsReturnBtnHovered ||
+                    this.isClickOnSettingsCloseButton(pointer) || this.isClickOnSettingsReturnButton(pointer)) {
                     this.closeSettingsMenu();
                     return;
                 }
 
                 // Check fullscreen checkbox
-                if (this.fullscreenCheckboxHovered) {
+                if (this.fullscreenCheckboxHovered || this.isClickOnFullscreenCheckbox(pointer)) {
                     this.toggleFullscreen();
                     return;
                 }
 
                 // Check volume slider interaction (mute buttons and slider tracks)
-                this.checkVolumeSliderClickByHover();
+                // Try hover-based first, then coordinate-based
+                if (!this.checkVolumeSliderClickByHover()) {
+                    this.isClickOnVolumeMuteButton(pointer) || this.isClickOnVolumeSlider(pointer);
+                }
             }
 
             // ========== DESKTOP INPUT HANDLERS ==========
@@ -1850,7 +1856,7 @@
                 this.settingsReturnBtnHovered = false;
 
                 // Version number above Return button
-                const versionText = this.add.text(0, btnY - 45, 'v0.1.9', {
+                const versionText = this.add.text(0, btnY - 45, 'v0.1.10', {
                     fontFamily: '"Press Start 2P", cursive',
                     fontSize: '14px',
                     color: '#ffffff'
@@ -2293,7 +2299,7 @@
             }
 
             checkVolumeSliderClickByHover() {
-                if (!this.volumeSliders) return;
+                if (!this.volumeSliders) return false;
 
                 for (const key of Object.keys(this.volumeSliders)) {
                     const slider = this.volumeSliders[key];
@@ -2301,7 +2307,7 @@
                     // Check if mute button is hovered
                     if (slider.muteHovered) {
                         this.toggleVolumeMute(key);
-                        return;
+                        return true;
                     }
 
                     // Check if slider track is hovered (start drag)
@@ -2309,9 +2315,10 @@
                         this.draggingVolumeSlider = key;
                         // Immediately update to clicked position using activePointer
                         this.updateVolumeSliderDrag(this.input.activePointer);
-                        return;
+                        return true;
                     }
                 }
+                return false;
             }
 
             syncVolumeSliders() {
