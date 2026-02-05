@@ -1,7 +1,7 @@
 # The Sandwich Horror — Architecture Guide
 ## For Claude Code Implementation
 
-Last Updated: February 5, 2026 (UIScene + Combinations - Phase 4d)
+Last Updated: February 5, 2026 (State-driven hotspots pattern documented)
 
 ---
 
@@ -60,7 +60,7 @@ When resuming after compaction, re-read this guide and check `git log --oneline 
 ### TODO (Not Yet Implemented)
 - [x] **Item-on-item combinations** — Click item B while item A is selected to combine (`tryCombineItems` in BaseScene.js)
 - [x] **Item pickup from hotspots** — `giveItem`, `removeAfterPickup`, `pickupFlag` supported in RoomScene.js
-- [ ] **State-driven hotspot changes** — `states` system from architecture spec not implemented (hotspots that change responses based on flags)
+- [x] **State-driven hotspots** — Pattern documented below; use when building/redesigning rooms with puzzle logic
 - [ ] **Cutscene/sequence system** — No async/await wrappers for walkTo/showDialog to enable scripted sequences
 
 ### Legacy Scene Classes (Exist but Not Data-Driven)
@@ -305,6 +305,60 @@ TSH.Rooms.laboratory = {
 ```
 
 A single scene class (or small number of classes) reads this data and renders any room. This replaces the current approach of one massive scene class per room.
+
+---
+
+## 3.1 State-Driven Hotspots (Standard Pattern)
+
+**All room hotspots are state-driven.** When building or redesigning a room, `getHotspotData()` reads from `TSH.State` to determine what hotspots exist, what they're named, what their examine text says, and what actions are available. Rooms are renderers of current game state, not containers of static data.
+
+This is the standard pattern, not a future refactor. Every new or redesigned room uses it from the start.
+
+```javascript
+getHotspotData(height) {
+    const hotspots = [];
+
+    // Hotspot exists conditionally
+    if (!TSH.State.getFlag('clock.clock_fallen')) {
+        hotspots.push({ id: 'wall-clock', name: 'Wall Clock', ... });
+    }
+
+    // Hotspot changes based on knowledge
+    hotspots.push({
+        id: 'teleporter',
+        name: TSH.State.getFlag('finale.knows_teleporter_truth')
+            ? 'Cloning Device' : 'Teleporter',
+        lookResponse: TSH.State.getFlag('finale.knows_teleporter_truth')
+            ? 'The cloning machine. Hector failed to mention the death ray.'
+            : 'Some kind of teleportation device?',
+        ...
+    });
+
+    return hotspots;
+}
+```
+
+**For rooms where puzzles aren't implemented yet**, hotspots can start simple with no conditionals. Add state conditionals when wiring up the puzzle logic for that room. Don't add speculative conditionals for puzzles that aren't built yet.
+
+**Mid-visit hotspot updates:** Rooms where state changes while the player is present (e.g., catching Hector's body) should declare relevant flags and listen for changes:
+
+```javascript
+this.relevantFlags = ['hector.body_captured', 'hector.lab_coat_dropped'];
+TSH.State.on('flagChanged', (data) => {
+    if (this.relevantFlags.includes(data.path)) {
+        this.refreshHotspots();
+    }
+});
+```
+
+**What can change per hotspot:**
+| Property | Example |
+|----------|---------|
+| Existence | TV hotspot gone after player steals it |
+| Name | "Teleporter" → "Cloning Device" |
+| Examine text | Different description after learning the truth |
+| Available actions | "Take" only available when alien is on roof |
+| Position | Clock on wall → clock on floor after falling |
 
 ---
 
