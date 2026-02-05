@@ -1,7 +1,7 @@
 # The Sandwich Horror — Architecture Guide
 ## For Claude Code Implementation
 
-Last Updated: February 4, 2026 (Settings Menu & Volume Controls)
+Last Updated: February 5, 2026 (Item Icons System)
 
 ---
 
@@ -40,6 +40,8 @@ This document captures all architecture decisions made during planning. Claude C
 - [x] Fullscreen toggle checkbox in settings menu
 - [x] Volume sliders (Master, Music, Effects) with mute buttons and percentage display
 - [x] Hotspot highlighting system (Shift key on desktop, long-press on mobile)
+- [x] Character placeholder sprites with camera preset scaling (`nate_placeholder.png`, `hector_placeholder.png`)
+- [x] Procedural item icons system (`src/data/items/icons.js`) with p=4 chunky pixel style
 
 ### TODO (Not Yet Implemented)
 - [x] **Item-on-item combinations** — Click item B while item A is selected to combine (`tryCombineItems` in BaseScene.js)
@@ -248,7 +250,74 @@ Each recipe specifies what's consumed, what's produced, what flags are set, and 
 
 ---
 
-## 6. Save/Load
+## 6. Item Icons
+
+Inventory items display as procedural pixel-art icons drawn at runtime. Defined in `src/data/items/icons.js`.
+
+### Style Guidelines
+
+- **Pixel size:** `p = 4` (chunky, matches character sprites per ROOM_DESIGN_BIBLE)
+- **Icon area:** ~70px (fits 70% of inventory slot)
+- **Working grid:** ~17x17 "game pixels" maximum
+- **Colors:** Use defined palettes, avoid pure black/white
+
+### Adding a New Icon
+
+1. Add drawing function to `TSH.ItemIcons` in `icons.js`:
+
+```javascript
+TSH.ItemIcons = {
+    // ... existing icons ...
+
+    my_new_item: function(graphics, x, y, size) {
+        const g = graphics;
+        const p = 4;  // Pixel size
+
+        // Center the icon (adjust based on your design)
+        const baseX = x - 6 * p;  // Half width in pixels
+        const baseY = y - 7 * p;  // Half height in pixels
+
+        // Define colors
+        const MAIN_COLOR = 0xaabbcc;
+        const SHADOW = 0x889900;
+
+        // Draw pixels using helper
+        // pixel(g, px, py, color, baseX, baseY) draws a p×p square
+        g.fillStyle(MAIN_COLOR, 1);
+        g.fillRect(baseX + 0 * p, baseY + 0 * p, p, p);  // One pixel at (0,0)
+        // ... continue drawing ...
+    }
+};
+```
+
+2. The icon automatically appears in inventory and cursor when that item is selected.
+
+### Helper Pattern
+
+```javascript
+// Inline pixel helper (define inside each icon function)
+function pixel(g, px, py, color, baseX, baseY) {
+    g.fillStyle(color, 1);
+    g.fillRect(baseX + px * p, baseY + py * p, p, p);
+}
+```
+
+### Fallback Behavior
+
+Items without a `TSH.ItemIcons[item.id]` function display as colored rounded rectangles using `item.color` (default: gold `0xffd700`).
+
+### Current Icons
+
+| Item ID | Description |
+|---------|-------------|
+| `help_wanted_ad` | Torn paper with text lines |
+| `candle` | Cream candle with wick, brass holder |
+| `lit_candle` | Candle with orange/yellow flame |
+| `matches` | Blue matchbox with red-tipped matches |
+
+---
+
+## 7. Save/Load
 
 3 slots, JSON to localStorage.
 
@@ -264,7 +333,7 @@ Version field enables future migration of old saves.
 
 ---
 
-## 7. Audio System
+## 8. Audio System
 
 Channel-based audio with volume categories. Initialized after Phaser game creates.
 
@@ -426,7 +495,7 @@ create() {
 
 ---
 
-## 8. NPC States
+## 9. NPC States
 
 Tracked as string enums in `TSH.State`:
 
@@ -443,7 +512,7 @@ Tracked as string enums in `TSH.State`:
 
 ---
 
-## 9. File Structure
+## 10. File Structure
 
 ```
 src/
@@ -478,7 +547,7 @@ src/
 
 ---
 
-## 10. Script Loading Order (index.html)
+## 11. Script Loading Order (index.html)
 
 1. Phaser CDN
 2. `TSH.js` (namespace)
@@ -490,7 +559,7 @@ src/
 
 ---
 
-## 11. Technical Specs
+## 12. Technical Specs
 
 - **Engine:** Phaser 3.60 via CDN
 - **No build tools.** No npm, no bundler. Script tags only.
@@ -503,7 +572,7 @@ src/
 
 ---
 
-## 12. Room List (18 rooms, 5-6 cuttable)
+## 13. Room List (18 rooms, 5-6 cuttable)
 
 1. Bus Stop (cutscene only, cuttable)
 2. Woods (intro only, cuttable)
@@ -526,7 +595,7 @@ src/
 
 ---
 
-## 13. What NOT to Do
+## 14. What NOT to Do
 
 - Don't use Phaser registry for game state (use TSH.State)
 - Don't write monolithic scene classes with inline drawing code
@@ -537,7 +606,7 @@ src/
 
 ---
 
-## 14. Interaction Systems
+## 15. Interaction Systems
 
 ### 2-Action System
 - **Left-click on background**: Walk to location
@@ -590,7 +659,7 @@ src/
 
 ---
 
-## 15. Conversation Mode
+## 16. Conversation Mode
 
 When player left-clicks on an NPC, the game enters conversation mode:
 
@@ -615,7 +684,7 @@ When player left-clicks on an NPC, the game enters conversation mode:
 
 ---
 
-## 16. Mobile Optimization
+## 17. Mobile Optimization
 
 ### Touch Targets
 - Verb coin actions: Minimum 60px, recommended 70px
@@ -645,7 +714,7 @@ When player left-clicks on an NPC, the game enters conversation mode:
 
 ---
 
-## 17. Settings Menu
+## 18. Settings Menu
 
 The settings menu provides player options without leaving the game.
 
@@ -696,7 +765,7 @@ Three sliders with labels above:
 
 ---
 
-## 18. Hotspot Highlighting
+## 19. Hotspot Highlighting
 
 Helps players find interactive elements without pixel hunting.
 
@@ -728,7 +797,7 @@ hotspots: [
 
 ---
 
-## 19. Testing Checklist
+## 20. Testing Checklist
 
 ### Core Functionality
 - [ ] Character walks correctly within walkable area
@@ -757,7 +826,7 @@ hotspots: [
 
 ---
 
-## 20. Development Workflow
+## 21. Development Workflow
 
 ### Version Number
 

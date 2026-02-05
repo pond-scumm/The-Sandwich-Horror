@@ -1855,7 +1855,7 @@
                 this.settingsReturnBtnHovered = false;
 
                 // Version number above Return button
-                const versionText = this.add.text(0, btnY - 45, 'v0.1.14', {
+                const versionText = this.add.text(0, btnY - 45, 'v0.1.15', {
                     fontFamily: '"Press Start 2P", cursive',
                     fontSize: '14px',
                     color: '#ffffff'
@@ -2807,6 +2807,24 @@
                 console.log('[Inventory] Combination successful! Produced:', result.produces);
             }
 
+            // Helper: Draw item icon (custom graphic or fallback colored square)
+            drawItemIcon(item, size) {
+                const itemGraphic = this.add.graphics();
+
+                // Check for custom icon drawing function
+                if (TSH.ItemIcons && TSH.ItemIcons[item.id]) {
+                    TSH.ItemIcons[item.id](itemGraphic, 0, 0, size);
+                } else {
+                    // Fallback: colored rounded rectangle
+                    itemGraphic.fillStyle(item.color || 0xffd700, 1);
+                    itemGraphic.fillRoundedRect(-size / 2, -size / 2, size, size, 10);
+                    itemGraphic.lineStyle(2, 0x000000, 0.3);
+                    itemGraphic.strokeRoundedRect(-size / 2, -size / 2, size, size, 10);
+                }
+
+                return itemGraphic;
+            }
+
             updateSlotItem(slot, newItem) {
                 // Update a slot's item in-place (preserves slot position)
                 slot.display.removeAll(true);
@@ -2814,11 +2832,7 @@
 
                 // Icon size is 70% of slot size
                 const itemSize = Math.floor(slot.size * 0.7);
-                const itemGraphic = this.add.graphics();
-                itemGraphic.fillStyle(newItem.color || 0xffd700, 1);
-                itemGraphic.fillRoundedRect(-itemSize / 2, -itemSize / 2, itemSize, itemSize, 10);
-                itemGraphic.lineStyle(2, 0x000000, 0.3);
-                itemGraphic.strokeRoundedRect(-itemSize / 2, -itemSize / 2, itemSize, itemSize, 10);
+                const itemGraphic = this.drawItemIcon(newItem, itemSize);
                 slot.display.add(itemGraphic);
 
                 const slotSize = slot.size;
@@ -2878,12 +2892,9 @@
                 // Update the cursor to show a new item (when selected item transforms)
                 this.itemCursor.removeAll(true);
 
-                const cursorBg = this.add.graphics();
-                cursorBg.fillStyle(item.color || 0xffd700, 1);
-                cursorBg.fillRoundedRect(-25, -25, 50, 50, 8);
-                cursorBg.lineStyle(2, 0xffffff, 0.8);
-                cursorBg.strokeRoundedRect(-25, -25, 50, 50, 8);
-                this.itemCursor.add(cursorBg);
+                // Draw item icon at cursor size (50px)
+                const cursorIcon = this.drawItemIcon(item, 50);
+                this.itemCursor.add(cursorIcon);
 
                 this.itemCursorHighlight = this.add.graphics();
                 this.itemCursorHighlight.lineStyle(4, 0xff0000, 1);
@@ -2924,11 +2935,7 @@
 
                 // Icon size is 70% of slot size
                 const itemSize = Math.floor(slot.size * 0.7);
-                const itemGraphic = this.add.graphics();
-                itemGraphic.fillStyle(item.color || 0xffd700, 1);
-                itemGraphic.fillRoundedRect(-itemSize / 2, -itemSize / 2, itemSize, itemSize, 10);
-                itemGraphic.lineStyle(2, 0x000000, 0.3);
-                itemGraphic.strokeRoundedRect(-itemSize / 2, -itemSize / 2, itemSize, itemSize, 10);
+                const itemGraphic = this.drawItemIcon(item, itemSize);
                 slot.display.add(itemGraphic);
 
                 const slotSize = slot.size;
@@ -2998,13 +3005,10 @@
 
                 this.crosshairCursor.setVisible(false);
 
+                // Draw item icon as cursor (50px size)
                 this.itemCursor.removeAll(true);
-                const cursorBg = this.add.graphics();
-                cursorBg.fillStyle(item.color || 0xffd700, 1);
-                cursorBg.fillRoundedRect(-25, -25, 50, 50, 8);
-                cursorBg.lineStyle(2, 0xffffff, 0.8);
-                cursorBg.strokeRoundedRect(-25, -25, 50, 50, 8);
-                this.itemCursor.add(cursorBg);
+                const cursorIcon = this.drawItemIcon(item, 50);
+                this.itemCursor.add(cursorIcon);
 
                 // Red outline highlight (shown when over hotspot)
                 this.itemCursorHighlight = this.add.graphics();
