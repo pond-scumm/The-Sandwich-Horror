@@ -179,50 +179,54 @@ class UIScene extends Phaser.Scene {
         const g = this.arrowGraphics;
         g.clear();
 
-        const p = 3;  // Pixel size for chunky look
+        const p = 4;  // Pixel size for chunky look
         const color = 0xffffff;
         const shadow = 0x000000;
 
-        // Arrow pointing in the given direction
-        // Base arrow points right, we'll flip for left
+        // Horizontal arrow matching BaseScene style but with shadow
+        // flip: 1 for right, -1 for left
         const flip = direction === 'left' ? -1 : 1;
 
-        g.fillStyle(shadow, 0.5);
         // Shadow offset
         const so = 2;
 
-        // Draw shadow first
-        g.fillRect(flip * 0 * p + so, -1 * p + so, p, p);
-        g.fillRect(flip * 1 * p + so, -2 * p + so, p, p);
-        g.fillRect(flip * 2 * p + so, -3 * p + so, p, p);
-        g.fillRect(flip * 3 * p + so, -4 * p + so, p, p);
-        g.fillRect(flip * 3 * p + so, -3 * p + so, p, p);
-        g.fillRect(flip * 3 * p + so, -2 * p + so, p, p);
-        g.fillRect(flip * 3 * p + so, -1 * p + so, p, p);
-        g.fillRect(flip * 3 * p + so, 0 * p + so, p, p);
-        g.fillRect(flip * 3 * p + so, 1 * p + so, p, p);
-        g.fillRect(flip * 3 * p + so, 2 * p + so, p, p);
-        g.fillRect(flip * 3 * p + so, 3 * p + so, p, p);
-        g.fillRect(flip * 2 * p + so, 2 * p + so, p, p);
-        g.fillRect(flip * 1 * p + so, 1 * p + so, p, p);
-        g.fillRect(flip * 0 * p + so, 0 * p + so, p, p);
+        // Draw shadow first (red-tinted shadow for better visibility)
+        g.fillStyle(0x330000, 0.8);
 
-        // Draw arrow
-        g.fillStyle(color, 1);
-        g.fillRect(flip * 0 * p, -1 * p, p, p);
-        g.fillRect(flip * 1 * p, -2 * p, p, p);
-        g.fillRect(flip * 2 * p, -3 * p, p, p);
-        g.fillRect(flip * 3 * p, -4 * p, p, p);
-        g.fillRect(flip * 3 * p, -3 * p, p, p);
-        g.fillRect(flip * 3 * p, -2 * p, p, p);
-        g.fillRect(flip * 3 * p, -1 * p, p, p);
-        g.fillRect(flip * 3 * p, 0 * p, p, p);
-        g.fillRect(flip * 3 * p, 1 * p, p, p);
-        g.fillRect(flip * 3 * p, 2 * p, p, p);
-        g.fillRect(flip * 3 * p, 3 * p, p, p);
-        g.fillRect(flip * 2 * p, 2 * p, p, p);
-        g.fillRect(flip * 1 * p, 1 * p, p, p);
-        g.fillRect(flip * 0 * p, 0 * p, p, p);
+        if (direction === 'left') {
+            // Left-pointing arrow shadow
+            g.fillRect(-6 * p + so, -1 * p + so, p, 2 * p);
+            g.fillRect(-5 * p + so, -2 * p + so, p, 4 * p);
+            g.fillRect(-4 * p + so, -3 * p + so, p, 6 * p);
+            g.fillRect(-3 * p + so, -4 * p + so, p, 8 * p);
+            g.fillRect(2 * p + so, -2 * p + so, 6 * p, 4 * p);  // Shaft
+        } else {
+            // Right-pointing arrow shadow
+            g.fillRect(5 * p + so, -1 * p + so, p, 2 * p);
+            g.fillRect(4 * p + so, -2 * p + so, p, 4 * p);
+            g.fillRect(3 * p + so, -3 * p + so, p, 6 * p);
+            g.fillRect(2 * p + so, -4 * p + so, p, 8 * p);
+            g.fillRect(-4 * p + so, -2 * p + so, 6 * p, 4 * p);  // Shaft
+        }
+
+        // Draw main arrow (white with red tint for exit indicator)
+        g.fillStyle(0xff4444, 1);
+
+        if (direction === 'left') {
+            // Left-pointing arrow
+            g.fillRect(-6 * p, -1 * p, p, 2 * p);
+            g.fillRect(-5 * p, -2 * p, p, 4 * p);
+            g.fillRect(-4 * p, -3 * p, p, 6 * p);
+            g.fillRect(-3 * p, -4 * p, p, 8 * p);
+            g.fillRect(2 * p, -2 * p, 6 * p, 4 * p);  // Shaft
+        } else {
+            // Right-pointing arrow
+            g.fillRect(5 * p, -1 * p, p, 2 * p);
+            g.fillRect(4 * p, -2 * p, p, 4 * p);
+            g.fillRect(3 * p, -3 * p, p, 6 * p);
+            g.fillRect(2 * p, -4 * p, p, 8 * p);
+            g.fillRect(-4 * p, -2 * p, 6 * p, 4 * p);  // Shaft
+        }
     }
 
     // ── Item Cursor ─────────────────────────────────────────────────────────

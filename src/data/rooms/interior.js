@@ -4,18 +4,385 @@
 // The main hub of the house. First room the player explores after entering.
 // Connects to: laboratory (right), front_of_house (left - via front door later)
 //
-// Art: Currently using single-layer rendering from original GameScene.
-// Can be split into multiple parallax layers later for depth effect.
+// Structure: Room data first (for easy editing), drawing code below.
 // ============================================================================
 
 (function() {
     'use strict';
 
     // =========================================================================
-    // DRAWING HELPER FUNCTIONS
+    // ROOM DATA
     // =========================================================================
-    // These are extracted from the original GameScene for reuse.
-    // They draw individual furniture pieces and room elements.
+
+    TSH.Rooms.interior = {
+        id: 'interior',
+        name: "Hector's Foyer",
+
+        worldWidth: 2560,
+        screenWidth: 1280,
+        walkableArea: {
+            polygon: [
+                { x: 0, y: 0.736 },
+                { x: 426, y: 0.729 },
+                { x: 503, y: 0.747 },
+                { x: 614, y: 0.744 },
+                { x: 802, y: 0.740 },
+                { x: 1033, y: 0.740 },
+                { x: 1311, y: 0.739 },
+                { x: 1584, y: 0.744 },
+                { x: 1636, y: 0.764 },
+                { x: 1808, y: 0.749 },
+                { x: 1835, y: 0.733 },
+                { x: 2040, y: 0.738 },
+                { x: 2076, y: 0.747 },
+                { x: 2130, y: 0.747 },
+                { x: 2178, y: 0.735 },
+                { x: 2467, y: 0.731 },
+                { x: 2544, y: 0.726 },
+                { x: 2542, y: 0.985 },
+                { x: 1862, y: 0.985 },
+                { x: 1234, y: 0.969 },
+                { x: 612, y: 0.974 },
+                { x: 18, y: 0.974 }
+            ]
+        },
+
+        lighting: {
+            enabled: true,
+            ambient: 0x9a8878,
+            ambientMobile: 0xb8a090,
+            sources: [
+                { id: 'moon_left', x: 380, y: 0.50, radius: 350, color: 0xaabbdd, intensity: 0.8 },
+                { id: 'moon_right', x: 1920, y: 0.50, radius: 320, color: 0xaabbdd, intensity: 0.7 },
+                { id: 'fireplace', x: 900, y: 0.60, radius: 450, type: 'fireplace', intensity: 2.0 },
+                { id: 'fireplace2', x: 900, y: 0.72, radius: 300, color: 0xffaa66, intensity: 1.5 },
+                { id: 'lab_glow', x: 2400, y: 0.60, radius: 350, color: 0xaaffaa, intensity: 1.0 },
+                { id: 'desk_lamp', x: 1750, y: 0.45, radius: 200, type: 'lamp', intensity: 0.8 }
+            ]
+        },
+
+        audio: {
+            music: {
+                key: 'interior_theme',
+                volume: 0.6,
+                fade: 1000
+            },
+            continueFrom: ['laboratory']
+        },
+
+        layers: [
+            {
+                name: 'room',
+                scrollFactor: 1.0,
+                depth: 50,
+                draw: drawInteriorRoom
+            }
+        ],
+
+        spawns: {
+            default: { x: 250, y: 0.82 },
+            from_lab: { x: 2200, y: 0.82 },
+            from_laboratory: { x: 2200, y: 0.82 },
+            from_outside: { x: 250, y: 0.82 },
+            from_front_of_house: { x: 250, y: 0.82 },
+            from_backyard: { x: 1280, y: 0.82 },
+            from_attic: { x: 1280, y: 0.82 },
+            from_alien_room: { x: 1280, y: 0.82 }
+        },
+
+        exits: [
+            {
+                edge: 'right',
+                x: 2520,
+                width: 80,
+                target: 'backyard',
+                spawnPoint: 'from_interior'
+            }
+        ],
+
+        npcs: [],
+
+        // =====================================================================
+        // HOTSPOTS
+        // =====================================================================
+
+        hotspots: [
+            // === BACK ROW (behind furniture) ===
+            {
+                id: 'front_door',
+                x: 169, y: 0.476, w: 146, h: 0.474,
+                interactX: 220, interactY: 0.82,
+                name: 'Front Door',
+                verbs: { action: 'Open', look: 'Examine' },
+                responses: {
+                    look: "Solid oak! They don't make 'em like this anymore.",
+                    action: "Nope. Didn't hike through those creepy woods just to chicken out now."
+                }
+            },
+            {
+                id: 'window_left',
+                x: 402, y: 0.39, w: 185, h: 0.458,
+                interactX: 402, interactY: 0.82,
+                name: 'Window',
+                verbs: { action: 'Open', look: 'Look through' },
+                responses: {
+                    look: "Wow, look at that moon! The garden's a mess though. Very... wild.",
+                    action: "Painted shut. Like, really painted shut."
+                }
+            },
+            {
+                id: 'coat_rack',
+                x: 38, y: 0.508, w: 61, h: 0.377,
+                interactX: 80, interactY: 0.82,
+                name: 'Coat Rack',
+                verbs: { action: 'Search', look: 'Examine' },
+                responses: {
+                    look: "Ooh, vintage! The moths think so too, apparently.",
+                    action: "Receipt from 1987: 'eggs, assorted beakers.' That's a grocery list I can respect."
+                }
+            },
+            {
+                id: 'small_table',
+                x: 541, y: 0.678, w: 72, h: 0.097,
+                interactX: 541, interactY: 0.82,
+                name: 'Small Table',
+                verbs: { action: 'Search', look: 'Examine' },
+                responses: {
+                    look: "That's not a table, that's a mail fort. Years of 'Science Monthly'! Jealous.",
+                    action: "All addressed to 'Dr. H. Manzana.' Someone's popular with the post office."
+                }
+            },
+            {
+                id: 'grandfather_clock',
+                x: 670, y: 0.483, w: 77, h: 0.464,
+                interactX: 650, interactY: 0.82,
+                name: 'Grandfather Clock',
+                verbs: { action: 'Check time', look: 'Examine' },
+                responses: {
+                    look: "What a beauty! The second hand's doing something funky though. Tick-tick... tick.",
+                    action: "Almost midnight. Spooky! I love it."
+                }
+            },
+            {
+                id: 'fireplace',
+                x: 895, y: 0.563, w: 186, h: 0.303,
+                interactX: 895, interactY: 0.82,
+                name: 'Fireplace',
+                verbs: { action: 'Warm hands', look: 'Examine' },
+                responses: {
+                    look: "Now THAT'S a fireplace. Mantle's got all sorts of stuff on it.",
+                    action: "Ohhh yes. Toasty. My fingers were basically icicles."
+                }
+            },
+            {
+                id: 'mantle_photos',
+                x: 862, y: 0.36, w: 101, h: 0.05,
+                interactX: 862, interactY: 0.82,
+                name: 'Mantle Photos',
+                verbs: { action: 'Pick up', look: 'Examine' },
+                responses: {
+                    look: "Old photos! Awards, colleagues... the guy smiled more back then. Wonder what happened.",
+                    action: "Better not. Those aren't mine."
+                }
+            },
+            {
+                id: 'candle',
+                x: 960, y: 0.344, w: 17, h: 0.076,
+                interactX: 960, interactY: 0.82,
+                name: 'Candle',
+                verbs: { action: 'Take', look: 'Examine' },
+                responses: {
+                    look: "Ooh, fancy brass candlestick! Very atmospheric.",
+                    action: "Nah, that'd be rude. Can't just steal a guy's ambiance."
+                }
+            },
+            {
+                id: 'matches',
+                x: 991, y: 0.377, w: 20, h: 0.022,
+                interactX: 960, interactY: 0.82,
+                name: 'Matches',
+                verbs: { action: 'Take', look: 'Examine' },
+                giveItem: 'matches',
+                removeAfterPickup: true,
+                responses: {
+                    look: "A little box of matches. Could come in handy!",
+                    action: "I'll take these. You never know when you need fire."
+                }
+            },
+            {
+                id: 'bookshelf',
+                x: 1173, y: 0.473, w: 177, h: 0.454,
+                interactX: 1100, interactY: 0.82,
+                name: 'Bookshelf',
+                verbs: { action: 'Search', look: 'Browse' },
+                responses: {
+                    look: "Floor to ceiling! Science, philosophy, everything. This is my kind of chaos.",
+                    action: "'Interdimensional Postal Services'?! I need to work here."
+                }
+            },
+            {
+                id: 'window_right',
+                x: 1926, y: 0.394, w: 174, h: 0.46,
+                interactX: 1926, interactY: 0.82,
+                name: 'Right Window',
+                verbs: { action: 'Open', look: 'Look through' },
+                responses: {
+                    look: "I can see the town from here! Little twinkling lights. Cute.",
+                    action: "Also painted shut. This guy really hates fresh air, huh."
+                }
+            },
+            {
+                id: 'desk',
+                x: 1716, y: 0.659, w: 163, h: 0.145,
+                interactX: 1716, interactY: 0.82,
+                name: 'Desk',
+                verbs: { action: 'Search', look: 'Examine' },
+                responses: {
+                    look: "Whoa. Papers, blueprints, weird gizmos everywhere. This is a WORKING desk.",
+                    action: "Calculations I don't understand, diagrams I don't understand... I love it."
+                }
+            },
+            {
+                id: 'blueprints',
+                x: 1701, y: 0.362, w: 109, h: 0.104,
+                interactX: 1701, interactY: 0.82,
+                name: 'Blueprints',
+                verbs: { action: 'Take', look: 'Study' },
+                responses: {
+                    look: "Portal Mark VII? What happened to marks one through six?",
+                    action: "Can't just take someone's portal blueprints. That's Portal Theft."
+                }
+            },
+            {
+                id: 'strange_device',
+                x: 2109, y: 0.614, w: 46, h: 0.199,
+                interactX: 2109, interactY: 0.82,
+                name: 'Strange Device',
+                verbs: { action: 'Touch', look: 'Examine' },
+                responses: {
+                    look: "Brass, glass, glowing, humming... I have no idea what this is but I want one.",
+                    action: "So tempting. But I should probably not get vaporized before my interview."
+                }
+            },
+            {
+                id: 'laboratory_door',
+                x: 2352, y: 0.477, w: 143, h: 0.466,
+                interactX: 2352, interactY: 0.82,
+                name: 'Laboratory Door',
+                verbs: { action: 'Enter', look: 'Examine' },
+                responses: {
+                    look: "Green light, electrical hum... this is it! The lab!"
+                },
+                actionTrigger: {
+                    type: 'transition',
+                    target: 'laboratory',
+                    spawnPoint: 'from_interior'
+                }
+            },
+
+            // === FRONT ROW (in front of back row) ===
+            {
+                id: 'left_armchair',
+                polygon: [
+                    { x: 644, y: 0.588 },
+                    { x: 669, y: 0.588 },
+                    { x: 674, y: 0.732 },
+                    { x: 749, y: 0.739 },
+                    { x: 750, y: 0.792 },
+                    { x: 641, y: 0.793 }
+                ],
+                highlightX: 679, highlightY: 0.757,
+                interactX: 695, interactY: 0.88,
+                name: 'Left Armchair',
+                verbs: { action: 'Sit in', look: 'Examine' },
+                responses: {
+                    look: "Ooh, fancy! Burgundy leather, faces the fire. Prime napping real estate.",
+                    action: "Oh wow. OH wow. This is comfortable. I could live here."
+                }
+            },
+            {
+                id: 'right_armchair',
+                polygon: [
+                    { x: 1164, y: 0.589 },
+                    { x: 1186, y: 0.565 },
+                    { x: 1190, y: 0.794 },
+                    { x: 1080, y: 0.792 },
+                    { x: 1085, y: 0.735 },
+                    { x: 1159, y: 0.733 }
+                ],
+                highlightX: 1149, highlightY: 0.761,
+                interactX: 1135, interactY: 0.88,
+                name: 'Right Armchair',
+                verbs: { action: 'Sit in', look: 'Examine' },
+                responses: {
+                    look: "The matching chair! Two seats, facing the fire. Perfect for brainstorming. Or arguing.",
+                    action: "Also very comfortable. Hard to pick a favorite."
+                }
+            },
+            {
+                id: 'coffee_table',
+                x: 910, y: 0.766, w: 177, h: 0.068,
+                interactX: 907, interactY: 0.88,
+                name: 'Coffee Table',
+                verbs: { action: 'Search', look: 'Examine' },
+                responses: {
+                    look: "'Quantum Tunneling for Beginners,' 'Dimensional Theory,' and... 'TV Guide.' A well-rounded reader.",
+                    action: "Way over my head. But give me a few months!"
+                }
+            }
+        ],
+
+        // =====================================================================
+        // PICKUP OVERLAYS
+        // =====================================================================
+
+        pickupOverlays: [
+            {
+                hotspotId: 'matches',
+                itemId: 'matches',
+                x: 984,
+                y: 0.365,
+                depth: 55,
+                draw: (g, x, y) => {
+                    const p = 4;
+                    g.fillStyle(0x8B4513);
+                    g.fillRect(x, y, p*5, p*3);
+                    g.fillStyle(0xA0522D);
+                    g.fillRect(x, y, p*5, p);
+                    g.fillStyle(0x654321);
+                    g.fillRect(x + p*4, y, p, p*3);
+                    g.fillStyle(0x8B0000);
+                    g.fillRect(x, y + p, p*4, p);
+                }
+            }
+        ],
+
+        // =====================================================================
+        // ITEM INTERACTIONS
+        // =====================================================================
+
+        itemInteractions: {
+            fireplace: {
+                default: "I'm not throwing my {item} into the fire. That seems wasteful."
+            },
+            strange_device: {
+                default: "I wave my {item} near the device. It hums appreciatively but nothing happens."
+            },
+            _default: "I don't think the {item} works with the {hotspot}."
+        },
+
+        firstVisit: {
+            delay: 800,
+            dialogue: "Hello? Is anyone home?"
+        },
+
+        features: {
+            fireplace: true
+        }
+    };
+
+    // =========================================================================
+    // DRAWING HELPER FUNCTIONS
     // =========================================================================
 
     const COLORS = {
@@ -630,9 +997,6 @@
         g.fillStyle(COLORS.FIRE_LIGHT);
         g.fillRect(candleX + p*2, itemBaseY - p*14, p, p*2);
 
-        // Matchbox is drawn as a pickup overlay (see pickupOverlays in room data)
-        // so it can be removed dynamically when picked up
-
         const fireWidth = fireboxWidth - p*8;
         const fireX = fireboxX + (fireboxWidth - fireWidth) / 2;
         drawFire(g, fireX, floorY - p*6, fireWidth, p*14);
@@ -1091,411 +1455,5 @@
         drawStrangeDevice(g, 2080, floorY);
         drawDoor(g, 2280, 180, floorY, true);
     }
-
-    // =========================================================================
-    // ROOM DATA
-    // =========================================================================
-
-    TSH.Rooms.interior = {
-        id: 'interior',
-        name: "Hector's Foyer",
-
-        worldWidth: 2560,
-        screenWidth: 1280,
-        walkableArea: {
-            polygon: [
-                { x: 0, y: 0.736 },
-                { x: 426, y: 0.729 },
-                { x: 503, y: 0.747 },
-                { x: 614, y: 0.744 },
-                { x: 802, y: 0.740 },
-                { x: 1033, y: 0.740 },
-                { x: 1311, y: 0.739 },
-                { x: 1584, y: 0.744 },
-                { x: 1636, y: 0.764 },
-                { x: 1808, y: 0.749 },
-                { x: 1835, y: 0.733 },
-                { x: 2040, y: 0.738 },
-                { x: 2076, y: 0.747 },
-                { x: 2130, y: 0.747 },
-                { x: 2178, y: 0.735 },
-                { x: 2467, y: 0.731 },
-                { x: 2544, y: 0.726 },
-                { x: 2542, y: 0.985 },
-                { x: 1862, y: 0.985 },
-                { x: 1234, y: 0.969 },
-                { x: 612, y: 0.974 },
-                { x: 18, y: 0.974 }
-            ]
-        },
-
-        lighting: {
-            enabled: true,
-            ambient: 0x9a8878,
-            ambientMobile: 0xb8a090,
-            sources: [
-                { id: 'moon_left', x: 380, y: 0.50, radius: 350, color: 0xaabbdd, intensity: 0.8 },
-                { id: 'moon_right', x: 1920, y: 0.50, radius: 320, color: 0xaabbdd, intensity: 0.7 },
-                { id: 'fireplace', x: 900, y: 0.60, radius: 450, type: 'fireplace', intensity: 2.0 },
-                { id: 'fireplace2', x: 900, y: 0.72, radius: 300, color: 0xffaa66, intensity: 1.5 },
-                { id: 'lab_glow', x: 2400, y: 0.60, radius: 350, color: 0xaaffaa, intensity: 1.0 },
-                { id: 'desk_lamp', x: 1750, y: 0.45, radius: 200, type: 'lamp', intensity: 0.8 }
-            ]
-        },
-
-        // ========== AUDIO ==========
-        // music: Main background track (plays on 'main' channel)
-        // layers: Additional ambient sounds (each on its own channel)
-        // continueFrom: Don't restart music if coming from these rooms
-        audio: {
-            music: {
-                key: 'interior_theme',      // assets/audio/music/interior_theme.mp3
-                volume: 0.6,
-                fade: 1000
-            },
-            // layers: [
-            //     { key: 'fire_crackle', channel: 'ambient', volume: 0.3 }
-            // ],
-            continueFrom: ['laboratory']    // Music continues when returning from lab
-        },
-
-        // Single layer - original art preserved exactly
-        // Can be split into multiple parallax layers later
-        layers: [
-            {
-                name: 'room',
-                scrollFactor: 1.0,
-                depth: 50,
-                draw: drawInteriorRoom
-            }
-        ],
-
-        spawns: {
-            default: { x: 250, y: 0.82 },
-            from_lab: { x: 2200, y: 0.82 },
-            from_laboratory: { x: 2200, y: 0.82 },
-            from_outside: { x: 250, y: 0.82 },
-            from_front_of_house: { x: 250, y: 0.82 },
-            from_backyard: { x: 1280, y: 0.82 },
-            from_attic: { x: 1280, y: 0.82 },
-            from_alien_room: { x: 1280, y: 0.82 }
-        },
-
-        exits: [
-            {
-                edge: 'right',
-                x: 2520,
-                width: 80,
-                target: 'laboratory',
-                spawnPoint: 'from_interior'
-            }
-        ],
-
-        npcs: [],
-
-        hotspots: [
-            // === BACK ROW (behind furniture) ===
-            {
-                draft: true,
-                id: 'front_door',
-                x: 169, y: 0.476, w: 146, h: 0.474,
-                interactX: 220, interactY: 0.82,
-                name: 'Front Door',
-                verbs: { action: 'Open', look: 'Examine', talk: 'Talk to' },
-                responses: {
-                    look: "Solid oak! They don't make 'em like this anymore.",
-                    action: "Nope. Didn't hike through those creepy woods just to chicken out now.",
-                    talk: "Thanks for not being locked!"
-                }
-            },
-            {
-                draft: true,
-                id: 'window_left',
-                x: 402, y: 0.39, w: 185, h: 0.458,
-                interactX: 402, interactY: 0.82,
-                name: 'Window',
-                verbs: { action: 'Open', look: 'Look through', talk: 'Talk to' },
-                responses: {
-                    look: "Wow, look at that moon! The garden's a mess though. Very... wild.",
-                    action: "Painted shut. Like, really painted shut.",
-                    talk: "Goodnight, moon! ...Wait, that's a book."
-                }
-            },
-            {
-                draft: true,
-                id: 'coat_rack',
-                x: 38, y: 0.508, w: 61, h: 0.377,
-                interactX: 80, interactY: 0.82,
-                name: 'Coat Rack',
-                verbs: { action: 'Search', look: 'Examine', talk: 'Talk to' },
-                responses: {
-                    look: "Ooh, vintage! The moths think so too, apparently.",
-                    action: "Receipt from 1987: 'eggs, assorted beakers.' That's a grocery list I can respect.",
-                    talk: "Looking good! Very... dusty chic."
-                }
-            },
-            {
-                draft: true,
-                id: 'small_table',
-                x: 541, y: 0.678, w: 72, h: 0.097,
-                interactX: 541, interactY: 0.82,
-                name: 'Small Table',
-                verbs: { action: 'Search', look: 'Examine', talk: 'Talk to' },
-                responses: {
-                    look: "That's not a table, that's a mail fort. Years of 'Science Monthly'! Jealous.",
-                    action: "All addressed to 'Dr. H. Manzana.' Someone's popular with the post office.",
-                    talk: "Hang in there, buddy. The mail will stop eventually. ...Probably."
-                }
-            },
-            {
-                draft: true,
-                id: 'grandfather_clock',
-                x: 670, y: 0.483, w: 77, h: 0.464,
-                interactX: 650, interactY: 0.82,
-                name: 'Grandfather Clock',
-                verbs: { action: 'Check time', look: 'Examine', talk: 'Talk to' },
-                responses: {
-                    look: "What a beauty! The second hand's doing something funky though. Tick-tick... tick.",
-                    action: "Almost midnight. Spooky! I love it.",
-                    talk: "Keep up the good work, big guy."
-                }
-            },
-            {
-                draft: true,
-                id: 'fireplace',
-                x: 895, y: 0.563, w: 186, h: 0.303,
-                interactX: 895, interactY: 0.82,
-                name: 'Fireplace',
-                verbs: { action: 'Warm hands', look: 'Examine', talk: 'Talk to' },
-                responses: {
-                    look: "Now THAT'S a fireplace. Mantle's got all sorts of stuff on it.",
-                    action: "Ohhh yes. Toasty. My fingers were basically icicles.",
-                    talk: "Thanks for existing!"
-                }
-            },
-            {
-                draft: true,
-                id: 'mantle_photos',
-                x: 862, y: 0.36, w: 101, h: 0.05,
-                interactX: 862, interactY: 0.82,
-                name: 'Mantle Photos',
-                verbs: { action: 'Pick up', look: 'Examine', talk: 'Talk to' },
-                responses: {
-                    look: "Old photos! Awards, colleagues... the guy smiled more back then. Wonder what happened.",
-                    action: "Better not. Those aren't mine.",
-                    talk: "You all look like you're having fun. Good times!"
-                }
-            },
-            {
-                draft: true,
-                id: 'candle',
-                x: 960, y: 0.344, w: 17, h: 0.076,
-                interactX: 960, interactY: 0.82,
-                name: 'Candle',
-                verbs: { action: 'Take', look: 'Examine', talk: 'Talk to' },
-                responses: {
-                    look: "Ooh, fancy brass candlestick! Very atmospheric.",
-                    action: "Nah, that'd be rude. Can't just steal a guy's ambiance.",
-                    talk: "Flicker once if you're haunted! ...Okay that one was just a draft."
-                }
-            },
-            {
-                draft: true,
-                id: 'matches',
-                x: 991, y: 0.377, w: 20, h: 0.022,
-                interactX: 960, interactY: 0.82,
-                name: 'Matches',
-                verbs: { action: 'Take', look: 'Examine', talk: 'Talk to' },
-                giveItem: 'matches',
-                removeAfterPickup: true,
-                responses: {
-                    look: "A little box of matches. Could come in handy!",
-                    action: "I'll take these. You never know when you need fire.",
-                    talk: "You're fired! Get it? ...I'll see myself out."
-                }
-            },
-            {
-                draft: true,
-                id: 'bookshelf',
-                x: 1173, y: 0.473, w: 177, h: 0.454,
-                interactX: 1100, interactY: 0.82,
-                name: 'Bookshelf',
-                verbs: { action: 'Search', look: 'Browse', talk: 'Talk to' },
-                responses: {
-                    look: "Floor to ceiling! Science, philosophy, everything. This is my kind of chaos.",
-                    action: "'Interdimensional Postal Services'?! I need to work here.",
-                    talk: "Tell me your secrets! ...No? Playing hard to get. I respect that."
-                }
-            },
-            {
-                draft: true,
-                id: 'window_right',
-                x: 1926, y: 0.394, w: 174, h: 0.46,
-                interactX: 1926, interactY: 0.82,
-                name: 'Right Window',
-                verbs: { action: 'Open', look: 'Look through', talk: 'Talk to' },
-                responses: {
-                    look: "I can see the town from here! Little twinkling lights. Cute.",
-                    action: "Also painted shut. This guy really hates fresh air, huh.",
-                    talk: "Hey town! I made it! ...They can't hear me."
-                }
-            },
-            {
-                draft: true,
-                id: 'desk',
-                x: 1716, y: 0.659, w: 163, h: 0.145,
-                interactX: 1716, interactY: 0.82,
-                name: 'Desk',
-                verbs: { action: 'Search', look: 'Examine', talk: 'Talk to' },
-                responses: {
-                    look: "Whoa. Papers, blueprints, weird gizmos everywhere. This is a WORKING desk.",
-                    action: "Calculations I don't understand, diagrams I don't understand... I love it.",
-                    talk: "What secrets are you hiding? Besides all these papers."
-                }
-            },
-            {
-                draft: true,
-                id: 'blueprints',
-                x: 1701, y: 0.362, w: 109, h: 0.104,
-                interactX: 1701, interactY: 0.82,
-                name: 'Blueprints',
-                verbs: { action: 'Take', look: 'Study', talk: 'Talk to' },
-                responses: {
-                    look: "Portal Mark VII? What happened to marks one through six?",
-                    action: "Can't just take someone's portal blueprints. That's Portal Theft.",
-                    talk: "Portal. This is officially the coolest job interview ever."
-                }
-            },
-            {
-                draft: true,
-                id: 'strange_device',
-                x: 2109, y: 0.614, w: 46, h: 0.199,
-                interactX: 2109, interactY: 0.82,
-                name: 'Strange Device',
-                verbs: { action: 'Touch', look: 'Examine', talk: 'Talk to' },
-                responses: {
-                    look: "Brass, glass, glowing, humming... I have no idea what this is but I want one.",
-                    action: "So tempting. But I should probably not get vaporized before my interview.",
-                    talk: "What do you do? Blink twice for 'something cool.'"
-                }
-            },
-            {
-                draft: true,
-                id: 'laboratory_door',
-                x: 2352, y: 0.477, w: 143, h: 0.466,
-                interactX: 2352, interactY: 0.82,
-                name: 'Laboratory Door',
-                verbs: { action: 'Enter', look: 'Examine', talk: 'Call out' },
-                responses: {
-                    look: "Green light, electrical hum... this is it! The lab!",
-                    talk: "Hello? Mr. Manzana? I'm here about the job!"
-                },
-                actionTrigger: {
-                    type: 'transition',
-                    target: 'laboratory',
-                    spawnPoint: 'from_interior'
-                }
-            },
-            // === FRONT ROW (in front of back row) ===
-            {
-                draft: true,
-                id: 'left_armchair',
-                polygon: [
-                    { x: 644, y: 0.588 },
-                    { x: 669, y: 0.588 },
-                    { x: 674, y: 0.732 },
-                    { x: 749, y: 0.739 },
-                    { x: 750, y: 0.792 },
-                    { x: 641, y: 0.793 }
-                ],
-                highlightX: 679, highlightY: 0.757,
-                interactX: 695, interactY: 0.88,
-                name: 'Left Armchair',
-                verbs: { action: 'Sit in', look: 'Examine', talk: 'Talk to' },
-                responses: {
-                    look: "Ooh, fancy! Burgundy leather, faces the fire. Prime napping real estate.",
-                    action: "Oh wow. OH wow. This is comfortable. I could live here.",
-                    talk: "You're beautiful and I appreciate you."
-                }
-            },
-            {
-                draft: true,
-                id: 'right_armchair',
-                polygon: [
-                    { x: 1164, y: 0.589 },
-                    { x: 1186, y: 0.565 },
-                    { x: 1190, y: 0.794 },
-                    { x: 1080, y: 0.792 },
-                    { x: 1085, y: 0.735 },
-                    { x: 1159, y: 0.733 }
-                ],
-                highlightX: 1149, highlightY: 0.761,
-                interactX: 1135, interactY: 0.88,
-                name: 'Right Armchair',
-                verbs: { action: 'Sit in', look: 'Examine', talk: 'Talk to' },
-                responses: {
-                    look: "The matching chair! Two seats, facing the fire. Perfect for brainstorming. Or arguing.",
-                    action: "Also very comfortable. Hard to pick a favorite.",
-                    talk: "Don't worry, I think you're just as good as the other one."
-                }
-            },
-            {
-                draft: true,
-                id: 'coffee_table',
-                x: 910, y: 0.766, w: 177, h: 0.068,
-                interactX: 907, interactY: 0.88,
-                name: 'Coffee Table',
-                verbs: { action: 'Search', look: 'Examine', talk: 'Talk to' },
-                responses: {
-                    look: "'Quantum Tunneling for Beginners,' 'Dimensional Theory,' and... 'TV Guide.' A well-rounded reader.",
-                    action: "Way over my head. But give me a few months!",
-                    talk: "One day I'll understand all of this. ONE DAY."
-                }
-            }
-        ],
-
-        // Dynamic overlays for pickable items (removed when item is picked up)
-        pickupOverlays: [
-            {
-                hotspotId: 'matches',
-                itemId: 'matches',
-                x: 984,
-                y: 0.365,
-                depth: 55,
-                draw: (g, x, y) => {
-                    const p = 4;
-                    // Brown matchbox
-                    g.fillStyle(0x8B4513);
-                    g.fillRect(x, y, p*5, p*3);
-                    g.fillStyle(0xA0522D);  // Lighter top
-                    g.fillRect(x, y, p*5, p);
-                    g.fillStyle(0x654321);  // Dark edge
-                    g.fillRect(x + p*4, y, p, p*3);
-                    // Red striker strip
-                    g.fillStyle(0x8B0000);
-                    g.fillRect(x, y + p, p*4, p);
-                }
-            }
-        ],
-
-        itemInteractions: {
-            fireplace: {
-                default: "I'm not throwing my {item} into the fire. That seems wasteful."
-            },
-            strange_device: {
-                default: "I wave my {item} near the device. It hums appreciatively but nothing happens."
-            },
-            _default: "I don't think the {item} works with the {hotspot}."
-        },
-
-        firstVisit: {
-            delay: 800,
-            dialogue: "Hello? Is anyone home?"
-        },
-
-        features: {
-            fireplace: true
-        }
-    };
 
 })();

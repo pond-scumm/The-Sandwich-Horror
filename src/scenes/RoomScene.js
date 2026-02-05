@@ -670,6 +670,9 @@ class RoomScene extends BaseScene {
             zone.on('pointerdown', (pointer) => {
                 if (this.inventoryOpen) return;
 
+                // Mark as UI click to prevent background walk on pointerup
+                this.clickedUI = true;
+
                 const targetY = height * ((this.walkableArea.minY + this.walkableArea.maxY) / 2);
                 let targetX = exit.edge === 'left' ? 100 : this.worldWidth - 100;
 
@@ -879,6 +882,9 @@ class RoomScene extends BaseScene {
 
     transitionToScene(targetRoomId, spawnPoint) {
         console.log('[RoomScene] Transitioning to:', targetRoomId, 'spawn:', spawnPoint);
+
+        // Hide arrow cursor before transition
+        this.hideArrowCursor();
 
         TSH.State._spawnPoint = spawnPoint;
         TSH.State.setCurrentRoom(targetRoomId);
