@@ -1,7 +1,7 @@
 # The Sandwich Horror — Architecture Guide
 ## For Claude Code Implementation
 
-Last Updated: February 5, 2026 (UIScene + Cursors - Phase 3)
+Last Updated: February 5, 2026 (UIScene + Buttons - Phase 4a)
 
 ---
 
@@ -10,6 +10,14 @@ Last Updated: February 5, 2026 (UIScene + Cursors - Phase 3)
 This document captures all architecture decisions made during planning. Claude Code should follow these patterns when implementing features.
 
 **IMPORTANT:** Before proposing new features, always check the Implementation Status below and verify against actual code. Don't assume something needs to be built — grep the codebase first.
+
+---
+
+## Context Management Rule
+
+Before starting any multi-file refactor or multi-step change: estimate whether the implementation will require more context than is currently available. If compaction is likely to occur mid-change, stop and alert the developer before writing any code. Say: *"This change is complex enough that I may need to compact mid-work. Want to compact now so I start with a clean context?"* Always compact before starting, never mid-implementation.
+
+When resuming after compaction, re-read this guide and check `git log --oneline -10` before continuing work.
 
 ---
 
@@ -45,6 +53,7 @@ This document captures all architecture decisions made during planning. Claude C
 - [x] Event emitter system in TSH.State (Phase 1 of UIScene refactor)
 - [x] UI state management in TSH.State (Phase 2 of UIScene refactor)
 - [x] UIScene with cursor management (Phase 3 of UIScene refactor)
+- [x] UIScene with inventory/settings buttons (Phase 4a of UIScene refactor)
 
 ### TODO (Not Yet Implemented)
 - [x] **Item-on-item combinations** — Click item B while item A is selected to combine (`tryCombineItems` in BaseScene.js)

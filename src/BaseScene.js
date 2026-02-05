@@ -244,8 +244,164 @@
                 // Restore inventory from game state
                 this.rebuildInventoryFromState();
 
+                // Listen to UI state changes (when UIScene handles buttons)
+                if (this.uiSceneActive) {
+                    TSH.State.on('uiStateChanged', this.onUIStateChanged.bind(this));
+                }
+
                 // Fade in
                 this.cameras.main.fadeIn(500, 0, 0, 0);
+            }
+
+            onUIStateChanged(data) {
+                const { key, value } = data;
+
+                if (key === 'inventoryOpen') {
+                    // Toggle inventory panel visibility
+                    if (value) {
+                        this.showInventoryPanel();
+                    } else {
+                        this.hideInventoryPanel();
+                    }
+                } else if (key === 'settingsOpen') {
+                    // Toggle settings panel visibility
+                    if (value) {
+                        this.showSettingsPanel();
+                    } else {
+                        this.hideSettingsPanel();
+                    }
+                }
+            }
+
+            showInventoryPanel() {
+                // Sync local state with TSH.State
+                this.inventoryOpen = true;
+
+                // Stop character movement when inventory opens
+                this.stopCharacterMovement();
+                this.setCrosshairHover(null);
+
+                // Play inventory open sound
+                TSH.Audio.playSFX('inventory_open');
+
+                // Position panel at center of screen (accounting for scroll)
+                const { width, height } = this.scale;
+                const scrollX = this.cameras.main.scrollX || 0;
+                const scrollY = this.cameras.main.scrollY || 0;
+                this.inventoryPanel.setPosition(scrollX + width / 2, scrollY + height / 2);
+
+                // Animate panel open
+                this.inventoryPanel.setVisible(true);
+                this.inventoryPanel.setScale(0.8);
+                this.inventoryPanel.setAlpha(0);
+                this.tweens.add({
+                    targets: this.inventoryPanel,
+                    scale: 1,
+                    alpha: 1,
+                    duration: 150,
+                    ease: 'Back.out'
+                });
+            }
+
+            hideInventoryPanel() {
+                // Sync local state with TSH.State
+                this.inventoryOpen = false;
+
+                // Play inventory close sound
+                TSH.Audio.playSFX('inventory_close');
+
+                // Hide slot highlight
+                if (this.selectedSlotHighlight) {
+                    this.selectedSlotHighlight.setVisible(false);
+                }
+
+                // Clear any pending item press timer
+                if (this.inventoryItemPressTimer) {
+                    this.inventoryItemPressTimer.remove();
+                    this.inventoryItemPressTimer = null;
+                }
+
+                // Clear pressed item state
+                this.pressedInventoryItem = null;
+                this.pressedInventorySlot = null;
+
+                // Clear item outside timer
+                if (this.itemOutsideInventoryTimer) {
+                    this.itemOutsideInventoryTimer.remove();
+                    this.itemOutsideInventoryTimer = null;
+                }
+
+                // Reset crosshair and hotspot label
+                this.drawCrosshair(0xffffff);
+                if (this.hotspotLabel) {
+                    this.hotspotLabel.setText('');
+                }
+
+                // Animate panel close
+                this.tweens.add({
+                    targets: this.inventoryPanel,
+                    scale: 0.8,
+                    alpha: 0,
+                    duration: 100,
+                    ease: 'Power2',
+                    onComplete: () => this.inventoryPanel.setVisible(false)
+                });
+            }
+
+            showSettingsPanel() {
+                // Sync local state with TSH.State
+                this.settingsMenuOpen = true;
+
+                // Close inventory if open
+                if (this.inventoryOpen) {
+                    TSH.State.setInventoryOpen(false);
+                }
+
+                // Stop character movement
+                this.stopCharacterMovement();
+
+                // Reset crosshair and hide hotspot label
+                this.drawCrosshair(0xffffff);
+                if (this.hotspotLabel) {
+                    this.hotspotLabel.setVisible(false);
+                    this.hotspotLabel.setText('');
+                }
+
+                // Sync fullscreen checkbox state
+                this.updateFullscreenCheckbox();
+
+                // Sync volume sliders with current audio volumes
+                this.syncVolumeSliders();
+
+                // Show the panel
+                this.settingsBlurOverlay.setVisible(true);
+                this.settingsPanel.setVisible(true);
+
+                // Pause the game
+                this.pauseGame();
+            }
+
+            hideSettingsPanel() {
+                // Sync local state with TSH.State
+                this.settingsMenuOpen = false;
+                // Ensure TSH.State is synced (defensive - state should already be false)
+                TSH.State._state.ui.settingsOpen = false;
+
+                // Reset hover states to prevent stale state on next open
+                this.settingsCloseBtnHovered = false;
+                this.settingsReturnBtnHovered = false;
+
+                // Hide overlay and panel
+                this.settingsBlurOverlay.setVisible(false);
+                this.settingsPanel.setVisible(false);
+
+                // Restore hotspot label visibility
+                if (this.hotspotLabel) {
+                    this.hotspotLabel.setVisible(true);
+                }
+
+                // Resume the game
+                this.resumeGame();
             }
 
             rebuildInventoryFromState() {
@@ -366,6 +522,14 @@
             handleBackgroundPress(pointer) {
                 if (this.clickedUI) return;
 
+                // When UIScene is active, ignore clicks on UIScene buttons
+                if (this.uiSceneActive) {
+                    const uiScene = this.scene.get('UIScene');
+                    if (uiScene && (uiScene.isClickOnInventoryButton(pointer) || uiScene.isClickOnSettingsButton(pointer))) {
+                        return;
+                    }
+                }
+
                 // Right-click with item selected = deselect (works even when inventory is open)
                 if (this.selectedItem && pointer.rightButtonDown()) {
                     console.log('[BaseScene] Right-click with item selected, deselecting:', this.selectedItem.id);
@@ -446,12 +610,15 @@
             // ========== SETTINGS MENU INPUT ==========
 
             handleSettingsPointerDown(pointer) {
-                // Use both hover states (desktop) and direct coordinate checks (mobile quick taps)
-
                 // Check if clicking X button or Return button
                 if (this.settingsCloseBtnHovered || this.settingsReturnBtnHovered ||
                     this.isClickOnSettingsCloseButton(pointer) || this.isClickOnSettingsReturnButton(pointer)) {
-                    this.closeSettingsMenu();
+                    // Use state-driven approach when UIScene handles buttons
+                    if (this.uiSceneActive) {
+                        TSH.State.setUIState('settingsOpen', false);
+                    } else {
+                        this.closeSettingsMenu();
+                    }
                     return;
                 }
 
@@ -477,7 +644,16 @@
                     return;
                 }
 
-                // Check for settings button click (use hover state from update loop)
+                // When UIScene is active, let it handle button clicks
+                if (this.uiSceneActive) {
+                    const uiScene = this.scene.get('UIScene');
+                    if (uiScene && (uiScene.isClickOnInventoryButton(pointer) || uiScene.isClickOnSettingsButton(pointer))) {
+                        this.clickedUI = true;
+                        return;
+                    }
+                }
+
+                // Check for settings button click (legacy, use hover state from update loop)
                 if (this.settingsButtonHovered) {
                     this.openSettingsMenu();
                     return;
@@ -545,13 +721,22 @@
                     return;
                 }
 
-                // Check for settings button
+                // When UIScene is active, let it handle button clicks
+                if (this.uiSceneActive) {
+                    const uiScene = this.scene.get('UIScene');
+                    if (uiScene && (uiScene.isClickOnInventoryButton(pointer) || uiScene.isClickOnSettingsButton(pointer))) {
+                        this.clickedUI = true;  // Mark as UI click for pointerup
+                        return;
+                    }
+                }
+
+                // Check for settings button (legacy, when UIScene not active)
                 if (this.isClickOnSettingsButton(pointer)) {
                     this.openSettingsMenu();
                     return;
                 }
 
-                // Check inventory button (check coordinates directly for quick taps)
+                // Check inventory button (legacy, when UIScene not active)
                 if (this.inventoryButtonArea) {
                     const btn = this.inventoryButtonArea;
                     if (pointer.x >= btn.x - btn.size/2 && pointer.x <= btn.x + btn.size/2 &&
@@ -631,6 +816,14 @@
                 if (this.clickedUI) {
                     this.clickedUI = false;
                     return;
+                }
+
+                // When UIScene is active, check if tap was on UIScene buttons and skip processing
+                if (this.uiSceneActive) {
+                    const uiScene = this.scene.get('UIScene');
+                    if (uiScene && (uiScene.isClickOnInventoryButton(pointer) || uiScene.isClickOnSettingsButton(pointer))) {
+                        return;
+                    }
                 }
 
                 // Stop continuous running if active
@@ -1687,7 +1880,10 @@
                 this.selectedSlotHighlight.setDepth(2501);
                 this.selectedSlotHighlight.setVisible(false);
 
-                // Inventory button (bottom left corner)
+                // Skip button creation if UIScene handles it
+                if (this.uiSceneActive) return;
+
+                // Inventory button (bottom left corner) - legacy, when UIScene not active
                 const btnSize = 90;
                 this.inventoryButtonArea = { x: btnSize/2 + 15, y: height - btnSize/2 - 15, size: btnSize };
 
@@ -1737,32 +1933,35 @@
             // ========== SETTINGS MENU ==========
 
             createSettingsUI(width, height) {
-                // Settings button (top right corner)
-                const btnSize = 70;
-                this.settingsButtonArea = { x: width - btnSize/2 - 15, y: btnSize/2 + 15, size: btnSize };
+                // Skip button creation if UIScene handles it
+                if (!this.uiSceneActive) {
+                    // Settings button (top right corner) - legacy, when UIScene not active
+                    const btnSize = 70;
+                    this.settingsButtonArea = { x: width - btnSize/2 - 15, y: btnSize/2 + 15, size: btnSize };
 
-                this.settingsButton = this.add.container(this.settingsButtonArea.x, this.settingsButtonArea.y);
-                this.settingsButton.setDepth(4000);
-                this.settingsButton.setScrollFactor(0);
+                    this.settingsButton = this.add.container(this.settingsButtonArea.x, this.settingsButtonArea.y);
+                    this.settingsButton.setDepth(4000);
+                    this.settingsButton.setScrollFactor(0);
 
-                // Create hollow (outline) version - shown by default
-                this.settingsBtnHollow = this.add.graphics();
-                this.settingsBtnHollow.lineStyle(3, 0x6a6a8a, 0.7);
-                this.settingsBtnHollow.strokeRoundedRect(-btnSize/2, -btnSize/2, btnSize, btnSize, 10);
-                // Hollow gear icon (outline only)
-                this.drawGearIcon(this.settingsBtnHollow, 0, 0, 22, false);
-                this.settingsButton.add(this.settingsBtnHollow);
+                    // Create hollow (outline) version - shown by default
+                    this.settingsBtnHollow = this.add.graphics();
+                    this.settingsBtnHollow.lineStyle(3, 0x6a6a8a, 0.7);
+                    this.settingsBtnHollow.strokeRoundedRect(-btnSize/2, -btnSize/2, btnSize, btnSize, 10);
+                    // Hollow gear icon (outline only)
+                    this.drawGearIcon(this.settingsBtnHollow, 0, 0, 22, false);
+                    this.settingsButton.add(this.settingsBtnHollow);
 
-                // Create filled version - shown on hover/open
-                this.settingsBtnFilled = this.add.graphics();
-                this.settingsBtnFilled.fillStyle(0x3a3a5a, 0.9);
-                this.settingsBtnFilled.fillRoundedRect(-btnSize/2, -btnSize/2, btnSize, btnSize, 10);
-                this.settingsBtnFilled.lineStyle(3, 0x6a6a8a, 1);
-                this.settingsBtnFilled.strokeRoundedRect(-btnSize/2, -btnSize/2, btnSize, btnSize, 10);
-                // Filled gear icon
-                this.drawGearIcon(this.settingsBtnFilled, 0, 0, 22, true);
-                this.settingsBtnFilled.setVisible(false);
-                this.settingsButton.add(this.settingsBtnFilled);
+                    // Create filled version - shown on hover/open
+                    this.settingsBtnFilled = this.add.graphics();
+                    this.settingsBtnFilled.fillStyle(0x3a3a5a, 0.9);
+                    this.settingsBtnFilled.fillRoundedRect(-btnSize/2, -btnSize/2, btnSize, btnSize, 10);
+                    this.settingsBtnFilled.lineStyle(3, 0x6a6a8a, 1);
+                    this.settingsBtnFilled.strokeRoundedRect(-btnSize/2, -btnSize/2, btnSize, btnSize, 10);
+                    // Filled gear icon
+                    this.drawGearIcon(this.settingsBtnFilled, 0, 0, 22, true);
+                    this.settingsBtnFilled.setVisible(false);
+                    this.settingsButton.add(this.settingsBtnFilled);
+                }
 
                 // Create blur overlay (covers entire screen when menu is open)
                 this.settingsBlurOverlay = this.add.graphics();
@@ -2410,6 +2609,13 @@
                 if (this.dialogActive || this.conversationActive) return;
                 if (this.settingsMenuOpen) return;
 
+                // When UIScene handles buttons, use state-driven approach
+                if (this.uiSceneActive) {
+                    TSH.State.setUIState('settingsOpen', true);
+                    return;
+                }
+
+                // Legacy path when UIScene not active
                 this.settingsMenuOpen = true;
                 TSH.State.setUIState('settingsOpen', true);
                 this.updateSettingsButtonState();
@@ -2448,6 +2654,13 @@
             closeSettingsMenu() {
                 if (!this.settingsMenuOpen) return;
 
+                // When UIScene handles buttons, use state-driven approach
+                if (this.uiSceneActive) {
+                    TSH.State.setUIState('settingsOpen', false);
+                    return;
+                }
+
+                // Legacy path when UIScene not active
                 this.settingsMenuOpen = false;
                 TSH.State.setUIState('settingsOpen', false);
                 this.updateSettingsButtonState();
@@ -2662,7 +2875,16 @@
             }
 
             toggleInventory(silent = false) {
+                // When UIScene is active and not doing silent close, use state-driven approach
+                if (this.uiSceneActive && !silent) {
+                    const newState = !TSH.State.isInventoryOpen();
+                    TSH.State.setInventoryOpen(newState);
+                    return;
+                }
+
+                // Legacy path (or silent close which needs direct control)
                 this.inventoryOpen = !this.inventoryOpen;
+                TSH.State._state.ui.inventoryOpen = this.inventoryOpen; // Keep state in sync
                 this.updateInventoryButtonState();
 
                 if (this.inventoryOpen) {
