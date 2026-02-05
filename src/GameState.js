@@ -6,7 +6,7 @@
 //
 // Usage:
 //   TSH.State.getFlag('has_clock')        → true/false
-//   TSH.State.setFlag('has_clock', true)   
+//   TSH.State.setFlag('has_clock', true)
 //   TSH.State.addItem('crowbar')
 //   TSH.State.removeItem('crowbar')
 //   TSH.State.hasItem('crowbar')           → true/false
@@ -14,6 +14,19 @@
 //   TSH.State.setNPCState('alien', 'on_roof')
 //   TSH.State.toJSON()                     → serializable save data
 //   TSH.State.loadFromJSON(data)           → restore from save
+//
+// Event System:
+//   TSH.State.on('inventoryChanged', (data) => { ... })
+//   TSH.State.on('flagChanged', (data) => { ... })
+//   TSH.State.on('npcStateChanged', (data) => { ... })
+//   TSH.State.on('roomChanged', (data) => { ... })
+//   TSH.State.off('inventoryChanged', callback)  → remove listener
+//
+// Event Data:
+//   inventoryChanged: { type: 'added'|'removed'|'consumed', itemId }
+//   flagChanged:      { path, value }
+//   npcStateChanged:  { npcId, state, previousState }
+//   roomChanged:      { from, to }
 // ============================================================================
 
 (function() {
@@ -208,11 +221,39 @@
     
     const GameState = {
         _state: null,
-        
+        _listeners: {},
+
         // Initialize with default state (new game)
         init() {
             this._state = createDefaultState();
+            this._listeners = {};
             return this;
+        },
+
+        // ── Event Emitter ────────────────────────────────────────────────
+        // Simple pub/sub for state change notifications.
+        // Events: inventoryChanged, flagChanged, npcStateChanged, roomChanged
+
+        on(event, callback) {
+            if (!this._listeners[event]) {
+                this._listeners[event] = [];
+            }
+            this._listeners[event].push(callback);
+        },
+
+        off(event, callback) {
+            if (!this._listeners[event]) return;
+            const idx = this._listeners[event].indexOf(callback);
+            if (idx !== -1) {
+                this._listeners[event].splice(idx, 1);
+            }
+        },
+
+        emit(event, data) {
+            if (!this._listeners[event]) return;
+            for (const callback of this._listeners[event]) {
+                callback(data);
+            }
         },
         
         // ── Flag Methods ────────────────────────────────────────────────
@@ -237,6 +278,7 @@
                 obj = obj[parts[i]];
             }
             obj[parts[parts.length - 1]] = value;
+            this.emit('flagChanged', { path, value });
         },
         
         // Get all flags (for debug display)
@@ -249,13 +291,15 @@
         addItem(itemId) {
             if (!this._state.inventory.includes(itemId)) {
                 this._state.inventory.push(itemId);
+                this.emit('inventoryChanged', { type: 'added', itemId });
             }
         },
-        
+
         removeItem(itemId) {
             const idx = this._state.inventory.indexOf(itemId);
             if (idx !== -1) {
                 this._state.inventory.splice(idx, 1);
+                this.emit('inventoryChanged', { type: 'removed', itemId });
             }
         },
         
@@ -269,9 +313,14 @@
         
         // Mark an item as permanently consumed
         consumeItem(itemId) {
-            this.removeItem(itemId);
+            const wasInInventory = this._state.inventory.includes(itemId);
+            this.removeItem(itemId);  // This emits 'inventoryChanged' if item was present
             if (!this._state.usedItems.includes(itemId)) {
                 this._state.usedItems.push(itemId);
+            }
+            // Emit consumed event (distinct from removed, for UI that cares)
+            if (wasInInventory) {
+                this.emit('inventoryChanged', { type: 'consumed', itemId });
             }
         },
         
@@ -286,18 +335,22 @@
         },
         
         setNPCState(npcId, state) {
+            const previousState = this._state.npcStates[npcId];
             this._state.npcStates[npcId] = state;
+            this.emit('npcStateChanged', { npcId, state, previousState });
         },
-        
+
         // ── Room Methods ────────────────────────────────────────────────
-        
+
         getCurrentRoom() {
             return this._state.currentRoom;
         },
-        
+
         setCurrentRoom(roomId) {
-            this._state.previousRoom = this._state.currentRoom;
+            const fromRoom = this._state.currentRoom;
+            this._state.previousRoom = fromRoom;
             this._state.currentRoom = roomId;
+            this.emit('roomChanged', { from: fromRoom, to: roomId });
         },
         
         getPreviousRoom() {

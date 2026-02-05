@@ -126,6 +126,33 @@ TSH.State.loadFromJSON(data)                 // For loading
 TSH.State.dump()                             // Debug: log state to console
 ```
 
+### Event System:
+State changes emit events that any part of the game can listen to. This enables reactive UI updates and decoupled architecture.
+
+```javascript
+// Subscribe to events
+TSH.State.on('inventoryChanged', (data) => {
+    console.log('Inventory changed:', data.type, data.itemId);
+});
+
+TSH.State.on('flagChanged', (data) => {
+    if (data.path === 'finale.knows_teleporter_truth') {
+        // Update hotspot label dynamically
+    }
+});
+
+// Unsubscribe
+TSH.State.off('inventoryChanged', myCallback);
+```
+
+**Available Events:**
+| Event | Data | Triggers |
+|-------|------|----------|
+| `inventoryChanged` | `{ type: 'added'\|'removed'\|'consumed', itemId }` | `addItem()`, `removeItem()`, `consumeItem()` |
+| `flagChanged` | `{ path, value }` | `setFlag()` |
+| `npcStateChanged` | `{ npcId, state, previousState }` | `setNPCState()` |
+| `roomChanged` | `{ from, to }` | `setCurrentRoom()` |
+
 ### Migration note:
 The old approach used Phaser's registry (`this.registry.get('gameState')`). All scenes should be migrated to use `TSH.State` instead.
 
