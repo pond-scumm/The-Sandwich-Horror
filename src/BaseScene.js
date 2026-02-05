@@ -10,11 +10,15 @@
 
                 // Player state
                 this.player = null;
+                this.playerSprite = null;  // Reference to the actual sprite (for tinting, etc.)
                 this.isWalking = false;
                 this.walkTween = null;
                 this.bobTween = null;
                 this.leftLeg = null;
                 this.rightLeg = null;
+
+                // Camera preset for character scaling (FAR, MEDIUM, CLOSE)
+                this.cameraPreset = 'MEDIUM';
 
                 // Movement
                 this.lastClickTime = 0;
@@ -168,6 +172,16 @@
             }
 
             // ========== SCENE LIFECYCLE ==========
+
+            preload() {
+                // Load character placeholder sprites
+                if (!this.textures.exists('nate_placeholder')) {
+                    this.load.image('nate_placeholder', 'assets/sprites/nate_placeholder.png');
+                }
+                if (!this.textures.exists('hector_placeholder')) {
+                    this.load.image('hector_placeholder', 'assets/sprites/hector_placeholder.png');
+                }
+            }
 
             create() {
                 const { width, height } = this.scale;
@@ -973,91 +987,48 @@
 
             // ========== PLAYER ==========
 
+            // Scale factors for Nate sprite (180x610 native) at each camera distance
+            // Adjusted 2.25x from original ROOM_DESIGN_BIBLE targets for proper visual scale
+            static PLAYER_SCALES = {
+                FAR: 0.37,       // ~225px tall
+                MEDIUM: 0.52,    // ~315px tall
+                CLOSE: 0.66     // ~405px tall
+            };
+
             createPlayer(spawnX, spawnY) {
                 const { height } = this.scale;
                 const playerY = spawnY || height * 0.75;
 
+                // Get scale based on camera preset (default MEDIUM)
+                const scale = BaseScene.PLAYER_SCALES[this.cameraPreset] || BaseScene.PLAYER_SCALES.MEDIUM;
+
+                // Create container at spawn position (maintains compatibility with existing code)
                 this.player = this.add.container(spawnX, playerY);
 
-                const p = 6; // Pixel size
-                const pixel = (x, y, color) => {
-                    const sprite = this.add.sprite(x * p, -y * p, 'pixel');
-                    sprite.setTint(color);
-                    sprite.setPipeline('Light2D');
-                    return sprite;
-                };
+                // Check if sprite texture is loaded
+                if (this.textures.exists('nate_placeholder')) {
+                    // Create sprite with origin at bottom-center (feet)
+                    this.playerSprite = this.add.sprite(0, 0, 'nate_placeholder');
+                    this.playerSprite.setOrigin(0.5, 1);  // Bottom-center
+                    this.playerSprite.setScale(scale);
+                    this.playerSprite.setPipeline('Light2D');
 
-                // Colors
-                const SKIN = 0xeabc8e, SKIN_DARK = 0xd4a574;
-                const HAIR = 0x2ecc71, HAIR_DARK = 0x1fa855;
-                const VEST = 0x3366aa, VEST_DARK = 0x254a7a;
-                const SHIRT = 0xeeeeee, SHIRT_DARK = 0xcccccc;
-                const PANTS = 0x2c3e50, PANTS_DARK = 0x1a252f;
-                const SHOES = 0x1a1a1a, BLACK = 0x000000, WHITE = 0xffffff;
-
-                const pixels = [];
-
-                // Shoes
-                for (let x = -5; x <= -2; x++) { pixels.push(pixel(x, 0, SHOES)); pixels.push(pixel(x, 1, SHOES)); }
-                for (let x = 2; x <= 5; x++) { pixels.push(pixel(x, 0, SHOES)); pixels.push(pixel(x, 1, SHOES)); }
-
-                // Legs
-                this.leftLegPixels = [];
-                this.rightLegPixels = [];
-                for (let y = 2; y <= 18; y++) {
-                    for (let x = -4; x <= -2; x++) this.leftLegPixels.push(pixel(x, y, x === -4 ? PANTS_DARK : PANTS));
-                    for (let x = 2; x <= 4; x++) this.rightLegPixels.push(pixel(x, y, x === 4 ? PANTS_DARK : PANTS));
-                }
-                this.leftLeg = this.add.container(0, 0, this.leftLegPixels);
-                this.rightLeg = this.add.container(0, 0, this.rightLegPixels);
-
-                // Torso
-                for (let y = 19; y <= 28; y++) {
-                    pixels.push(pixel(-6, y, SHIRT)); pixels.push(pixel(-5, y, SHIRT_DARK));
-                    pixels.push(pixel(5, y, SHIRT_DARK)); pixels.push(pixel(6, y, SHIRT));
-                }
-                for (let y = 18; y <= 30; y++) {
-                    for (let x = -4; x <= 4; x++) {
-                        if (x === -4 || x === 4) pixels.push(pixel(x, y, VEST_DARK));
-                        else if (x === 0 && y >= 20) pixels.push(pixel(x, y, SHIRT));
-                        else pixels.push(pixel(x, y, VEST));
-                    }
-                }
-                for (let x = -3; x <= 3; x++) pixels.push(pixel(x, 31, VEST));
-                pixels.push(pixel(-2, 32, VEST)); pixels.push(pixel(2, 32, VEST));
-
-                // Hands
-                for (let y = 19; y <= 21; y++) {
-                    pixels.push(pixel(-6, y, SKIN)); pixels.push(pixel(-7, y, SKIN_DARK));
-                    pixels.push(pixel(6, y, SKIN)); pixels.push(pixel(7, y, SKIN_DARK));
+                    this.player.add(this.playerSprite);
+                } else {
+                    // Fallback: colored rectangle if sprite not loaded
+                    console.warn('[BaseScene] nate_placeholder texture not found, using fallback rectangle');
+                    const fallbackHeight = 140 * scale / BaseScene.PLAYER_SCALES.MEDIUM;  // Scale relative to MEDIUM
+                    const fallbackWidth = fallbackHeight * (180 / 610);  // Maintain aspect ratio
+                    const fallback = this.add.rectangle(0, -fallbackHeight / 2, fallbackWidth, fallbackHeight, 0x2ecc71);
+                    fallback.setPipeline('Light2D');
+                    this.player.add(fallback);
+                    this.playerSprite = fallback;
                 }
 
-                // Neck & Head
-                for (let i = 0; i < 2; i++) for (let x = -1; x <= 1; x++) pixels.push(pixel(x, 32 + i, SKIN));
-                for (let y = 34; y <= 42; y++) {
-                    let w = y >= 37 && y <= 39 ? 5 : (y >= 36 && y <= 40 ? 4 : 3);
-                    for (let x = -w; x <= w; x++) pixels.push(pixel(x, y, (x === -w || x === w) ? SKIN_DARK : SKIN));
-                }
+                // Clear leg references (no leg animation with sprite)
+                this.leftLeg = null;
+                this.rightLeg = null;
 
-                // Eyes
-                [-3, -2].forEach(x => { pixels.push(pixel(x, 38, BLACK)); pixels.push(pixel(x, 39, BLACK)); });
-                [2, 3].forEach(x => { pixels.push(pixel(x, 38, BLACK)); pixels.push(pixel(x, 39, BLACK)); });
-                pixels.push(pixel(-3, 39, WHITE)); pixels.push(pixel(2, 39, WHITE));
-                for (let x = -4; x <= 4; x++) if (x !== 0) pixels.push(pixel(x, 40, BLACK));
-                [-1, 0, 1].forEach(x => pixels.push(pixel(x, 36, SKIN_DARK)));
-
-                // Hair
-                for (let y = 41; y <= 45; y++) {
-                    let w = y >= 44 ? 4 : (y >= 43 ? 5 : 4);
-                    if (y >= 45) w = 3;
-                    for (let x = -w; x <= w; x++) pixels.push(pixel(x, y, (x === -w || x === w || y === 45) ? HAIR_DARK : HAIR));
-                }
-                pixels.push(pixel(-3, 46, HAIR)); pixels.push(pixel(-2, 46, HAIR)); pixels.push(pixel(-2, 47, HAIR_DARK));
-                pixels.push(pixel(0, 46, HAIR)); pixels.push(pixel(0, 47, HAIR)); pixels.push(pixel(0, 48, HAIR_DARK));
-                pixels.push(pixel(2, 46, HAIR)); pixels.push(pixel(3, 46, HAIR)); pixels.push(pixel(2, 47, HAIR_DARK));
-                for (let y = 38; y <= 41; y++) { pixels.push(pixel(-5, y, HAIR_DARK)); pixels.push(pixel(5, y, HAIR_DARK)); }
-
-                this.player.add([this.leftLeg, this.rightLeg, ...pixels]);
                 this.player.setDepth(100);
             }
 
@@ -1884,7 +1855,7 @@
                 this.settingsReturnBtnHovered = false;
 
                 // Version number above Return button
-                const versionText = this.add.text(0, btnY - 45, 'v0.1.13', {
+                const versionText = this.add.text(0, btnY - 45, 'v0.1.14', {
                     fontFamily: '"Press Start 2P", cursive',
                     fontSize: '14px',
                     color: '#ffffff'

@@ -670,116 +670,33 @@
 
             createScientist(height) {
                 // Create scientist sprite container at the terminal - Dr. Hector Manzana
-                // Using same pixel art style as the hero
-                this.scientist = this.add.container(2050, height * 0.68);
+                // Position adjusted for bottom-center origin (feet on ground)
+                const groundY = height * 0.78;  // Adjusted from 0.68 to account for origin change
+                this.scientist = this.add.container(2050, groundY);
                 this.scientist.setDepth(100);
 
-                const p = 6; // Pixel size (same as hero)
-                const pixel = (x, y, color) => {
-                    const sprite = this.add.sprite(x * p, -y * p, 'pixel');
-                    sprite.setTint(color);
-                    sprite.setPipeline('Light2D');
-                    return sprite;
-                };
+                // Get scale from BaseScene, adjusted so Hector matches Nate's height
+                // Nate is 610px tall, Hector is 589px - multiply by 610/589 to equalize
+                const baseScale = BaseScene.PLAYER_SCALES[this.cameraPreset] || BaseScene.PLAYER_SCALES.MEDIUM;
+                const scale = baseScale * (610 / 589);  // ~1.036x to match Nate's height
 
-                // Colors for Hector
-                const SKIN = 0xd4a574, SKIN_DARK = 0xb8956a;
-                const HAIR = 0x1a1a1a, HAIR_GRAY = 0x606060;
-                const COAT = 0xeeeeee, COAT_DARK = 0xcccccc;
-                const PANTS = 0x2c3e50, PANTS_DARK = 0x1a252f;
-                const SHOES = 0x1a1a1a, BLACK = 0x000000, WHITE = 0xffffff;
-                const MUSTACHE = 0x2a2a2a;
-                const GOGGLE_FRAME = 0x3a3a3a, GOGGLE_LENS = 0x88ccff;
-
-                const pixels = [];
-
-                // Shoes (y: 0-1)
-                for (let x = -5; x <= -2; x++) { pixels.push(pixel(x, 0, SHOES)); pixels.push(pixel(x, 1, SHOES)); }
-                for (let x = 2; x <= 5; x++) { pixels.push(pixel(x, 0, SHOES)); pixels.push(pixel(x, 1, SHOES)); }
-
-                // Legs (y: 2-18) - dark trousers
-                for (let y = 2; y <= 18; y++) {
-                    for (let x = -4; x <= -2; x++) pixels.push(pixel(x, y, x === -4 ? PANTS_DARK : PANTS));
-                    for (let x = 2; x <= 4; x++) pixels.push(pixel(x, y, x === 4 ? PANTS_DARK : PANTS));
+                if (this.textures.exists('hector_placeholder')) {
+                    // Create sprite with origin at bottom-center (feet)
+                    this.scientistSprite = this.add.sprite(0, 0, 'hector_placeholder');
+                    this.scientistSprite.setOrigin(0.5, 1);
+                    this.scientistSprite.setScale(scale);
+                    this.scientistSprite.setPipeline('Light2D');
+                    this.scientist.add(this.scientistSprite);
+                } else {
+                    // Fallback: colored rectangle if sprite not loaded
+                    console.warn('[LaboratoryScene] hector_placeholder texture not found, using fallback');
+                    const fallbackHeight = 306 * scale / BaseScene.PLAYER_SCALES.MEDIUM;
+                    const fallbackWidth = fallbackHeight * (147 / 589);
+                    const fallback = this.add.rectangle(0, -fallbackHeight / 2, fallbackWidth, fallbackHeight, 0xeeeeee);
+                    fallback.setPipeline('Light2D');
+                    this.scientist.add(fallback);
+                    this.scientistSprite = fallback;
                 }
-
-                // Lab coat body (y: 18-30)
-                for (let y = 18; y <= 30; y++) {
-                    for (let x = -5; x <= 5; x++) {
-                        if (x === -5 || x === 5) pixels.push(pixel(x, y, COAT_DARK));
-                        else if (x === 0 && y >= 20) pixels.push(pixel(x, y, COAT_DARK)); // Center seam
-                        else pixels.push(pixel(x, y, COAT));
-                    }
-                }
-                // Coat collar
-                for (let x = -4; x <= 4; x++) pixels.push(pixel(x, 31, COAT));
-                pixels.push(pixel(-3, 32, COAT)); pixels.push(pixel(3, 32, COAT));
-
-                // Arms in lab coat (y: 19-28)
-                for (let y = 19; y <= 27; y++) {
-                    pixels.push(pixel(-6, y, COAT)); pixels.push(pixel(-7, y, COAT_DARK));
-                    pixels.push(pixel(6, y, COAT)); pixels.push(pixel(7, y, COAT_DARK));
-                }
-
-                // Hands (y: 19-21)
-                for (let y = 19; y <= 21; y++) {
-                    pixels.push(pixel(-8, y, SKIN)); pixels.push(pixel(-9, y, SKIN_DARK));
-                    pixels.push(pixel(8, y, SKIN)); pixels.push(pixel(9, y, SKIN_DARK));
-                }
-
-                // Neck (y: 32-33)
-                for (let i = 0; i < 2; i++) for (let x = -1; x <= 1; x++) pixels.push(pixel(x, 32 + i, SKIN));
-
-                // Head (y: 34-42)
-                for (let y = 34; y <= 42; y++) {
-                    let w = y >= 37 && y <= 39 ? 5 : (y >= 36 && y <= 40 ? 4 : 3);
-                    for (let x = -w; x <= w; x++) pixels.push(pixel(x, y, (x === -w || x === w) ? SKIN_DARK : SKIN));
-                }
-
-                // Eyes (y: 38-40)
-                [-3, -2].forEach(x => { pixels.push(pixel(x, 38, BLACK)); pixels.push(pixel(x, 39, BLACK)); });
-                [2, 3].forEach(x => { pixels.push(pixel(x, 38, BLACK)); pixels.push(pixel(x, 39, BLACK)); });
-                pixels.push(pixel(-3, 39, WHITE)); pixels.push(pixel(2, 39, WHITE));
-                // Eyebrows
-                for (let x = -4; x <= -1; x++) pixels.push(pixel(x, 40, BLACK));
-                for (let x = 1; x <= 4; x++) pixels.push(pixel(x, 40, BLACK));
-
-                // Nose hint
-                pixels.push(pixel(0, 37, SKIN_DARK));
-
-                // Mustache (y: 35-36)
-                for (let x = -3; x <= 3; x++) pixels.push(pixel(x, 36, MUSTACHE));
-                pixels.push(pixel(-4, 36, MUSTACHE)); pixels.push(pixel(4, 36, MUSTACHE));
-                for (let x = -2; x <= 2; x++) pixels.push(pixel(x, 35, MUSTACHE));
-
-                // Hair - slick black with gray on sides (y: 41-47)
-                // Main black hair on top
-                for (let y = 41; y <= 45; y++) {
-                    let w = y >= 44 ? 3 : (y >= 43 ? 4 : 4);
-                    if (y === 45) w = 2;
-                    for (let x = -w; x <= w; x++) {
-                        pixels.push(pixel(x, y, (x === -w || x === w || y === 45) ? HAIR : HAIR));
-                    }
-                }
-                // Slicked back top
-                pixels.push(pixel(-1, 46, HAIR)); pixels.push(pixel(0, 46, HAIR)); pixels.push(pixel(1, 46, HAIR));
-                pixels.push(pixel(0, 47, HAIR));
-
-                // Gray hair on sides (distinguished look)
-                for (let y = 41; y <= 43; y++) {
-                    pixels.push(pixel(-5, y, HAIR_GRAY));
-                    pixels.push(pixel(5, y, HAIR_GRAY));
-                }
-
-                // Goggles pushed up on forehead (y: 43-44)
-                pixels.push(pixel(-4, 44, GOGGLE_FRAME)); pixels.push(pixel(-3, 44, GOGGLE_LENS)); pixels.push(pixel(-2, 44, GOGGLE_LENS));
-                pixels.push(pixel(-4, 43, GOGGLE_FRAME)); pixels.push(pixel(-3, 43, GOGGLE_LENS)); pixels.push(pixel(-2, 43, GOGGLE_FRAME));
-                pixels.push(pixel(4, 44, GOGGLE_FRAME)); pixels.push(pixel(3, 44, GOGGLE_LENS)); pixels.push(pixel(2, 44, GOGGLE_LENS));
-                pixels.push(pixel(4, 43, GOGGLE_FRAME)); pixels.push(pixel(3, 43, GOGGLE_LENS)); pixels.push(pixel(2, 43, GOGGLE_FRAME));
-                // Goggle strap
-                pixels.push(pixel(-1, 44, GOGGLE_FRAME)); pixels.push(pixel(0, 44, GOGGLE_FRAME)); pixels.push(pixel(1, 44, GOGGLE_FRAME));
-
-                pixels.forEach(px => this.scientist.add(px));
             }
 
             // Room-specific item interactions

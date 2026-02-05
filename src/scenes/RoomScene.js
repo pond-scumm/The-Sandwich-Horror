@@ -58,6 +58,7 @@ class RoomScene extends BaseScene {
 
     // Preload image-based layers and audio
     preload() {
+        super.preload();  // Load Nate sprite from BaseScene
         if (this.shouldRedirect) return;
 
         const room = this.roomData;
