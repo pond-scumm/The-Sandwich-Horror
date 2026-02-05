@@ -779,6 +779,11 @@
                         this.itemCursor.setPosition(pointer.x, pointer.y);
                     }
 
+                    // Close inventory if dragging item outside panel (same as desktop)
+                    if (this.inventoryOpen) {
+                        this.checkItemOutsideInventory(pointer);
+                    }
+
                     // Check hotspot under finger for visual feedback
                     const hotspot = this.getHotspotAtPointer(pointer);
                     if (hotspot !== gesture.hoveredHotspot) {
@@ -1857,7 +1862,7 @@
                 this.settingsReturnBtnHovered = false;
 
                 // Version number above Return button
-                const versionText = this.add.text(0, btnY - 45, 'v0.1.11', {
+                const versionText = this.add.text(0, btnY - 45, 'v0.1.12', {
                     fontFamily: '"Press Start 2P", cursive',
                     fontSize: '14px',
                     color: '#ffffff'
