@@ -387,7 +387,6 @@ Wainscoting should always reach approximately Nate's waist height.
 
 ### Doors & Windows (Reference Sizes)
 
-**All doors and windows must match the Interior room.** These are the canonical measurements — use them in every room unless specifically asked to create a different type. Staircases follow the same sizing principles as doors.
 
 **Doors** (both front door and lab door style):
 

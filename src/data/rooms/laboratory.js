@@ -79,6 +79,7 @@
             default: { x: 300, y: 0.82 },
             from_interior: { x: 300, y: 0.82 },
             from_backlab: { x: 1600, y: 0.82 },
+            from_secure_storage: { x: 1600, y: 0.82 },
             from_sideroom: { x: 3000, y: 0.82 }
         },
 
@@ -125,8 +126,12 @@
                 name: 'Back Lab Door',
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
-                    look: "Heavy security door. There's a keypad and what looks like a retina scanner. Serious stuff.",
-                    action: "It's locked. The keypad blinks red at me. Very unwelcoming."
+                    look: "Heavy security door. There's a keypad and what looks like a retina scanner. Behind it is the secure storage area with laser grids."
+                },
+                actionTrigger: {
+                    type: 'transition',
+                    target: 'secure_storage',
+                    spawnPoint: 'from_laboratory'
                 }
             },
             {
