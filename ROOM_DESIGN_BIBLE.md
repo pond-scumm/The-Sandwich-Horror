@@ -57,25 +57,24 @@ See CREATIVE_BIBLE.md for full character voice guidelines.
 
 | Property | Value | Notes |
 |----------|-------|-------|
-| Screen resolution | 1280 x 720 | 16:9, mobile-first |
-| Background pixel unit (`p`) | 2px | Minimum drawn element. Allows high detail density |
-| Effective pixel grid | 640 x 360 | How many "game pixels" fit on screen |
-| Room width | Flexible | Any width as needed (1280-3840px+) |
+| Screen resolution | 1280 × 720 | 16:9, mobile-first |
+| Background pixel unit (`p`) | 4px | Minimum drawn element |
+| Effective pixel grid | 320 × 180 | How many "game pixels" fit on screen |
+| Room width | Flexible | Any width as needed (1280–3840px+) |
 
 ### Pixel Grid Rules
 
-- Every coordinate, dimension, and offset in drawing code must be a multiple of `p` (2)
+- Every coordinate, dimension, and offset in drawing code must be a multiple of `p` (4)
 - This maintains a consistent pixel-art grid throughout all backgrounds
 - The only exception is sub-pixel work within dithering patterns
-- Character sprites use a larger pixel unit (~4px) than backgrounds -- chunkier sprites on detailed backgrounds is a classic pixel-art convention (see Section 2A)
 
 ### Room Width
 
 Rooms are not locked to fixed multiples of screen width. A room can be any width that serves the design:
-- **1280px** (1x) -- fits one screen, no scrolling. Good for small/intimate rooms
-- **1920px** (1.5x) -- moderate scroll
-- **2560px** (2x) -- standard wide room
-- **3200px** (2.5x) -- large rooms like the Main Lab
+- **1280px** (1×) -- fits one screen, no scrolling. Good for small/intimate rooms
+- **1920px** (1.5×) -- moderate scroll
+- **2560px** (2×) -- standard wide room
+- **3200px** (2.5×) -- large rooms like the Main Lab
 - Any other width as needed
 - Camera scrolls horizontally to follow the player. Vertical scrolling is never used
 
@@ -91,32 +90,25 @@ Background textures are **static**. No animated tiles, no parallax scrolling, no
 
 ---
 
-## 2. Camera Distance & Character Scale
-
-Rooms use one of three camera presets. Each defines how large Nate appears and how much of the environment is visible.
+## 2. Character Scale
 
 ### The Sprite Anchor
 
-**Nate's sprite height is the anchor for all room proportions.** Doors, furniture, shelves, and architectural features all scale relative to Nate. Before generating rooms at a new camera distance, Nate's height at that distance must be established -- even a rough blocked-out silhouette at the correct height is sufficient.
+**Nate's sprite height is the anchor for all room proportions.** Doors, furniture, shelves, and architectural features all scale relative to Nate.
 
-| Preset | Nate Height | Walkable Band | Feel | Example Rooms |
-|--------|------------|---------------|------|---------------|
-| **FAR** | ~225px | 0.78-0.92 | Expansive, establishing | Main Lab, Backyard |
-| **MEDIUM** | ~315px | 0.72-0.92 | Standard gameplay | Foyer, 2nd Floor, Front Exterior |
-| **CLOSE** | ~405px | 0.68-0.90 | Intimate, detailed | Back Lab, Storage, Attic |
+| Property | Value |
+|----------|-------|
+| Nate's height | ~315px |
+| Walkable band | 0.72–0.92 (fraction of screen height) |
 
-> **Note:** Nate's placeholder sprite is 180×610px native. Scale factors in `BaseScene.PLAYER_SCALES` are calibrated at 2.25× the original design targets to achieve these heights.
+> **Note:** Nate's placeholder sprite is 180×610px native. Scale factors in `BaseScene.PLAYER_SCALES` are calibrated at 2.25× the original design targets to achieve this height.
 
 ### Scale Rules
 
-- **Doors** are always ~1.5x Nate's height at that camera distance
+- **Doors** are always ~1.5× Nate's height (~473px)
 - **Standard furniture** (tables, chairs) scales proportionally to Nate
-- **Wall features** (windows, paintings) scale to the room architecture, not to Nate -- a window in a FAR room is smaller on screen but represents a larger real-world object
+- **Wall features** (windows, paintings) scale to the room architecture, not to Nate
 - **Walkable area** is the bottom band of the screen. Characters walk left-right only. The `minY` and `maxY` values define this band as a fraction of screen height
-
-### Transitioning Between Distances
-
-When Nate walks between rooms of different camera distances, the scene transition (fade/cut) handles the scale jump. Do not animate camera zoom changes.
 
 ---
 
@@ -126,10 +118,9 @@ This section defines the character sprite style established by the Nate and Hect
 
 ### Pixel Scale Relationship
 
-Character sprites are drawn at approximately **4px pixel unit** -- chunkier than the p=2 background grid. This mismatch is **intentional and correct.** Chunky characters on detailed environments is a classic pixel-art convention used by LucasArts, Thimbleweed Park, and similar titles. The character reads as a bold, clear silhouette against a richer backdrop.
+Character sprites are drawn at approximately **4px pixel unit** -- matching the background grid. Inventory icons should also match this pixel scale.
 
-- **Do not** redraw characters at p=2 to match backgrounds
-- **Inventory icons** should match the character's chunkier pixel scale, not the background scale
+- **Do not** redraw characters at a finer pixel scale than backgrounds
 
 ### Proportions
 
@@ -206,31 +197,13 @@ Only objects physically against the back wall should have their base at `floorY`
 
 ### Depth Zones
 
-Each camera preset defines a walkable band. Within that band, three depth zones control where objects are placed and how large they appear:
-
-**MEDIUM camera (walkable 0.72–0.92):**
+Within the walkable band (0.72–0.92), three depth zones control where objects are placed and how large they appear:
 
 | Zone | y-range | Scale | Use for |
 |------|---------|-------|---------|
-| **Back wall** | 0.72 (floorY) | 1.0x | Shelves, wall-mounted items, furniture pushed against the wall |
-| **Mid-floor** | 0.74–0.78 | 1.0–1.05x | Tables, chairs, large freestanding furniture |
-| **Foreground** | 0.80–0.85 | 1.05–1.1x | Items near the viewer, foreground props |
-
-**FAR camera (walkable 0.78–0.92):**
-
-| Zone | y-range | Scale | Use for |
-|------|---------|-------|---------|
-| **Back wall** | 0.78 (floorY) | 1.0x | Wall-mounted, against-wall furniture |
-| **Mid-floor** | 0.80–0.84 | 1.0–1.05x | Freestanding furniture |
-| **Foreground** | 0.85–0.88 | 1.05–1.1x | Foreground props |
-
-**CLOSE camera (walkable 0.68–0.90):**
-
-| Zone | y-range | Scale | Use for |
-|------|---------|-------|---------|
-| **Back wall** | 0.68 (floorY) | 1.0x | Wall-mounted, against-wall furniture |
-| **Mid-floor** | 0.70–0.76 | 1.0–1.05x | Freestanding furniture |
-| **Foreground** | 0.78–0.84 | 1.05–1.1x | Foreground props |
+| **Back wall** | 0.72 (floorY) | 1.0× | Shelves, wall-mounted items, furniture pushed against the wall |
+| **Mid-floor** | 0.74–0.78 | 1.0–1.05× | Tables, chairs, large freestanding furniture |
+| **Foreground** | 0.80–0.85 | 1.05–1.1× | Items near the viewer, foreground props |
 
 Exact y-values are per room — these are guidelines, not rigid constraints.
 
@@ -238,12 +211,12 @@ Exact y-values are per room — these are guidelines, not rigid constraints.
 
 1. **Back wall** is a flat vertical surface. All wall-mounted items are drawn flat with no perspective distortion
 2. **Floor** extends from `floorY` to the bottom of the screen. There should be **meaningful visible floor space** between the wall-floor line and the bottom of the frame
-3. **Objects further from the viewer** (closer to the back wall) are positioned higher in the frame and drawn at 1.0x scale
-4. **Objects closer to the viewer** are positioned lower in the frame and drawn up to 1.1x scale. Keep scaling subtle — depth comes mainly from vertical staggering and overlap, not size changes
+3. **Objects further from the viewer** (closer to the back wall) are positioned higher in the frame and drawn at 1.0× scale
+4. **Objects closer to the viewer** are positioned lower in the frame and drawn up to 1.1× scale. Keep scaling subtle — depth comes mainly from vertical staggering and overlap, not size changes
 5. **Stagger vertical placement.** Avoid placing all objects at the same y-baseline. Vary their depth positions to break the flat-elevation look
 6. **Overlap creates depth.** Objects in the mid-floor or foreground should partially overlap objects behind them. A foreground chair might clip the bottom of a back-wall desk. This occlusion is the strongest depth cue
 7. **Furniture depth** is additionally faked using:
-   - **Side panels:** A narrow rectangle on the left edge, drawn in a darker color, suggesting a visible side face. Width is typically `p*10` to `p*12` (20-24px at p=2)
+   - **Side panels:** A narrow rectangle on the left edge, drawn in a darker color, suggesting a visible side face. Width is typically `p*5` to `p*6` (20-24px at p=4)
    - **Value shift:** Objects closer to the viewer get slightly higher contrast and warmer colors
 8. **No diagonal lines.** All edges are axis-aligned rectangles. Curves and angles are suggested through stepped pixel patterns only
 
@@ -261,7 +234,7 @@ Items drawn later appear in front of earlier items. **Draw order follows depth �
 4. Floor-level furniture against wall (desks, tables at `floorY`)
 5. Floor items (rugs, floor markings)
 6. Mid-floor furniture (chairs, freestanding tables — below `floorY`)
-7. Foreground objects (items closest to camera — lowest y, up to 1.1x scale)
+7. Foreground objects (items closest to camera — lowest y, up to 1.1× scale)
 
 This matches the hotspot array ordering rule (Section 7A, Rule 7): background hotspots first, foreground hotspots last.
 
@@ -343,9 +316,9 @@ Every light source **tints** nearby surfaces in the background texture. A firepl
 
 | Zone | Distance from Source | Warm Shift (fire/lamp) | Cool Shift (moon) |
 |------|---------------------|----------------------|-------------------|
-| **Core** | 0-50px | R+40, G+20, B-10 | R-10, G+5, B+30 |
-| **Mid** | 50-120px | R+25, G+10 | R-5, B+20 |
-| **Outer** | 120-200px | R+10, G+5 | B+10 |
+| **Core** | 0–50px | R+40, G+20, B−10 | R−10, G+5, B+30 |
+| **Mid** | 50–120px | R+25, G+10 | R−5, B+20 |
+| **Outer** | 120–200px | R+10, G+5 | B+10 |
 | **Ambient** | Beyond 200px | No shift | No shift |
 
 #### Implementation (Simplified for Placeholder Phase)
@@ -393,45 +366,62 @@ See Section 2A for character sprite tinting. Currently **per-room ambient tint o
 
 These proportions keep Hector's home feeling like one coherent building.
 
-### Wall Structure (MEDIUM Camera)
+### Wall Structure
 
 ```
-Crown Molding:     p*10 (20px) from top   -- WOOD_DARK to WOOD_LIGHT
+Crown Molding:     p*5 (20px) from top    -- WOOD_DARK to WOOD_LIGHT
 Upper Wall:        variable height         -- WALL_MID with panel texture
-Wainscoting:       p*70 (140px) tall       -- WOOD_DARK with recessed panels
+Wainscoting:       p*35 (140px) tall       -- WOOD_DARK with recessed panels
 Floor Line:        floorY (height * 0.72)  -- transition to floor
 Floor:             remaining height        -- FLOOR_DARK with board texture
 ```
 
-Adjust proportionally for FAR and CLOSE cameras. Wainscoting should always reach approximately Nate's waist height.
+Wainscoting should always reach approximately Nate's waist height.
 
 ### Wall Panels
 
-- Upper wall panel width: `p * 40` (80px)
-- Wainscot panel width: `p * 56` (112px)
+- Upper wall panel width: `p * 20` (80px)
+- Wainscot panel width: `p * 28` (112px)
 - Each panel: left highlight edge, right shadow edge
-- Subtle wallpaper texture in upper wall, spaced `p*24` apart
+- Subtle wallpaper texture in upper wall, spaced `p*12` apart
 
-### Doors
+### Doors & Windows (Reference Sizes)
 
-- Height: ~1.5x Nate's height at current camera distance (FAR: ~338px, MEDIUM: ~473px, CLOSE: ~608px)
-- Width: **~140px** (realistic door proportions, not sized to Nate). Reference the interior room doors for correct sizing. Doors should look like real doors that a person walks through, not narrow slits sized exactly to the character sprite width
-- Frame: `p * 6` (12px) border in WOOD_DARK
+**All doors and windows must match the Interior room.** These are the canonical measurements — use them in every room unless specifically asked to create a different type. Staircases follow the same sizing principles as doors.
+
+**Doors** (both front door and lab door style):
+
+| Part | Width | Height |
+|------|-------|--------|
+| Panel (no frame) | 140px (`p * 35`) | ~338px (from y-position to `floorY`) |
+| With frame | 164px (panel + 12px frame each side) | ~358px (panel + 20px top extension) |
+| Frame border | 12px (`p * 3`) per side | — |
+| Top panels (×2) | 48px (`p * 12`) | 80px (`p * 20`) |
+| Bottom panels (×2) | 48px (`p * 12`) | 100px (`p * 25`) |
+| Gap between panels | 12px (`p * 3`) | — |
+
 - 4-panel design with highlight/shadow edges
 - Brass handle with keyhole detail
 - Lab/special doors: slightly brighter, ajar with colored light spill
 
-### Windows
+**Windows:**
 
-- 4-pane design with cross muntins
+| Part | Width | Height |
+|------|-------|--------|
+| Window opening | 150–160px | ~318px (from y-position to `floorY`) |
+| Outer frame | 12px (`p * 3`) border all sides | — |
+| Inner muntins | 8px (`p * 2`) creating 4-pane design | — |
+
 - Dark night sky (0x0a0a18) through glass
 - Pixel-art moon and stars
 - Curtains on brass rod with finials
 - Windowsill
 
+**Never scale doors or windows down to fit a wall.** If a wall feels crowded, reduce the number of objects on it or widen the room — don't shrink the door.
+
 ### Floors
 
-- Floorboard width: `p * 30` (60px)
+- Floorboard width: `p * 15` (60px)
 - Board divider at left edge of each board
 - Subtle highlight line
 - Sparse wood grain (2-3 horizontal lines per board)
@@ -445,24 +435,24 @@ Adjust proportionally for FAR and CLOSE cameras. Wainscoting should always reach
 
 - Every piece of furniture is a named function: `drawCoatRack()`, `drawFireplace()`, etc.
 - Each function takes `(g, x, floorY, COLORS)` at minimum
-- All functions declare `const p = 2` as pixel unit
+- All functions declare `const p = 4` as pixel unit
 - Furniture is positioned relative to `floorY`, not absolute Y
-- Items against wall sit at `floorY`. Items "in front" sit at `floorY + 15` to `floorY + 25`
+- Items against wall sit at `floorY`. Items "in front" sit in the mid-floor or foreground depth zones (see Section 3)
 
 ### 3D Depth Effect (Side Panels)
 
 Larger furniture gets a **side panel** on its **left** side:
-- Width: `p*10` to `p*12` (20-24px)
+- Width: `p*5` to `p*6` (20-24px)
 - Color: WOOD_DARK (darker than front face)
 - Optional wood grain texture
 
-### Detail Level (at p=2)
+### Detail Level (at p=4)
 
-With `p = 2`, significantly more detail is possible than `p = 4`:
-- **4-5 value levels per material** (dark, shadow, mid, light, highlight)
-- **Interior detail:** Individual drawer handles, book spine variations, wood knots, mortar lines, fabric texture
-- **Clear silhouettes:** Shape is instantly recognizable
+With `p = 4`, focus on clear shapes and strong silhouettes:
+- **2-3 value levels per material** (dark, mid, light)
+- **Bold silhouettes:** Shape is instantly recognizable from across the room
 - **Functional clarity:** Interactive objects must be visually obvious
+- **Simplicity is fine:** Don't try to cram fine detail into chunky pixels. A bookshelf reads as colored rectangles for spines, not individual titles
 
 ### Clutter & Props
 
@@ -544,7 +534,7 @@ hotspots: [
 
 ## 8. Dithering
 
-Dithering mixes two colors in a scattered pattern to create the illusion of a third. At `p = 2`, dithering is more effective because individual pixels are smaller and blend better.
+Dithering mixes two colors in a scattered pattern to create the illusion of a third.
 
 ### When to Dither
 
@@ -584,7 +574,7 @@ class [RoomName]Scene extends BaseScene {
         super({ key: '[RoomName]Scene' });
         this.worldWidth = [room width];
         this.screenWidth = 1280;
-        this.walkableArea = { minY: [preset], maxY: [preset] };
+        this.walkableArea = { minY: 0.72, maxY: 0.92 };
         this.roomTint = 0xffffff; // Per-room sprite tint (see Section 2A)
     }
 
@@ -606,7 +596,7 @@ class [RoomName]Scene extends BaseScene {
 
     drawRoom(worldWidth, height) {
         // 1. COLORS object (master palette subset + a few contaminated variants for key surfaces)
-        // 2. floorY from camera preset
+        // 2. floorY = height * 0.72
         // 3. Back wall -> floor -> wall furniture -> floor items -> foreground
         // 4. Commit to RenderTexture
     }
@@ -637,12 +627,12 @@ class [RoomName]Scene extends BaseScene {
 - Architectural layouts and spatial composition
 - Consistent color palettes
 - Recognizable furniture silhouettes (rectangles)
-- Atmospheric dithering and texture (better at p=2)
+- Atmospheric dithering and texture
 - Phaser Light2D with animation
 - Consistent proportions and scale
-- Accurate hotspot placement
+- Accurate hotspot placement (via LAYOUT pattern)
 - Side-panel depth effects
-- Interior detail at p=2 (handles, spines, mortar, knots)
+- Bold, chunky shapes with clear readability at p=4
 
 ### CANNOT Do
 - Diagonal lines or true curves
@@ -650,6 +640,7 @@ class [RoomName]Scene extends BaseScene {
 - Organic shapes (trees, characters)
 - Strategic individual pixel placement
 - Perspective distortion
+- Fine interior detail (individual book spines, mortar lines) — keep it chunky
 
 ### Dev Art Goal
 Procedural backgrounds are **layout and atmosphere placeholders.** They establish room dimensions, furniture placement, hotspot positions, lighting mood, and transitions. All will eventually be hand-drawn.
@@ -658,18 +649,18 @@ Procedural backgrounds are **layout and atmosphere placeholders.** They establis
 
 ## 11. Room List & Assignments
 
-| Room | Camera | Width | Primary Light | Mood | Status |
-|------|--------|-------|---------------|------|--------|
-| Foyer | MEDIUM | 2560 | Fireplace, moonlight, desk lamp | Warm, cozy | Built at p=4 -- rebuild to p=2 after new standard is validated |
-| Main Lab | FAR | 3200 | Fluorescent, device glow, portal | Science green | Planned |
-| Back Lab | CLOSE | 1280 | Dim overhead, locker light | Cramped, cluttered | Planned |
-| 2nd Floor Hallway | MEDIUM | 2560 | Wall sconces, moonlight | Dim, mysterious | Planned |
-| Hector's Bedroom | MEDIUM | 1280 | Bedside lamp, moonlight | Personal, warm | Planned |
-| Attic / Alien Room | CLOSE | 1280 | TV glow, starlight | Blue-white, alien | Planned |
-| Basement | MEDIUM | 1280 | Bare bulb, generator glow | Industrial, cold | Planned |
-| Frank's Room | CLOSE | 1280 | Single overhead, candle | Eerie, Gothic | Planned |
-| Front Exterior | MEDIUM | 2560 | Moonlight, window glow | Night, foreboding | Planned |
-| Backyard | FAR | 2560 | Moonlight, fence glow | Open, mysterious | Planned |
-| Earl's Yard | MEDIUM | 1280 | Tiki torches, strings, grill | Warm, festive | Planned |
-| Roof | MEDIUM | 1280 | Moonlight, starfield | Exposed, vast sky | Planned |
-| Storage Room | CLOSE | 1280 | Laser grid, emergency light | Tense, red-lit | Planned |
+| Room | Width | Primary Light | Mood | Status |
+|------|-------|---------------|------|--------|
+| Interior | 2560 | Fireplace, moonlight, desk lamp | Warm, cozy | ✅ Built (reference room) |
+| Main Lab | 3200 | Fluorescent, device glow, portal | Science green | 🔲 Planned |
+| Back Lab | 1280 | Dim overhead, locker light | Cramped, cluttered | 🔲 Planned |
+| 2nd Floor Hallway | 2560 | Wall sconces, moonlight | Dim, mysterious | 🔲 Planned |
+| Hector's Bedroom | 1280 | Bedside lamp, moonlight | Personal, warm | 🔲 Planned |
+| Attic / Alien Room | 1280 | TV glow, starlight | Blue-white, alien | 🔲 Planned |
+| Basement | 1280 | Bare bulb, generator glow | Industrial, cold | 🔲 Planned |
+| Frank's Room | 1280 | Single overhead, candle | Eerie, Gothic | 🔲 Planned |
+| Front Exterior | 2560 | Moonlight, window glow | Night, foreboding | 🔲 Planned |
+| Backyard | 2560 | Moonlight, fence glow | Open, mysterious | 🔲 Planned |
+| Earl's Yard | 1280 | Tiki torches, strings, grill | Warm, festive | 🔲 Planned |
+| Roof | 1280 | Moonlight, starfield | Exposed, vast sky | 🔲 Planned |
+| Storage Room | 1280 | Laser grid, emergency light | Tense, red-lit | 🔲 Planned |
