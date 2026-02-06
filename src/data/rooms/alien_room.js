@@ -38,8 +38,8 @@
 
         lighting: {
             enabled: true,
-            ambient: 0x3a3545, // Dark, TV-lit room
-            ambientMobile: 0x5a5565,
+            ambient: 0x5a5565, // TV-lit room
+            ambientMobile: 0x7a7585,
             sources: [
                 // TV glow (dominant, blue-white flicker)
                 { id: 'tv_glow', x: 1050, y: 0.55, radius: 380, color: 0x88aaff, intensity: 1.2 },
@@ -101,7 +101,7 @@
             // === ENTRANCE/DOORWAY ===
             {
                 id: 'doorway_exit',
-                x: 0, y: 0.35, w: 100, h: 0.45,
+                x: 90, y: 0.485, w: 140, h: 0.47,
                 interactX: 80, interactY: 0.82,
                 name: 'Hallway',
                 verbs: { action: 'Leave', look: 'Look at' },
@@ -118,7 +118,7 @@
             // === DRESSER (25% larger, moved right and down) ===
             {
                 id: 'dresser_alien',
-                x: 230, y: 0.55, w: 150, h: 0.30,
+                x: 329, y: 0.62, w: 138, h: 0.17,
                 interactX: 300, interactY: 0.88,
                 name: 'Dresser',
                 verbs: { action: 'Search', look: 'Examine' },
@@ -131,7 +131,7 @@
             // === LAVA LAMP (on larger dresser) ===
             {
                 id: 'lamp_lava',
-                x: 295, y: 0.42, w: 50, h: 0.15,
+                x: 328, y: 0.48, w: 24, h: 0.17,
                 interactX: 320, interactY: 0.88,
                 name: 'Lava Lamp',
                 verbs: { action: 'Touch', look: 'Examine' },
@@ -144,7 +144,7 @@
             // === COUCH (profile view, 1.5x bigger, moved right) ===
             {
                 id: 'couch_alien',
-                x: 420, y: 0.40, w: 180, h: 0.35,
+                x: 533, y: 0.56, w: 206, h: 0.33,
                 interactX: 410, interactY: 0.85,
                 name: 'Couch',
                 verbs: { action: 'Sit', look: 'Examine' },
@@ -157,7 +157,7 @@
             // === ALIEN NPC (Harry) - standing behind couch ===
             {
                 id: 'alien_harry',
-                x: 475, y: 0.15, w: 120, h: 0.55,
+                x: 537, y: 0.44, w: 110, h: 0.249,
                 interactX: 535, interactY: 0.85,
                 name: 'Alien',
                 type: 'npc',
@@ -172,7 +172,7 @@
             // === COFFEE TABLE (between couch and TV) ===
             {
                 id: 'table_coffee',
-                x: 710, y: 0.68, w: 200, h: 0.12,
+                x: 807, y: 0.685, w: 177, h: 0.072,
                 interactX: 810, interactY: 0.85,
                 name: 'Coffee Table',
                 verbs: { action: 'Search', look: 'Examine' },
@@ -182,38 +182,10 @@
                 }
             },
 
-            // === REMOTE CONTROL ===
-            {
-                id: 'remote_control',
-                x: 735, y: 0.66, w: 50, h: 0.05,
-                interactX: 760, interactY: 0.85,
-                name: 'Remote Control',
-                verbs: { action: 'Take', look: 'Examine' },
-                responses: {
-                    look: "An old TV remote, absolutely covered in some kind of... slime? Residue? I don't want to know.",
-                    action: "I pick up the remote. It's... sticky. But at least I can control the TV now."
-                }
-                // TODO: Add to inventory when taken
-            },
-
-            // === TV GUIDE ===
-            {
-                id: 'tvguide',
-                x: 795, y: 0.66, w: 60, h: 0.05,
-                interactX: 825, interactY: 0.85,
-                name: 'TV Guide',
-                verbs: { action: 'Take', look: 'Examine' },
-                responses: {
-                    look: "This week's TV Guide, heavily annotated. Soap opera time slots are circled multiple times in what looks like... green ink? Green blood? Best not to ask.",
-                    action: "I flip through the TV Guide. So many annotations. Harry has OPINIONS about these shows."
-                }
-                // TODO: Add to inventory when taken
-            },
-
             // === TV (smaller, more right) ===
             {
                 id: 'tv_soap',
-                x: 970, y: 0.38, w: 180, h: 0.38,
+                x: 1062, y: 0.56, w: 164, h: 0.29,
                 interactX: 960, interactY: 0.85,
                 name: 'Television',
                 verbs: { action: 'Take', look: 'Examine' },
@@ -227,7 +199,7 @@
             // === VHS TAPES / DVDS (below TV stand) ===
             {
                 id: 'tapes_vhs',
-                x: 970, y: 0.68, w: 120, h: 0.12,
+                x: 1063, y: 0.721, w: 177, h: 0.075,
                 interactX: 1030, interactY: 0.85,
                 name: 'Video Tapes',
                 verbs: { action: 'Search', look: 'Examine' },
@@ -240,7 +212,7 @@
             // === MASS EXTINCTION DEVICE ===
             {
                 id: 'device_extinction',
-                x: 1150, y: 0.30, w: 100, h: 0.25,
+                x: 1180, y: 0.42, w: 80, h: 0.10,
                 interactX: 1180, interactY: 0.82,
                 name: 'Strange Device',
                 verbs: { action: 'Examine', look: 'Look at' },
@@ -253,7 +225,7 @@
             // === WALL POSTERS (2.5x bigger, centered over dresser) ===
             {
                 id: 'posters_wall',
-                x: 235, y: 0.12, w: 180, h: 0.32,
+                x: 329, y: 0.295, w: 176, h: 0.31,
                 interactX: 325, interactY: 0.82,
                 name: 'Wall Poster',
                 verbs: { action: 'Read', look: 'Look at' },
@@ -264,7 +236,7 @@
             },
             {
                 id: 'poster_2',
-                x: 740, y: 0.12, w: 180, h: 0.32,
+                x: 838, y: 0.295, w: 176, h: 0.31,
                 interactX: 830, interactY: 0.82,
                 name: 'Movie Poster',
                 verbs: { action: 'Read', look: 'Look at' },
@@ -277,26 +249,13 @@
             // === SNACK DEBRIS ===
             {
                 id: 'snacks_floor',
-                x: 450, y: 0.72, w: 120, h: 0.08,
+                x: 543, y: 0.747, w: 167, h: 0.041,
                 interactX: 510, interactY: 0.85,
                 name: 'Snack Debris',
                 verbs: { action: 'Clean up', look: 'Examine' },
                 responses: {
                     look: "Empty chip bags, candy wrappers, crushed soda cans. The floor around the couch is a graveyard of processed snacks. There's also some kind of... purple residue I don't recognize.",
                     action: "I pick up a few wrappers. Whoever was here sure likes their snacks."
-                }
-            },
-
-            // === CEILING ===
-            {
-                id: 'ceiling',
-                x: 500, y: 0.05, w: 300, h: 0.10,
-                interactX: 650, interactY: 0.82,
-                name: 'Ceiling',
-                verbs: { action: 'Examine', look: 'Look at' },
-                responses: {
-                    look: "Glow-in-the-dark stars stuck to the ceiling. But arranged in a very specific pattern - not random. A star map? Of somewhere very far away?",
-                    action: "I can't reach, but I count the stars. The constellation in the center has a little arrow pointing to one star in particular. Home, maybe?"
                 }
             }
         ],

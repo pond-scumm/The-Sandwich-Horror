@@ -92,7 +92,7 @@
             // === FRANK'S BEDROOM DOOR (far left) ===
             {
                 id: 'door_frank',
-                x: 80, y: 0.35, w: 140, h: 0.45,
+                x: 150, y: 0.485, w: 140, h: 0.47,
                 interactX: 150, interactY: 0.82,
                 name: "Frank's Room",
                 verbs: { action: 'Enter', look: 'Examine' },
@@ -105,7 +105,7 @@
             // === ALIEN'S BEDROOM DOOR ===
             {
                 id: 'door_alien',
-                x: 380, y: 0.35, w: 140, h: 0.45,
+                x: 450, y: 0.485, w: 140, h: 0.47,
                 interactX: 450, interactY: 0.82,
                 name: 'Bedroom Door',
                 verbs: { action: 'Open', look: 'Examine' },
@@ -123,7 +123,7 @@
             // === STAIRWELL DOWN (railing spans 750-1150) ===
             {
                 id: 'stairs_down',
-                x: 750, y: 0.50, w: 400, h: 0.40,
+                x: 950, y: 0.63, w: 400, h: 0.25,
                 interactX: 950, interactY: 0.82,
                 name: 'Stairwell',
                 verbs: { action: 'Go down', look: 'Look at' },
@@ -140,7 +140,7 @@
             // === BATHROOM DOOR ===
             {
                 id: 'door_bathroom',
-                x: 1280, y: 0.35, w: 140, h: 0.45,
+                x: 1350, y: 0.485, w: 140, h: 0.47,
                 interactX: 1350, interactY: 0.82,
                 name: 'Bathroom',
                 verbs: { action: 'Open', look: 'Examine' },
@@ -153,7 +153,7 @@
             // === HECTOR'S BEDROOM DOOR (far right) ===
             {
                 id: 'door_hector',
-                x: 1700, y: 0.35, w: 140, h: 0.45,
+                x: 1770, y: 0.485, w: 140, h: 0.47,
                 interactX: 1770, interactY: 0.82,
                 name: "Hector's Room",
                 verbs: { action: 'Open', look: 'Examine' },
@@ -170,7 +170,7 @@
             // === ATTIC PULL STRING ===
             {
                 id: 'pullstring_attic',
-                x: 1620, y: 0.28, w: 60, h: 0.25,
+                x: 1650, y: 0.18, w: 60, h: 0.15,
                 interactX: 1650, interactY: 0.82,
                 name: 'Attic Pull-String',
                 verbs: { action: 'Pull', look: 'Look at' },
@@ -184,7 +184,7 @@
             // === PORTRAITS (2.5x larger: 176w x 224h pixels, centered at x) ===
             {
                 id: 'portrait_1',
-                x: 632, y: 0.12, w: 176, h: 0.31,
+                x: 720, y: 0.275, w: 176, h: 0.31,
                 interactX: 720, interactY: 0.82,
                 name: 'Portrait',
                 verbs: { action: 'Examine', look: 'Look at' },
@@ -195,7 +195,7 @@
             },
             {
                 id: 'portrait_2',
-                x: 912, y: 0.12, w: 176, h: 0.31,
+                x: 1000, y: 0.275, w: 176, h: 0.31,
                 interactX: 1000, interactY: 0.82,
                 name: 'Portrait',
                 verbs: { action: 'Examine', look: 'Look at' },
@@ -206,7 +206,7 @@
             },
             {
                 id: 'portrait_3',
-                x: 1462, y: 0.12, w: 176, h: 0.31,
+                x: 1550, y: 0.275, w: 176, h: 0.31,
                 interactX: 1550, interactY: 0.82,
                 name: 'Unusual Portrait',
                 verbs: { action: 'Examine', look: 'Look at' },
@@ -219,7 +219,7 @@
             // === THERMOSTAT ===
             {
                 id: 'thermostat',
-                x: 1150, y: 0.45, w: 40, h: 0.08,
+                x: 1150, y: 0.415, w: 40, h: 0.08,
                 interactX: 1170, interactY: 0.82,
                 name: 'Thermostat',
                 verbs: { action: 'Adjust', look: 'Check' },
@@ -232,26 +232,13 @@
             // === WALL SCONCE ===
             {
                 id: 'sconce_wall',
-                x: 1195, y: 0.38, w: 30, h: 0.12,
+                x: 1200, y: 0.29, w: 30, h: 0.08,
                 interactX: 1200, interactY: 0.82,
                 name: 'Wall Sconce',
                 verbs: { action: 'Touch', look: 'Examine' },
                 responses: {
                     look: "A brass wall sconce with a flickering electric bulb. Very period-appropriate. The glow is warm but dim.",
                     action: "Still warm. The bulb flickers when I touch it but stays on. These things have been burning for who knows how long."
-                }
-            },
-
-            // === BANISTER ===
-            {
-                id: 'banister_rail',
-                x: 950, y: 0.58, w: 100, h: 0.08,
-                interactX: 1000, interactY: 0.82,
-                name: 'Banister',
-                verbs: { action: 'Slide down', look: 'Examine' },
-                responses: {
-                    look: "A well-worn wooden banister. Polished to a shine from countless hands. It curves down toward the foyer.",
-                    action: "Tempting, but I'm here on a trial basis. Probably shouldn't break any bones until I'm officially hired."
                 }
             }
         ],
