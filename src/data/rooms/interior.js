@@ -68,7 +68,7 @@
                 volume: 0.6,
                 fade: 1000
             },
-            continueFrom: ['laboratory', 'second_floor']
+            continueFrom: ['laboratory', 'second_floor', 'backyard']
         },
 
         layers: [

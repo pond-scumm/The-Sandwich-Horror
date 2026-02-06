@@ -872,12 +872,12 @@ class RoomScene extends BaseScene {
 
         this.createPlayer(spawnX, height * spawnY);
 
-        // Handle spawn direction
-        if (spawnDirection && this.playerSprite) {
+        // Handle spawn direction (use setScale for consistency with walkTo)
+        if (spawnDirection && this.player) {
             if (spawnDirection === 'left') {
-                this.playerSprite.setFlipX(true);
+                this.player.setScale(-1, 1);
             } else if (spawnDirection === 'right') {
-                this.playerSprite.setFlipX(false);
+                this.player.setScale(1, 1);
             }
         }
     }

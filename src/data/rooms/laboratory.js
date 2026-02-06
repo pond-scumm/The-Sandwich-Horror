@@ -63,7 +63,7 @@
                 volume: 0.6,
                 fade: 1000
             },
-            continueFrom: ['interior']
+            continueFrom: ['interior', 'back_lab']
         },
 
         layers: [
