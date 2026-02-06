@@ -57,15 +57,15 @@
             ambient: 0x8a7060,
             ambientMobile: 0xa88878,
             sources: [
-                { id: 'lamp_left', x: 540, y: 0.52, radius: 300, color: 0xffdd88, intensity: 1.0 },
-                { id: 'lamp_right', x: 860, y: 0.52, radius: 300, color: 0xffdd88, intensity: 1.0 },
+                { id: 'lamp_left', x: 308, y: 0.528, radius: 300, color: 0xffdd88, intensity: 1.0 },
+                { id: 'lamp_right', x: 807, y: 0.528, radius: 300, color: 0xffdd88, intensity: 1.0 },
                 { id: 'moonlight', x: 420, y: 0.45, radius: 250, color: 0xaabbdd, intensity: 0.5 }
             ]
         },
 
         audio: {
             music: {
-                key: 'interior_theme',
+                key: 'hector_theme',
                 volume: 0.4,
                 fade: 1000
             },

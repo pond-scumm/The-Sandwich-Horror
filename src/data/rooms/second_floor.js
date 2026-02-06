@@ -97,8 +97,12 @@
                 name: "Frank's Room",
                 verbs: { action: 'Enter', look: 'Examine' },
                 responses: {
-                    look: "A bedroom door with a crayon drawing taped to it. 'FRANKS ROOM' is written in wobbly letters. There's a crude picture of... a flower? Or maybe a sun with legs.",
-                    action: "I should probably focus on the task at hand. I can explore Frank's room later."
+                    look: "A bedroom door with a crayon drawing taped to it. 'FRANKS ROOM' is written in wobbly letters. There's a crude picture of... a flower? Or maybe a sun with legs."
+                },
+                actionTrigger: {
+                    type: 'transition',
+                    target: 'franks_room',
+                    spawnPoint: 'from_second_floor'
                 }
             },
 
