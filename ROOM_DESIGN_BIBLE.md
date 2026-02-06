@@ -37,6 +37,18 @@ When writing hotspot responses:
 4. ✗ Don't describe the physical action the player just commanded
 5. ✗ Don't write stage directions ("I approach", "I reach out", "I examine")
 
+### The "I" Rule
+
+Nate speaks in first person. He says "I can see," "I can't reach," "I'm not stealing." He's a person talking, not a telegram.
+
+The ONLY "I" to remove is when narrating the physical action the player just commanded: "I knock on the door. No answer." becomes just "No answer." The click already IS the knock — Nate doesn't need to describe what he just did.
+
+Everything else keeps "I" and keeps its natural energy and length. "Conversational" means how a real person talks to a friend, not how someone writes a text message in a hurry.
+
+### When Editing Existing Dialogue
+
+The bar for changing a working line is high. If a line already sounds like something a real person would say, leave it alone. Don't "tighten" dialogue by stripping out words — that kills voice. Only change a line if it violates the narration rule above, or if it's flat/generic and could be funnier or more specific.
+
 See CREATIVE_BIBLE.md for full character voice guidelines.
 
 ---

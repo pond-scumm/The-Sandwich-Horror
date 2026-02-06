@@ -13,6 +13,36 @@
     'use strict';
 
     // =========================================================================
+    // SHARED LAYOUT (single source of truth for all positions)
+    // =========================================================================
+    // Hotspot x,y is the center of the clickable area.
+    // Hotspot y should match the visual center of the drawn object.
+
+    const LAYOUT = {
+        // House elements (positioned relative to house structure)
+        back_door:   { x: 120, y: 0.51, w: 160, h: 0.42 },     // Door spans 0.30 to 0.72
+        window:      { x: 340, y: 0.335, w: 120, h: 0.12 },    // Visual center of window
+        clock:       { x: 340, y: 0.18, w: 80, h: 0.12 },      // Just above window
+        bulkhead:    { x: 380, y: 0.65, w: 220, h: 0.16 },     // On house, shifted left
+
+        // Yard items (hotspot y = visual center of each object)
+        clothesline: { x: 770, y: 0.55, w: 180, h: 0.34 },     // Center of coat/line area
+        doghouse:    { x: 1000, y: 0.64, w: 160, h: 0.16 },    // Center of doghouse
+        garden:      { x: 1100, y: 0.69, w: 400, h: 0.06 },    // Low plants
+        gnome:       { x: 1360, y: 0.65, w: 100, h: 0.14 },    // Center of gnome
+        telescope:   { x: 1560, y: 0.58, w: 120, h: 0.28 },    // Center of telescope
+        trash:       { x: 1760, y: 0.64, w: 180, h: 0.16 },    // Center of trash cans
+
+        // Fence elements
+        string_lights: { x: 1200, y: 0.36, w: 800, h: 0.06 },  // Above fence top
+        fence_gate:  { x: 2000, y: 0.64, w: 180, h: 0.32 },    // Covers full gate
+
+        // Far elements
+        shed:        { x: 2450, y: 0.50, w: 120, h: 0.28 },
+        moon:        { x: 2100, y: 0.08, w: 80, h: 0.10 }
+    };
+
+    // =========================================================================
     // ROOM DATA
     // =========================================================================
 
@@ -115,8 +145,8 @@
             // === HOUSE EXTERIOR (left side - fills full height) ===
             {
                 id: 'window_house',
-                x: 300, y: 0.35, w: 120, h: 0.18,
-                interactX: 300, interactY: 0.82,
+                ...LAYOUT.window,
+                interactX: LAYOUT.window.x, interactY: 0.82,
                 name: 'Window',
                 verbs: { action: 'Peek through', look: 'Examine' },
                 responses: {
@@ -126,8 +156,8 @@
             },
             {
                 id: 'clock_wall',
-                x: 450, y: 0.18, w: 80, h: 0.12,
-                interactX: 450, interactY: 0.82,
+                ...LAYOUT.clock,
+                interactX: LAYOUT.clock.x, interactY: 0.82,
                 name: 'Wall Clock',
                 verbs: { action: 'Reach for', look: 'Examine' },
                 responses: {
@@ -137,20 +167,9 @@
                 // TODO: State-driven - after clock falls, this hotspot changes position
             },
             {
-                id: 'house_wall',
-                x: 300, y: 0.45, w: 350, h: 0.25,
-                interactX: 300, interactY: 0.82,
-                name: 'House Exterior',
-                verbs: { action: 'Touch', look: 'Examine' },
-                responses: {
-                    look: "Weathered siding. A little overgrown with vines. Could use some love.",
-                    action: "Yep, that's a wall alright. Solid."
-                }
-            },
-            {
                 id: 'back_door',
-                x: 120, y: 0.42, w: 140, h: 0.42,
-                interactX: 120, interactY: 0.82,
+                ...LAYOUT.back_door,
+                interactX: LAYOUT.back_door.x, interactY: 0.82,
                 name: 'Back Door',
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
@@ -167,8 +186,8 @@
             // === BULKHEAD (bottom right corner of house) ===
             {
                 id: 'bulkhead_basement',
-                x: 720, y: 0.66, w: 220, h: 0.22,
-                interactX: 720, interactY: 0.82,
+                ...LAYOUT.bulkhead,
+                interactX: LAYOUT.bulkhead.x, interactY: 0.82,
                 name: 'Basement Bulkhead',
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
@@ -180,14 +199,13 @@
                     target: 'basement',
                     spawnPoint: 'from_backyard'
                 }
-                // Note: basement not built yet - placeholder
             },
 
-            // === YARD ITEMS ===
+            // === YARD ITEMS (mid-floor and foreground depth zones) ===
             {
                 id: 'clothesline',
-                x: 850, y: 0.45, w: 180, h: 0.20,
-                interactX: 850, interactY: 0.82,
+                ...LAYOUT.clothesline,
+                interactX: LAYOUT.clothesline.x, interactY: 0.82,
                 name: 'Clothesline',
                 verbs: { action: 'Search', look: 'Examine' },
                 responses: {
@@ -198,8 +216,8 @@
             },
             {
                 id: 'garden_wild',
-                x: 1100, y: 0.62, w: 400, h: 0.20,
-                interactX: 1100, interactY: 0.82,
+                ...LAYOUT.garden,
+                interactX: LAYOUT.garden.x, interactY: 0.82,
                 name: 'Overgrown Garden',
                 verbs: { action: 'Search', look: 'Examine' },
                 responses: {
@@ -209,8 +227,8 @@
             },
             {
                 id: 'doghouse',
-                x: 1000, y: 0.64, w: 160, h: 0.20,
-                interactX: 1000, interactY: 0.82,
+                ...LAYOUT.doghouse,
+                interactX: LAYOUT.doghouse.x, interactY: 0.82,
                 name: 'Doghouse',
                 verbs: { action: 'Look inside', look: 'Examine' },
                 responses: {
@@ -220,8 +238,8 @@
             },
             {
                 id: 'gnome',
-                x: 1300, y: 0.66, w: 100, h: 0.18,
-                interactX: 1300, interactY: 0.82,
+                ...LAYOUT.gnome,
+                interactX: LAYOUT.gnome.x, interactY: 0.82,
                 name: 'Garden Gnome',
                 verbs: { action: 'Pick up', look: 'Examine' },
                 responses: {
@@ -231,8 +249,8 @@
             },
             {
                 id: 'telescope',
-                x: 1500, y: 0.58, w: 120, h: 0.28,
-                interactX: 1500, interactY: 0.82,
+                ...LAYOUT.telescope,
+                interactX: LAYOUT.telescope.x, interactY: 0.82,
                 name: 'Telescope',
                 verbs: { action: 'Look through', look: 'Examine' },
                 responses: {
@@ -242,8 +260,8 @@
             },
             {
                 id: 'trash_cans',
-                x: 1700, y: 0.66, w: 180, h: 0.18,
-                interactX: 1700, interactY: 0.82,
+                ...LAYOUT.trash,
+                interactX: LAYOUT.trash.x, interactY: 0.82,
                 name: 'Garbage Cans',
                 verbs: { action: 'Search', look: 'Examine' },
                 responses: {
@@ -269,8 +287,8 @@
             },
             {
                 id: 'string_lights',
-                x: 1200, y: 0.48, w: 800, h: 0.08,
-                interactX: 1200, interactY: 0.82,
+                ...LAYOUT.string_lights,
+                interactX: LAYOUT.string_lights.x, interactY: 0.82,
                 name: 'String Lights',
                 verbs: { action: 'Admire', look: 'Look at' },
                 responses: {
@@ -280,8 +298,8 @@
             },
             {
                 id: 'fence_gate',
-                x: 2000, y: 0.53, w: 130, h: 0.24,
-                interactX: 2000, interactY: 0.82,
+                ...LAYOUT.fence_gate,
+                interactX: LAYOUT.fence_gate.x, interactY: 0.82,
                 name: 'Fence Gate',
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
@@ -298,7 +316,7 @@
             // === SHED (perpendicular, mostly off-screen right) ===
             {
                 id: 'shed_entrance',
-                x: 2450, y: 0.50, w: 120, h: 0.28,
+                ...LAYOUT.shed,
                 interactX: 2400, interactY: 0.82,
                 name: 'Garden Shed',
                 verbs: { action: 'Enter', look: 'Examine' },
@@ -311,8 +329,8 @@
             // === SKY ELEMENTS ===
             {
                 id: 'moon',
-                x: 200, y: 0.08, w: 80, h: 0.10,
-                interactX: 200, interactY: 0.82,
+                ...LAYOUT.moon,
+                interactX: LAYOUT.moon.x, interactY: 0.82,
                 name: 'Moon',
                 verbs: { action: 'Wave at', look: 'Look at' },
                 responses: {
@@ -493,8 +511,8 @@
     }
 
     function drawBackDoor(g, x, y, floorY) {
-        // Matching interior door exactly (scaled for p=2 vs p=4)
-        const doorWidth = p * 70;  // Same as interior (140px)
+        // Matching interior door size
+        const doorWidth = p * 80;  // 160px door width
         const doorHeight = floorY - y;
         const frameWidth = p * 3;
 
@@ -1004,7 +1022,7 @@
         drawStars(g, worldWidth, skyHeight);
 
         // Moon (positioned far right, not blocked by house)
-        drawMoon(g, 2100, height * 0.08);
+        drawMoon(g, LAYOUT.moon.x, height * LAYOUT.moon.y);
 
         // === FENCE (spans full width, behind everything - taller to reach eye level) ===
         const fenceHeight = p * 115;
@@ -1014,7 +1032,7 @@
         drawStringLights(g, 50, floorY - fenceHeight - p*15, worldWidth - 100);
 
         // === FENCE GATE (to Earl's yard) ===
-        drawFenceGate(g, p*1000, floorY, fenceHeight);
+        drawFenceGate(g, LAYOUT.fence_gate.x, floorY, fenceHeight);
 
         // === GROUND/GRASS ===
         g.fillStyle(COLORS.GRASS_DARK);
@@ -1040,28 +1058,29 @@
         const houseWidth = p * 280;
         drawHouseExterior(g, 0, floorY, houseWidth, floorY);
 
-        // Back door on house (matching interior door size exactly, with steps)
-        drawBackDoor(g, p*60, height * 0.30, floorY);
+        // Back door on house — derive top Y from hotspot center and height
+        const doorTopY = LAYOUT.back_door.y - LAYOUT.back_door.h / 2; // 0.30
+        drawBackDoor(g, LAYOUT.back_door.x, height * doorTopY, floorY);
 
         // Window on house
-        drawWindow(g, p*170, height * 0.28, p*50, p*40);
+        drawWindow(g, LAYOUT.window.x, height * LAYOUT.window.y, p*50, p*40);
 
-        // Clock HIGH on wall
-        drawClock(g, p*220, height * 0.15);
+        // Clock HIGH on wall (just above window)
+        drawClock(g, LAYOUT.clock.x, height * LAYOUT.clock.y);
 
-        // === BULKHEAD (bottom right corner of house, larger) ===
-        drawBulkhead(g, houseWidth - p*55, floorY);
+        // === BULKHEAD (on house, below window) ===
+        drawBulkhead(g, LAYOUT.bulkhead.x, floorY);
 
-        // === YARD ITEMS (middle section) ===
-        drawClothesline(g, p*350, p*420, height * 0.38, floorY);
-        drawDoghouse(g, p*500, floorY);
-        drawGarden(g, p*550, floorY, p*200);  // Much wider garden
-        drawGnome(g, p*680, floorY);
-        drawTelescope(g, p*780, floorY);
-        drawTrashCans(g, p*880, floorY);
+        // === YARD ITEMS (all sitting on grass, slightly in front of fence) ===
+        drawClothesline(g, LAYOUT.clothesline.x - p*35, LAYOUT.clothesline.x + p*35, height * 0.38, floorY);
+        drawDoghouse(g, LAYOUT.doghouse.x, floorY);
+        drawGarden(g, LAYOUT.garden.x - p*100, floorY, p*200);
+        drawGnome(g, LAYOUT.gnome.x, floorY);
+        drawTelescope(g, LAYOUT.telescope.x, floorY);
+        drawTrashCans(g, LAYOUT.trash.x, floorY);
 
         // === SHED (perpendicular, mostly off-screen right) ===
-        drawShedPerpendicular(g, worldWidth - p*80, floorY, height);
+        drawShedPerpendicular(g, LAYOUT.shed.x, floorY, height);
     }
 
 })();
