@@ -13,6 +13,28 @@
     'use strict';
 
     // =========================================================================
+    // SHARED LAYOUT — Single source of truth for all interactive element positions.
+    // Both drawing functions and hotspot definitions reference this object.
+    // When an element moves, change it here and both systems stay in sync.
+    // =========================================================================
+
+    const LAYOUT = {
+        woods:            { x: 640,  y: 0.35, w: 1280, h: 0.35 },
+        tree_left:        { x: 120,  y: 0.38, w: 120, h: 0.60 },
+        tree_right:       { x: 1160, y: 0.38, w: 110, h: 0.60 },
+        string_lights:    { x: 640,  y: 0.22, w: 1000, h: 0.08 },
+        flamingo:         { x: 320,  y: 0.66, w: 40,  h: 0.18 },
+        airstream:        { x: 640,  y: 0.42, w: 550, h: 0.45 },
+        airstream_door:   { x: 464,  y: 0.52, w: 100, h: 0.34 },
+        airstream_window: { x: 781,  y: 0.36, w: 150, h: 0.15 },
+        cooler:           { x: 1040, y: 0.69, w: 90,  h: 0.18 },
+        radio:            { x: 650,  y: 0.63, w: 70,  h: 0.19 },
+        grill:            { x: 780,  y: 0.61, w: 110, h: 0.24 },
+        earl:             { x: 920,  y: 0.46, w: 80,  h: 0.50 },
+        ladder:           { x: 1160, y: 0.52, w: 50,  h: 0.32 },
+    };
+
+    // =========================================================================
     // ROOM DATA
     // =========================================================================
 
@@ -113,11 +135,37 @@
         // =====================================================================
 
         hotspots: [
-            // === TREES & BACKGROUND ===
+            // === BACKGROUND (lowest priority — must be first in array) ===
+            {
+                id: 'woods_background',
+                ...LAYOUT.woods,
+                interactX: LAYOUT.woods.x, interactY: 0.82,
+                name: 'Dark Woods',
+                verbs: { action: 'Walk into', look: 'Peer into' },
+                responses: {
+                    look: "Dense, dark woods surround this cozy clearing. Pretty sure I'd get lost immediately.",
+                    action: "No thanks. I like it here where there's light and burgers."
+                }
+            },
+
+            // === AIRSTREAM (large fallback — created first, sits underneath) ===
+            {
+                id: 'airstream_home',
+                ...LAYOUT.airstream,
+                interactX: LAYOUT.airstream.x, interactY: 0.82,
+                name: "Earl's Airstream",
+                verbs: { action: 'Knock', look: 'Examine' },
+                responses: {
+                    look: "A vintage Airstream trailer, lovingly maintained. Warm light glows from inside. This is Earl's home, and it's beautiful.",
+                    action: "I knock on the door. No answer—Earl's out here with me. Feels rude to go in without permission."
+                }
+            },
+
+            // === SPECIFIC HOTSPOTS (created after backgrounds — sit on top) ===
             {
                 id: 'tree_left',
-                x: 120, y: 0.25, w: 100, h: 0.45,
-                interactX: 120, interactY: 0.82,
+                ...LAYOUT.tree_left,
+                interactX: LAYOUT.tree_left.x, interactY: 0.82,
                 name: 'Large Tree',
                 verbs: { action: 'Climb', look: 'Examine' },
                 responses: {
@@ -127,8 +175,8 @@
             },
             {
                 id: 'tree_right',
-                x: 1160, y: 0.28, w: 90, h: 0.42,
-                interactX: 1160, interactY: 0.82,
+                ...LAYOUT.tree_right,
+                interactX: LAYOUT.tree_right.x, interactY: 0.82,
                 name: 'Large Tree',
                 verbs: { action: 'Climb', look: 'Examine' },
                 responses: {
@@ -137,20 +185,9 @@
                 }
             },
             {
-                id: 'woods_background',
-                x: 640, y: 0.35, w: 1280, h: 0.35,
-                interactX: 640, interactY: 0.82,
-                name: 'Dark Woods',
-                verbs: { action: 'Walk into', look: 'Peer into' },
-                responses: {
-                    look: "Dense, dark woods surround this cozy clearing. Pretty sure I'd get lost immediately.",
-                    action: "No thanks. I like it here where there's light and burgers."
-                }
-            },
-            {
                 id: 'string_lights',
-                x: 640, y: 0.45, w: 1000, h: 0.08,
-                interactX: 640, interactY: 0.82,
+                ...LAYOUT.string_lights,
+                interactX: LAYOUT.string_lights.x, interactY: 0.82,
                 name: 'String Lights',
                 verbs: { action: 'Admire', look: 'Look at' },
                 responses: {
@@ -158,23 +195,34 @@
                     action: "This is perfect ambiance. Earl's got style."
                 }
             },
-
-            // === LAWN ITEMS ===
             {
-                id: 'chair_lawn',
-                x: 250, y: 0.68, w: 80, h: 0.16,
-                interactX: 250, interactY: 0.82,
-                name: 'Lawn Chair',
-                verbs: { action: 'Sit in', look: 'Examine' },
+                id: 'airstream_door',
+                ...LAYOUT.airstream_door,
+                interactX: LAYOUT.airstream_door.x, interactY: 0.82,
+                name: 'Airstream Door',
+                verbs: { action: 'Knock', look: 'Examine' },
                 responses: {
-                    look: "A well-worn folding lawn chair. Looks comfy in a \"I've been here for years\" kind of way.",
-                    action: "Tempting, but I shouldn't overstay my welcome. Plus, Earl's watching the grill."
+                    look: "The Airstream's front door. An aluminum door with a warm glow coming through the window. Steps lead up to it.",
+                    action: "I knock on the door. No answer from inside. Earl's out here by the grill."
                 }
             },
             {
+                id: 'airstream_window',
+                ...LAYOUT.airstream_window,
+                interactX: LAYOUT.airstream_window.x, interactY: 0.82,
+                name: 'Airstream Window',
+                verbs: { action: 'Peek', look: 'Look at' },
+                responses: {
+                    look: "A large window on the side of the Airstream. Warm light spills out. Looks cozy in there.",
+                    action: "I peek through the window. Nice curtains. A small kitchen. Some photos on the wall. Feels wrong to snoop."
+                }
+            },
+
+            // === LAWN ITEMS ===
+            {
                 id: 'flamingo_pink',
-                x: 380, y: 0.66, w: 40, h: 0.18,
-                interactX: 380, interactY: 0.82,
+                ...LAYOUT.flamingo,
+                interactX: LAYOUT.flamingo.x, interactY: 0.82,
                 name: 'Pink Flamingo',
                 verbs: { action: 'Poke', look: 'Examine' },
                 responses: {
@@ -183,24 +231,11 @@
                 }
             },
 
-            // === AIRSTREAM ===
-            {
-                id: 'airstream_home',
-                x: 640, y: 0.48, w: 280, h: 0.35,
-                interactX: 640, interactY: 0.82,
-                name: "Earl's Airstream",
-                verbs: { action: 'Knock', look: 'Examine' },
-                responses: {
-                    look: "A vintage Airstream trailer, lovingly maintained. Warm light glows from inside. This is Earl's home, and it's beautiful.",
-                    action: "I knock on the door. No answer—Earl's out here with me. Feels rude to go in without permission."
-                }
-            },
-
             // === GRILL AREA ===
             {
                 id: 'cooler_green',
-                x: 850, y: 0.70, w: 60, h: 0.12,
-                interactX: 850, interactY: 0.82,
+                ...LAYOUT.cooler,
+                interactX: LAYOUT.cooler.x, interactY: 0.82,
                 name: 'Cooler',
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
@@ -210,8 +245,8 @@
             },
             {
                 id: 'radio_table',
-                x: 650, y: 0.66, w: 70, h: 0.18,
-                interactX: 650, interactY: 0.82,
+                ...LAYOUT.radio,
+                interactX: LAYOUT.radio.x, interactY: 0.82,
                 name: 'Old Radio',
                 verbs: { action: 'Turn on', look: 'Examine' },
                 responses: {
@@ -221,8 +256,8 @@
             },
             {
                 id: 'grill_charcoal',
-                x: 780, y: 0.66, w: 90, h: 0.20,
-                interactX: 780, interactY: 0.82,
+                ...LAYOUT.grill,
+                interactX: LAYOUT.grill.x, interactY: 0.82,
                 name: 'Charcoal Grill',
                 verbs: { action: 'Check', look: 'Examine' },
                 responses: {
@@ -232,8 +267,8 @@
             },
             {
                 id: 'ladder_earl',
-                x: 1160, y: 0.52, w: 50, h: 0.32,
-                interactX: 1160, interactY: 0.82,
+                ...LAYOUT.ladder,
+                interactX: LAYOUT.ladder.x, interactY: 0.82,
                 name: "Earl's Ladder",
                 verbs: { action: 'Take', look: 'Examine' },
                 responses: {
@@ -249,6 +284,21 @@
                     }
                 }
                 // TODO: Once player returns Earl's item, this becomes available to take
+            },
+
+            // === EARL ===
+            {
+                id: 'earl_npc',
+                ...LAYOUT.earl,
+                interactX: LAYOUT.earl.x, interactY: 0.82,
+                name: 'Earl',
+                type: 'npc',
+                verbs: { action: 'Talk to', look: 'Look at' },
+                responses: {
+                    look: "A large, friendly-looking fellow in a fisherman's hat. He's got an easy smile and smells faintly of charcoal and pine.",
+                    action: null
+                }
+                // TODO: Wire up Earl's conversation tree
             }
         ],
 
@@ -625,9 +675,11 @@
         g.fillRect(x - width/2, airstreamBottom - p*2, width, p*2);
     }
 
-    function drawCooler(g, x, floorY) {
-        const coolerWidth = p * 30;
-        const coolerHeight = p * 20;
+    function drawCooler(g, x, floorY, scale) {
+        scale = scale || 1;
+        const s = p * scale;  // Scaled pixel unit
+        const coolerWidth = s * 30;
+        const coolerHeight = s * 20;
         const coolerTop = floorY - coolerHeight;
 
         // Main body
@@ -636,20 +688,20 @@
 
         // Lid
         g.fillStyle(COLORS.COOLER_GREEN_LIGHT);
-        g.fillRect(x - coolerWidth/2, coolerTop - p*3, coolerWidth, p*3);
+        g.fillRect(x - coolerWidth/2, coolerTop - s*3, coolerWidth, s*3);
 
         // Handle
         g.fillStyle(COLORS.WOOD_DARK);
-        g.fillRect(x - coolerWidth/2 - p*2, coolerTop + p*5, p*2, p*8);
-        g.fillRect(x + coolerWidth/2, coolerTop + p*5, p*2, p*8);
-        g.fillRect(x - coolerWidth/2 - p*2, coolerTop + p*5, coolerWidth/2 + p*2, p*2);
-        g.fillRect(x, coolerTop + p*5, coolerWidth/2 + p*2, p*2);
+        g.fillRect(x - coolerWidth/2 - s*2, coolerTop + s*5, s*2, s*8);
+        g.fillRect(x + coolerWidth/2, coolerTop + s*5, s*2, s*8);
+        g.fillRect(x - coolerWidth/2 - s*2, coolerTop + s*5, coolerWidth/2 + s*2, s*2);
+        g.fillRect(x, coolerTop + s*5, coolerWidth/2 + s*2, s*2);
 
         // Condensation drops
         g.fillStyle(0x99bbdd);
-        g.fillRect(x - p*8, coolerTop + p*8, p, p*2);
-        g.fillRect(x + p*5, coolerTop + p*12, p, p*2);
-        g.fillRect(x - p*2, coolerTop + p*15, p, p*2);
+        g.fillRect(x - s*8, coolerTop + s*8, s, s*2);
+        g.fillRect(x + s*5, coolerTop + s*12, s, s*2);
+        g.fillRect(x - s*2, coolerTop + s*15, s, s*2);
     }
 
     function drawGrill(g, x, floorY) {
@@ -930,30 +982,30 @@
         // === AIRSTREAM (centerpiece - large but not overwhelming, ~1.25x Nate's height) ===
         const airstreamWidth = worldWidth * 0.55;  // ~704px - prominent but leaves room
         const airstreamHeight = p * 197;  // ~394px, about 1.25x Nate's height
-        drawAirstream(g, 640, floorY, airstreamWidth, airstreamHeight);
+        drawAirstream(g, LAYOUT.airstream.x, floorY, airstreamWidth, airstreamHeight);
 
         // === LARGE TREES (framing the scene, in front of Airstream, pulled forward for depth) ===
-        drawTree(g, 120, floorY, height);  // Left tree - pulled toward center
-        drawTree(g, 1160, floorY, height);  // Right tree - pulled toward center
+        drawTree(g, LAYOUT.tree_left.x, floorY, height);
+        drawTree(g, LAYOUT.tree_right.x, floorY, height);
 
         // === STRING LIGHTS (in front of Airstream, raised high) ===
-        drawStringLights(g, 120, height * 0.20, 1040);
+        drawStringLights(g, LAYOUT.tree_left.x, height * 0.20, 1040);
 
         // === YARD ITEMS (in front of Airstream) ===
-        drawFlamingo(g, 320, floorY);  // Left side, in front of Airstream
-        drawCooler(g, 520, floorY);  // Also in front of Airstream
+        drawFlamingo(g, LAYOUT.flamingo.x, floorY);
+        drawCooler(g, LAYOUT.cooler.x, floorY, 1.5);
 
         // === TABLE WITH RADIO (between door and grill) ===
-        drawTableWithRadio(g, 650, floorY);
+        drawTableWithRadio(g, LAYOUT.radio.x, floorY);
 
         // === GRILL (under the Airstream window) ===
-        drawGrill(g, 780, floorY);
+        drawGrill(g, LAYOUT.grill.x, floorY);
 
         // === EARL THE BIGFOOT (well to the right of the grill) ===
-        drawEarl(g, 920, floorY);
+        drawEarl(g, LAYOUT.earl.x, floorY);
 
         // === LADDER (centered on right tree) ===
-        drawLadder(g, 1160, floorY, p*120);  // Bigger ladder, centered on right tree
+        drawLadder(g, LAYOUT.ladder.x, floorY, p*120);
     }
 
 })();

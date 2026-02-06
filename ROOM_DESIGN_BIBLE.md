@@ -378,6 +378,74 @@ Surfaces should have items on them:
 
 ---
 
+## 7A. Element Positioning (MANDATORY)
+
+Every room file with procedural drawing **must** define a single `LAYOUT` object at the top of the drawing scope containing the position and size of every interactive element. Both the drawing functions and the hotspot definitions must reference this same `LAYOUT` object. Never hardcode position values in two places. When an element needs to move, there should be exactly one number to change.
+
+### Why This Exists
+
+Drawing functions and hotspot definitions are independent systems that both need the same position data. Without a shared source of truth, moving a visual element leaves its hotspot behind — a bug that has occurred in every room built so far.
+
+### Pattern
+
+```javascript
+// ===== SHARED LAYOUT (single source of truth for all positions) =====
+const LAYOUT = {
+    grill:     { x: 780, y: 0.66, w: 90, h: 0.20 },
+    flamingo:  { x: 320, y: 0.66, w: 40, h: 0.18 },
+    ladder:    { x: 1160, y: 0.52, w: 50, h: 0.32 },
+    // ...
+};
+
+// ===== DRAWING CODE references LAYOUT =====
+function drawMainRoom(g, scene, worldWidth, height) {
+    const floorY = height * 0.72;
+    drawGrill(g, LAYOUT.grill.x, floorY);
+    drawFlamingo(g, LAYOUT.flamingo.x, floorY);
+    drawLadder(g, LAYOUT.ladder.x, floorY, p * 120);
+}
+
+// ===== HOTSPOTS reference LAYOUT =====
+hotspots: [
+    {
+        id: 'grill_charcoal',
+        ...LAYOUT.grill,
+        interactX: LAYOUT.grill.x, interactY: 0.82,
+        name: 'Charcoal Grill',
+        verbs: { action: 'Examine', look: 'Look at' },
+        responses: { look: "That's a serious grill.", action: "I shouldn't mess with another man's grill." }
+    },
+    {
+        id: 'flamingo_pink',
+        ...LAYOUT.flamingo,
+        interactX: LAYOUT.flamingo.x, interactY: 0.82,
+        name: 'Pink Flamingo',
+        // ...
+    }
+]
+```
+
+### Rules
+
+1. **`LAYOUT` contains `x`, `y`, `w`, `h` for every interactive element.** `x` is the visual center of the element. `y` is proportional (0.0–1.0). `w` and `h` define the clickable extent around that center
+2. **Drawing functions receive position from `LAYOUT`:** `drawGrill(g, LAYOUT.grill.x, floorY)` — never a hardcoded literal
+3. **Hotspot definitions spread from `LAYOUT`:** `{ id: 'grill', ...LAYOUT.grill, name: 'Grill' }` — the spread provides x/y/w/h, the rest is hotspot-specific
+4. **Manual overrides are allowed.** If you need to tweak a hotspot position after debug testing, override the spread value: `{ ...LAYOUT.grill, x: 800 }`. The explicit value wins. This is expected when fine-tuning with the debug overlay
+5. **Decorative-only elements don't need LAYOUT entries.** If something has no hotspot (pure background detail), position it however you like in the drawing code
+6. **Non-procedural rooms skip LAYOUT entirely.** When a room uses a static background image instead of procedural drawing, there's no drawing code to share positions with — define hotspot coordinates directly
+7. **Hotspot array order = bottom to top.** Phaser creates zones in array order, and later zones sit "on top" for input priority. Place large background hotspots (e.g., `woods_background`, `airstream`) first in the array, and smaller overlapping hotspots (e.g., `airstream_door`, `airstream_window`, `grill`) after them. If a specific hotspot can't be highlighted, it's probably buried under a larger one created later in the array
+
+### What Goes in LAYOUT vs. What Doesn't
+
+| In LAYOUT | Not in LAYOUT |
+|-----------|---------------|
+| Grill (has hotspot) | Background stars (decorative) |
+| Ladder (has hotspot) | Wall texture (decorative) |
+| TV (has hotspot) | Floor boards (decorative) |
+| NPC standing position (has hotspot) | Dithering patterns |
+
+---
+
 ## 8. Dithering
 
 Dithering mixes two colors in a scattered pattern to create the illusion of a third. At `p = 2`, dithering is more effective because individual pixels are smaller and blend better.

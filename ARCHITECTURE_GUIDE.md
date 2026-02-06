@@ -271,6 +271,8 @@ TSH.Rooms.laboratory = {
         }
     ],
 
+    // Hotspot array order = bottom to top (Phaser input priority).
+    // Large background hotspots first, specific overlapping ones after.
     hotspots: [
         {
             id: 'portal_device',
@@ -310,6 +312,10 @@ TSH.Rooms.laboratory = {
 ```
 
 A single scene class (or small number of classes) reads this data and renders any room. This replaces the current approach of one massive scene class per room.
+
+**Hotspot Array Ordering:** Phaser creates input zones in array order. Later zones sit on top and receive pointer events first. Always place large background hotspots (e.g., `woods_background`, full vehicle bodies) at the start of the array, and smaller overlapping hotspots (e.g., sub-elements like doors/windows, props on top of backgrounds) later. Array order = bottom to top for input priority.
+
+**LAYOUT Pattern (Procedural Rooms):** Rooms with procedural drawing must define a shared `LAYOUT` object that both drawing functions and hotspot definitions reference, preventing position drift when elements are moved. See ROOM_DESIGN_BIBLE.md Section 7A for full specification.
 
 ---
 
