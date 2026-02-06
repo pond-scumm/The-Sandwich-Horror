@@ -115,10 +115,14 @@
                 x: 169, y: 0.476, w: 146, h: 0.474,
                 interactX: 220, interactY: 0.82,
                 name: 'Front Door',
-                verbs: { action: 'Open', look: 'Examine' },
+                verbs: { action: 'Exit', look: 'Examine' },
                 responses: {
-                    look: "Solid oak! They don't make 'em like this anymore.",
-                    action: "Nope. Didn't hike through those creepy woods just to chicken out now."
+                    look: "Solid oak! They don't make 'em like this anymore."
+                },
+                actionTrigger: {
+                    type: 'transition',
+                    target: 'front_of_house',
+                    spawnPoint: 'from_interior'
                 }
             },
             {
