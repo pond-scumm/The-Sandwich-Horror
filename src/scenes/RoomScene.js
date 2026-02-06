@@ -895,11 +895,18 @@ class RoomScene extends BaseScene {
         const previousRoom = TSH.State.getPreviousRoom();
         const continueFrom = room.audio.continueFrom || [];
 
+        // Save previous room's audio position if it has pauseIn for this room
+        this.savePreviousRoomAudioPosition(previousRoom);
+
         // Check if we should continue current music (same track already playing from allowed room)
         const shouldContinueMusic = previousRoom &&
             continueFrom.includes(previousRoom) &&
             room.audio.music?.key &&
             TSH.Audio.isPlaying(room.audio.music.key);
+
+        // Check if we have a saved position to resume from
+        const savedMainPos = TSH.Audio.getSavedPosition('main', this.roomId);
+        const savedAmbientPos = TSH.Audio.getSavedPosition('ambient', this.roomId);
 
         // Handle main music track
         if (room.audio.music) {
@@ -911,18 +918,32 @@ class RoomScene extends BaseScene {
                     console.log(`[RoomScene] Music "${key}" continues from ${previousRoom}`);
                 }
                 TSH.Audio.setChannelVolume('main', volume);
-
-                // Apply effects even if continuing (in case they weren't applied before)
                 this.applyMusicEffects('main', effects);
             } else {
-                // Start new music (or switch tracks)
-                TSH.Audio.playMusic(key, {
+                // Stop any currently playing music first
+                TSH.Audio.stopMusic('main', { fade: 0 });
+
+                // Start music (possibly from saved position)
+                const sound = TSH.Audio.playMusic(key, {
                     channel: 'main',
                     volume: volume,
                     fade: fade
                 });
 
-                // Apply audio effects after a short delay (let the sound initialize)
+                // Resume from saved position if available
+                if (savedMainPos && savedMainPos.key === key && sound) {
+                    try {
+                        sound.setSeek(savedMainPos.seek);
+                        if (TSH.debug) {
+                            console.log(`[RoomScene] Resumed "${key}" from ${savedMainPos.seek.toFixed(2)}s`);
+                        }
+                    } catch (e) {
+                        console.warn('Could not seek audio:', e);
+                    }
+                    TSH.Audio.clearSavedPosition('main', this.roomId);
+                }
+
+                // Apply audio effects after a short delay
                 if (effects.length > 0) {
                     this.time.delayedCall(100, () => {
                         this.applyMusicEffects('main', effects);
@@ -957,11 +978,29 @@ class RoomScene extends BaseScene {
                 if (layerContinues) {
                     TSH.Audio.setChannelVolume(channel, volume);
                 } else {
-                    TSH.Audio.playMusic(key, {
+                    // Stop current audio on this channel
+                    TSH.Audio.stopMusic(channel, { fade: 0 });
+
+                    // Start the layer
+                    const sound = TSH.Audio.playMusic(key, {
                         channel: channel,
                         volume: volume,
                         fade: fade
                     });
+
+                    // Resume from saved position if available
+                    const savedPos = TSH.Audio.getSavedPosition(channel, this.roomId);
+                    if (savedPos && savedPos.key === key && sound) {
+                        try {
+                            sound.setSeek(savedPos.seek);
+                            if (TSH.debug) {
+                                console.log(`[RoomScene] Resumed layer "${key}" from ${savedPos.seek.toFixed(2)}s`);
+                            }
+                        } catch (e) {
+                            console.warn('Could not seek audio:', e);
+                        }
+                        TSH.Audio.clearSavedPosition(channel, this.roomId);
+                    }
                 }
             });
 
@@ -980,6 +1019,30 @@ class RoomScene extends BaseScene {
         if (TSH.debug) {
             console.log(`[RoomScene] Audio setup complete for ${this.roomId}`);
             TSH.Audio.dump();
+        }
+    }
+
+    /**
+     * Save the previous room's audio position if it wants to persist to this room.
+     */
+    savePreviousRoomAudioPosition(previousRoom) {
+        if (!previousRoom) return;
+
+        // Get the previous room's data
+        const prevRoomData = TSH.Rooms[previousRoom];
+        if (!prevRoomData?.audio?.pauseIn) return;
+
+        const pauseIn = prevRoomData.audio.pauseIn;
+
+        // Check if current room is in the pauseIn list
+        if (pauseIn.includes(this.roomId)) {
+            // Save audio positions for the previous room
+            TSH.Audio.savePositionForRoom('main', previousRoom);
+            TSH.Audio.savePositionForRoom('ambient', previousRoom);
+
+            if (TSH.debug) {
+                console.log(`[RoomScene] Saved audio position for ${previousRoom}`);
+            }
         }
     }
 

@@ -1,7 +1,7 @@
 # The Sandwich Horror — Architecture Guide
 ## For Claude Code Implementation
 
-Last Updated: February 5, 2026 (Scene transition cleanup, procedural NPCs)
+Last Updated: February 5, 2026 (Audio persistence, alien room, SFX fixes)
 
 ---
 
@@ -78,6 +78,7 @@ These scenes exist but use the old scene-class pattern instead of the data-drive
 - [x] `earls_yard.js` — Data-driven with procedural Earl NPC
 - [x] `basement.js` — Data-driven with procedural Frank NPC, nuclear generator, brain jar
 - [x] `second_floor.js` — Upstairs hallway with bedroom doors, stairwell, attic access, portraits
+- [x] `alien_room.js` — Harry's bedroom with TV, couch, lava lamp, mass extinction device, procedural alien NPC
 
 ---
 
@@ -704,7 +705,9 @@ TSH.Rooms.alien_room = {
             }
         ],
         // Don't restart music if coming from these rooms
-        continueFrom: ['franks_room', 'hallway']
+        continueFrom: ['franks_room', 'hallway'],
+        // Pause audio (save position) when going to these rooms
+        pauseIn: ['second_floor']
     }
 }
 ```
@@ -714,6 +717,21 @@ TSH.Rooms.alien_room = {
 - If same track already playing from a `continueFrom` room, it continues seamlessly
 - Unused ambient channels are automatically stopped when entering a room
 - Audio files are preloaded during scene preload phase
+
+**Audio Persistence (`pauseIn`):**
+When leaving a room to one listed in `pauseIn`, the audio position is saved. When returning, playback resumes from that exact position instead of restarting.
+
+```javascript
+// Example: alien_room audio persists when visiting second_floor
+audio: {
+    music: { key: 'alien_theme', volume: 0.25 },
+    layers: [{ key: 'tv_theme', channel: 'ambient', volume: 1.0 }],
+    continueFrom: ['second_floor'],
+    pauseIn: ['second_floor']  // Save position when going to second_floor
+}
+```
+
+This creates seamless audio continuity for rooms the player frequently moves between.
 
 ### Sound Effects (SFX)
 SFX are defined in `src/data/audio/sfx.js` and auto-preloaded by RoomScene.

@@ -57,6 +57,9 @@
             ambient2: null
         },
 
+        // Store audio seek positions for rooms (roomId_channel -> { key, seek, volume })
+        savedPositions: {},
+
         // ====================================================================
         // Initialization
         // ====================================================================
@@ -412,6 +415,61 @@
         },
 
         /**
+         * Save the current seek position for a room's audio (called when leaving a room)
+         * @param {string} channel - Channel to save
+         * @param {string} roomId - Room ID to associate the position with
+         */
+        savePositionForRoom(channel, roomId) {
+            const sound = this.channels[channel];
+            const key = this.currentTracks[channel];
+
+            if (!sound || !key) {
+                if (TSH.debug) {
+                    console.log(`TSH.Audio: No audio to save for ${roomId} on ${channel}`);
+                }
+                return;
+            }
+
+            // Get seek position (handle both playing and non-playing states)
+            let seekPos = 0;
+            try {
+                seekPos = sound.seek || 0;
+            } catch (e) {
+                seekPos = 0;
+            }
+
+            // Store the position
+            this.savedPositions[`${roomId}_${channel}`] = {
+                key: key,
+                seek: seekPos,
+                volume: sound._tshBaseVolume || 1.0
+            };
+
+            if (TSH.debug) {
+                console.log(`TSH.Audio: Saved position for "${key}" on ${channel} for room ${roomId} at ${seekPos.toFixed(2)}s`);
+            }
+        },
+
+        /**
+         * Get saved position for a room's audio
+         * @param {string} channel - Channel to check
+         * @param {string} roomId - Room ID
+         * @returns {object|null} Saved state or null
+         */
+        getSavedPosition(channel, roomId) {
+            return this.savedPositions[`${roomId}_${channel}`] || null;
+        },
+
+        /**
+         * Clear saved position for a room
+         * @param {string} channel - Channel
+         * @param {string} roomId - Room ID
+         */
+        clearSavedPosition(channel, roomId) {
+            delete this.savedPositions[`${roomId}_${channel}`];
+        },
+
+        /**
          * Apply a "radio" effect to a music channel (tinny, vintage sound)
          * @param {string} channel - Channel name to apply effect to
          */
@@ -663,6 +721,7 @@
                     .filter(([k, v]) => v !== null)
                     .map(([k, v]) => `${k}: ${v.key} (playing: ${v.isPlaying})`)
             );
+            console.log('Saved Positions:', this.savedPositions);
             console.groupEnd();
         }
     };

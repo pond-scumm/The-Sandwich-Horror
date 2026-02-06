@@ -304,14 +304,8 @@
                 verbs: { action: 'Enter', look: 'Examine' },
                 responses: {
                     look: "A rickety old shed. The door faces this way. Smells like fertilizer and regret.",
-                    action: null
-                },
-                actionTrigger: {
-                    type: 'transition',
-                    target: 'shed_interior',
-                    spawnPoint: 'from_backyard'
+                    action: "The door's stuck. Or maybe locked? Either way, I've got bigger problems than whatever's in this shed."
                 }
-                // Note: shed_interior not built yet - placeholder
             },
 
             // === SKY ELEMENTS ===

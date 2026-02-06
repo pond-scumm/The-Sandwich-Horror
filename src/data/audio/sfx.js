@@ -19,22 +19,21 @@
 
     TSH.SFX = {
         // ========== INVENTORY & ITEMS ==========
-        // TODO: Add audio files to assets/audio/sfx/
-        // pickup: {
-        //     key: 'sfx_pickup',
-        //     path: 'assets/audio/sfx/pickup.wav',
-        //     volume: 0.7
-        // },
-        // item_select: {
-        //     key: 'sfx_item_select',
-        //     path: 'assets/audio/sfx/item_pickup.wav',
-        //     volume: 0.5
-        // },
-        // item_combine: {
-        //     key: 'sfx_item_combine',
-        //     path: 'assets/audio/sfx/item_combine.wav',
-        //     volume: 0.6
-        // },
+        pickup: {
+            key: 'sfx_pickup',
+            path: 'assets/audio/sfx/item_pickup.wav',
+            volume: 0.7
+        },
+        item_select: {
+            key: 'sfx_item_select',
+            path: 'assets/audio/sfx/item_pickup.wav',
+            volume: 0.5
+        },
+        item_combine: {
+            key: 'sfx_item_combine',
+            path: 'assets/audio/sfx/item_combine.wav',
+            volume: 0.6
+        },
         // item_fail: {
         //     key: 'sfx_item_fail',
         //     path: 'assets/audio/sfx/item_fail.wav',
@@ -42,16 +41,16 @@
         // },
 
         // ========== UI ==========
-        // inventory_open: {
-        //     key: 'sfx_inventory_open',
-        //     path: 'assets/audio/sfx/inventory_open.wav',
-        //     volume: 0.4
-        // },
-        // inventory_close: {
-        //     key: 'sfx_inventory_close',
-        //     path: 'assets/audio/sfx/inventory_close.wav',
-        //     volume: 0.4
-        // },
+        inventory_open: {
+            key: 'sfx_inventory_open',
+            path: 'assets/audio/sfx/inventory_open.wav',
+            volume: 0.4
+        },
+        inventory_close: {
+            key: 'sfx_inventory_close',
+            path: 'assets/audio/sfx/inventory_close.wav',
+            volume: 0.4
+        },
         // menu_hover: {
         //     key: 'sfx_menu_hover',
         //     path: 'assets/audio/sfx/menu_hover.wav',
