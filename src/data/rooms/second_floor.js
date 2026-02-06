@@ -43,7 +43,6 @@
                 { id: 'sconce_1', x: 300, y: 0.32, radius: 180, color: 0xffcc88, intensity: 0.7 },
                 { id: 'sconce_2', x: 600, y: 0.32, radius: 180, color: 0xffcc88, intensity: 0.7 },
                 { id: 'sconce_3', x: 1200, y: 0.32, radius: 180, color: 0xffcc88, intensity: 0.7 },
-                { id: 'sconce_4', x: 1700, y: 0.32, radius: 180, color: 0xffcc88, intensity: 0.7 },
                 // Stairwell glow (warm light from below) - stairwell at x: 850
                 { id: 'stair_glow', x: 850, y: 0.68, radius: 250, color: 0xffaa66, intensity: 1.0 },
                 // Moonlight (cool, from off-screen window)
@@ -61,7 +60,7 @@
                 loop: true
             },
             layers: [],
-            continueFrom: ['interior', 'franks_room', 'alien_room', 'attic']
+            continueFrom: ['interior', 'franks_room', 'alien_room', 'attic', 'hectors_room']
         },
 
         layers: [
@@ -77,7 +76,8 @@
             default: { x: 850, y: 0.82 },
             from_interior: { x: 850, y: 0.82 },
             from_franks_room: { x: 150, y: 0.82 },
-            from_alien_room: { x: 450, y: 0.82 }
+            from_alien_room: { x: 450, y: 0.82 },
+            from_hectors_room: { x: 1770, y: 0.82, direction: 'left' }
         },
 
         exits: [],
@@ -147,6 +147,23 @@
                 responses: {
                     look: "A bathroom door. Plain, unassuming, currently representing my only hope of relief.",
                     action: "Locked! Of course it's locked. I really need to use this bathroom and it's LOCKED. This is a nightmare."
+                }
+            },
+
+            // === HECTOR'S BEDROOM DOOR (far right) ===
+            {
+                id: 'door_hector',
+                x: 1700, y: 0.35, w: 140, h: 0.45,
+                interactX: 1770, interactY: 0.82,
+                name: "Hector's Room",
+                verbs: { action: 'Open', look: 'Examine' },
+                responses: {
+                    look: "Hector's bedroom door. Looks like a pretty standard door, but knowing this house, who knows what's behind it."
+                },
+                actionTrigger: {
+                    type: 'transition',
+                    target: 'hectors_room',
+                    spawnPoint: 'from_second_floor'
                 }
             },
 
@@ -789,6 +806,9 @@
         // Bathroom door (right side)
         drawDoor(g, 1280, 180, floorY, false, null);
 
+        // Hector's bedroom door (far right)
+        drawDoor(g, 1700, 180, floorY, false, null);
+
         // === STAIRWELL ===
         drawStairwell(g, p * 425, floorY, height);
 
@@ -796,7 +816,6 @@
         drawWallSconce(g, 300, height * 0.25);   // Between Frank's door (ends ~220) and Alien's door (starts 380)
         drawWallSconce(g, 600, height * 0.25);   // Between Alien's door and stairwell
         drawWallSconce(g, 1200, height * 0.25);  // Between stairwell and bathroom
-        drawWallSconce(g, 1700, height * 0.25);  // Far right
 
         // === PORTRAITS (raised up, not touching wainscoting) ===
         // Portrait 1 removed - was overlapping with Frank's door

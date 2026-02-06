@@ -126,11 +126,15 @@
                 id: 'stairs_bedroom',
                 ...LAYOUT.stairs,
                 interactX: LAYOUT.stairs.x, interactY: 0.82,
-                name: 'Doorway',
-                verbs: { action: 'Go Through', look: 'Look at' },
+                name: 'Stairs Up',
+                verbs: { action: 'Go up', look: 'Look at' },
                 responses: {
-                    look: "A doorway in the back wall. I can see stairs leading up through it. Looks like they go to the second floor.",
-                    action: "These probably go somewhere important. Maybe later."
+                    look: "A doorway in the back wall. I can see stairs leading up through it. Looks like they go to the second floor."
+                },
+                actionTrigger: {
+                    type: 'transition',
+                    target: 'hectors_room',
+                    spawnPoint: 'from_back_lab'
                 }
             },
             {

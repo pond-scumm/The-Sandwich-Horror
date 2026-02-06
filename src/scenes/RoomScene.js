@@ -858,16 +858,27 @@ class RoomScene extends BaseScene {
 
         let spawnX = 250;
         let spawnY = 0.82;
+        let spawnDirection = null;
 
         if (room.spawns) {
             const spawn = room.spawns[spawnPoint] || room.spawns.default;
             if (spawn) {
                 spawnX = spawn.x;
                 spawnY = spawn.y;
+                spawnDirection = spawn.direction;
             }
         }
 
         this.createPlayer(spawnX, height * spawnY);
+
+        // Handle spawn direction
+        if (spawnDirection && this.playerSprite) {
+            if (spawnDirection === 'left') {
+                this.playerSprite.setFlipX(true);
+            } else if (spawnDirection === 'right') {
+                this.playerSprite.setFlipX(false);
+            }
+        }
     }
 
     // ========== FIRST VISIT ==========
