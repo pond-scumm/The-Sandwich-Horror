@@ -72,11 +72,12 @@ These scenes exist but use the old scene-class pattern instead of the data-drive
 **Decision needed:** Convert these to data-driven room files, or keep as legacy?
 
 ### Data-Driven Room Files
-- [x] `interior.js` — Complete with hotspots, walkable polygon, lighting, itemInteractions
+- [x] `interior.js` — Complete with hotspots, walkable polygon, lighting, itemInteractions, stairway to second floor
 - [x] `laboratory.js` — Data-driven with procedural drawing
 - [x] `backyard.js` — Data-driven with procedural drawing, bulkhead to basement
 - [x] `earls_yard.js` — Data-driven with procedural Earl NPC
 - [x] `basement.js` — Data-driven with procedural Frank NPC, nuclear generator, brain jar
+- [x] `second_floor.js` — Upstairs hallway with bedroom doors, stairwell, attic access, portraits
 
 ---
 

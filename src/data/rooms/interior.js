@@ -56,6 +56,7 @@
                 { id: 'moon_right', x: 1920, y: 0.50, radius: 320, color: 0xaabbdd, intensity: 0.7 },
                 { id: 'fireplace', x: 900, y: 0.60, radius: 450, type: 'fireplace', intensity: 2.0 },
                 { id: 'fireplace2', x: 900, y: 0.72, radius: 300, color: 0xffaa66, intensity: 1.5 },
+                { id: 'stairway_light', x: 1400, y: 0.40, radius: 200, color: 0xffcc88, intensity: 0.6 },
                 { id: 'lab_glow', x: 2400, y: 0.60, radius: 350, color: 0xaaffaa, intensity: 1.0 },
                 { id: 'desk_lamp', x: 1750, y: 0.45, radius: 200, type: 'lamp', intensity: 0.8 }
             ]
@@ -67,7 +68,7 @@
                 volume: 0.6,
                 fade: 1000
             },
-            continueFrom: ['laboratory']
+            continueFrom: ['laboratory', 'second_floor']
         },
 
         layers: [
@@ -87,7 +88,8 @@
             from_front_of_house: { x: 250, y: 0.82 },
             from_backyard: { x: 2338, y: 0.869 },
             from_attic: { x: 1280, y: 0.82 },
-            from_alien_room: { x: 1280, y: 0.82 }
+            from_alien_room: { x: 1280, y: 0.82 },
+            from_second_floor: { x: 1450, y: 0.82 }
         },
 
         exits: [
@@ -218,6 +220,21 @@
                 responses: {
                     look: "Floor to ceiling! Science, philosophy, everything. This is my kind of chaos.",
                     action: "'Interdimensional Postal Services'?! I need to work here."
+                }
+            },
+            {
+                id: 'stairway_door',
+                x: 1410, y: 0.476, w: 146, h: 0.474,
+                interactX: 1450, interactY: 0.82,
+                name: 'Stairway',
+                verbs: { action: 'Go up', look: 'Examine' },
+                responses: {
+                    look: "A stairway leading up to the second floor. I can hear the floorboards creaking up there."
+                },
+                actionTrigger: {
+                    type: 'transition',
+                    target: 'second_floor',
+                    spawnPoint: 'from_interior'
                 }
             },
             {
@@ -1208,6 +1225,61 @@
         }
     }
 
+    function drawStairwayUp(g, x, y, floorY) {
+        const p = 4;
+        const doorHeight = floorY - y;
+        const doorWidth = p * 35;
+        const frameWidth = p * 3;
+
+        // Door frame
+        g.fillStyle(COLORS.WOOD_DARK);
+        g.fillRect(x - frameWidth, y - p*5, doorWidth + frameWidth*2, doorHeight + p*5);
+        g.fillStyle(COLORS.WOOD_MID);
+        g.fillRect(x - frameWidth, y - p*5, p*2, doorHeight + p*5);
+        g.fillRect(x + doorWidth + p, y - p*5, p*2, doorHeight + p*5);
+        g.fillRect(x - frameWidth, y - p*5, doorWidth + frameWidth*2, p*2);
+
+        // Opening (dark, recessed)
+        g.fillStyle(0x1a1520);
+        g.fillRect(x, y, doorWidth, doorHeight);
+
+        // Visible stairs going up (perspective, receding into darkness)
+        const numVisibleSteps = 6;
+        const stepHeight = p * 6;
+        const stepDepth = p * 12;
+        for (let i = 0; i < numVisibleSteps; i++) {
+            const stepY = floorY - (i + 1) * stepHeight;
+            const stepX = x + i * p * 2; // Steps appear to go up and left
+            const stepWidth = doorWidth - i * p * 4;
+
+            // Step riser
+            g.fillStyle(COLORS.WOOD_MID);
+            g.fillRect(stepX, stepY, stepWidth, stepHeight);
+
+            // Step tread (top surface)
+            g.fillStyle(COLORS.WOOD_LIGHT);
+            g.fillRect(stepX, stepY, stepWidth, p*2);
+
+            // Shadow at back
+            g.fillStyle(COLORS.WOOD_DARK);
+            g.fillRect(stepX + stepWidth - p*2, stepY + p, p*2, stepHeight - p*2);
+        }
+
+        // Railing (left side, visible through doorway)
+        g.fillStyle(COLORS.WOOD_DARK);
+        g.fillRect(x + p*2, y + p*10, p*3, doorHeight - p*20);
+        g.fillStyle(COLORS.WOOD_MID);
+        g.fillRect(x + p*3, y + p*12, p, doorHeight - p*24);
+
+        // Top newel post
+        g.fillStyle(COLORS.WOOD_DARK);
+        g.fillRect(x + p, y + p*6, p*6, p*6);
+        g.fillStyle(COLORS.BRASS);
+        g.fillRect(x + p*2, y + p*4, p*4, p*3);
+
+        // No glow rectangle - let Phaser Light2D handle the glow
+    }
+
     function drawDesk(g, x, floorY) {
         const p = 4;
         const deskWidth = 180;
@@ -1445,6 +1517,7 @@
         drawGrandfatherClock(g, 630, floorY + 25);
         drawFireplace(g, 800, floorY);
         drawBookshelf(g, 1100, floorY);
+        drawStairwayUp(g, 1340, 180, floorY);
         drawArmchair(g, 640, floorY + 100, true);
         drawCoffeeTable(g, 820, floorY + 100);
         drawArmchair(g, 1080, floorY + 100, false);
