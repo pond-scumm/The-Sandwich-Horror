@@ -108,6 +108,9 @@
                 // UI tracking
                 this.clickedUI = false;
 
+                // Debug mode (disables all player actions)
+                this.debugEnabled = false;
+
                 // Settings menu
                 this.settingsMenuOpen = false;
                 this.settingsPanel = null;
@@ -424,6 +427,7 @@
             }
 
             handleBackgroundPress(pointer) {
+                if (this.debugEnabled) return;
                 if (this.clickedUI) return;
 
                 // When UIScene is active, ignore clicks on UIScene buttons
@@ -506,6 +510,9 @@
             // ========== SETTINGS MENU INPUT ==========
 
             handleSettingsPointerDown(pointer) {
+                // Block all settings interactions in debug mode
+                if (this.debugEnabled) return;
+
                 // Check if clicking X button or Return button
                 if (this.settingsCloseBtnHovered || this.settingsReturnBtnHovered ||
                     this.isClickOnSettingsCloseButton(pointer) || this.isClickOnSettingsReturnButton(pointer)) {
@@ -1021,6 +1028,7 @@
 
             // Examine a hotspot (show look description)
             examineHotspot(hotspot) {
+                if (this.debugEnabled) return;
                 const lookText = hotspot.lookResponse || hotspot.look || `It's ${hotspot.name}.`;
                 this.showDialog(lookText);
             }
@@ -1037,6 +1045,7 @@
             }
 
             handleBackgroundClick(x, y) {
+                if (this.debugEnabled) return;
                 if (this.dialogActive || this.conversationActive) return;
 
                 const { height } = this.scale;
@@ -1056,6 +1065,7 @@
             }
 
             runToPointer(pointer) {
+                if (this.debugEnabled) return;
                 const { height } = this.scale;
                 const scrollX = this.cameras.main.scrollX || 0;
                 const scrollY = this.cameras.main.scrollY || 0;
@@ -1071,6 +1081,7 @@
             }
 
             handleHotspotPress(hotspot, pointer) {
+                if (this.debugEnabled) return;
                 if (!pointer.leftButtonDown()) return;
                 if (this.isRunningHold) return;
                 if (this.conversationActive) return;
@@ -1514,6 +1525,7 @@
 
             // Override in subclass for room-specific actions
             executeAction(action, hotspot) {
+                if (this.debugEnabled) return;
                 if (action === 'Look At') {
                     this.showDialog(hotspot.lookResponse);
                 } else if (action === 'Use') {
@@ -1525,6 +1537,7 @@
 
             // Override in subclass for room-specific item interactions
             useItemOnHotspot(item, hotspot) {
+                if (this.debugEnabled) return;
                 this.showDialog(`That doesn't work.`);
             }
 
@@ -2356,6 +2369,7 @@
             }
 
             updateVolumeSliderDrag(pointer) {
+                if (this.debugEnabled) return;
                 if (!this.draggingVolumeSlider) return;
 
                 const key = this.draggingVolumeSlider;
@@ -2422,7 +2436,8 @@
             }
 
             openSettingsMenu() {
-                // Block if dialogue or conversation is active
+                // Block if debug mode is active or if dialogue or conversation is active
+                if (this.debugEnabled) return;
                 if (this.dialogActive || this.conversationActive) return;
                 if (this.settingsMenuOpen) return;
 
@@ -2469,6 +2484,8 @@
             }
 
             closeSettingsMenu() {
+                // Block all settings menu actions in debug mode
+                if (this.debugEnabled) return;
                 if (!this.settingsMenuOpen) return;
 
                 // When UIScene handles buttons, use state-driven approach
@@ -2692,6 +2709,9 @@
             }
 
             toggleInventory(silent = false) {
+                // Block all inventory actions in debug mode
+                if (this.debugEnabled) return;
+
                 // State-driven approach - UIScene handles the panel
                 const newState = !TSH.State.isInventoryOpen();
                 TSH.State.setInventoryOpen(newState);
@@ -2771,6 +2791,9 @@
             }
 
             selectItem(item) {
+                // Block all item selection actions in debug mode
+                if (this.debugEnabled) return;
+
                 // Toggle off if clicking the same item
                 if (this.selectedItem && this.selectedItem.id === item.id) {
                     this.deselectItem();
@@ -2785,6 +2808,8 @@
             }
 
             deselectItem() {
+                // Block all item deselection actions in debug mode
+                if (this.debugEnabled) return;
                 console.log('[BaseScene] deselectItem called');
                 this.selectedItem = null;
 

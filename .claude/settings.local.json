@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nApply 4x4 pixel standard to foyer and verb coin\n\n- Foyer: walls, floor, wainscoting, doors, windows updated\n- Furniture repositioned with depth \\(chairs, clock, desk, bookshelf\\)\n- Fireplace with proper stone grid and centered fire\n- Chairs face fireplace in side profile\n- Verb coin updated to match pixel standard\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push)",
+      "Bash(git rm:*)",
+      "Bash(git commit:*)",
+      "Bash(dir:*)",
+      "Bash(node --version:*)",
+      "Bash(where:*)",
+      "Bash(node:*)",
+      "Bash(ipconfig:*)",
+      "Bash(findstr:*)",
+      "Bash(npm:*)",
+      "Bash(wc:*)",
+      "Bash(grep:*)"
+    ]
+  }
+}

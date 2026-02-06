@@ -1138,6 +1138,12 @@ class UIScene extends Phaser.Scene {
     // ── UI Buttons ──────────────────────────────────────────────────────────
 
     canInteractWithUI() {
+        // Block all UI interactions if debug mode is active
+        const gameScene = this.getActiveGameScene();
+        if (gameScene && gameScene.debugEnabled) {
+            return false;
+        }
+
         const ui = TSH.State._state.ui;
         return !ui.transitioning && !ui.dialogActive && !ui.conversationActive;
     }

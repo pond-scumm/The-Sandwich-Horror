@@ -778,6 +778,7 @@ class RoomScene extends BaseScene {
             this.exitZones.push(zone);
 
             zone.on('pointerdown', (pointer) => {
+                if (this.debugEnabled) return;
                 if (this.inventoryOpen) return;
 
                 // Mark as UI click to prevent background walk on pointerup
@@ -1245,7 +1246,7 @@ class RoomScene extends BaseScene {
     // ====================================
 
     setupDebugOverlay() {
-        this.debugEnabled = false;
+        // debugEnabled inherited from BaseScene
         this.debugContainer = null;
         this.debugCoordText = null;
 

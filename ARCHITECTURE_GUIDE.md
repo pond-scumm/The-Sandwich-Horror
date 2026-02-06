@@ -1120,7 +1120,58 @@ hotspots: [
 
 ---
 
-## 20. Testing Checklist
+## 20. Debug Overlay
+
+The debug overlay provides coordinate display and visual aids for room development. Toggle with the backtick (`) key.
+
+### Features
+
+**Visual Overlays:**
+- Mouse coordinates (world, screen, and proportional Y)
+- Click logging to console with hotspot-ready format
+- Hotspot zone visualization (colored boxes/polygons)
+- Walkable area polygon with vertex numbers
+- Spawn point markers
+- Exit zone visualization
+
+**Implementation:**
+- Defined in `RoomScene.js` → `setupDebugOverlay()`
+- Toggle method: `toggleDebugOverlay()`
+- Property: `this.debugEnabled` (inherited from `BaseScene`)
+
+### Action Blocking
+
+**When debug mode is active, all player actions are disabled:**
+
+| Blocked Action | Entry Points |
+|----------------|--------------|
+| Walking | `handleBackgroundClick()`, `runToPointer()`, `handleBackgroundPress()` |
+| Hotspot interactions | `handleHotspotPress()`, `examineHotspot()`, `executeAction()` |
+| Using items on hotspots | `useItemOnHotspot()` |
+| Scene transitions | Exit zone `pointerdown` handlers |
+| Inventory (open/close) | `toggleInventory()` |
+| Settings menu (open/close) | `openSettingsMenu()`, `closeSettingsMenu()` |
+| Item selection/deselection | `selectItem()`, `deselectItem()` |
+
+**Implementation Pattern:**
+```javascript
+functionName() {
+    if (this.debugEnabled) return;
+    // ... rest of function
+}
+```
+
+### Usage
+
+1. Press ` (backtick) to toggle debug mode
+2. Move mouse to see coordinates
+3. Click to log coordinate data to console
+4. All player actions are blocked while active
+5. Press ` again to resume normal gameplay
+
+---
+
+## 21. Testing Checklist
 
 ### Core Functionality
 - [ ] Character walks correctly within walkable area
@@ -1149,7 +1200,7 @@ hotspots: [
 
 ---
 
-## 21. Development Workflow
+## 22. Development Workflow
 
 ### Version Number
 
