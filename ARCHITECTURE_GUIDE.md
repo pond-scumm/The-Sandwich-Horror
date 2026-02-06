@@ -1,7 +1,7 @@
 # The Sandwich Horror — Architecture Guide
 ## For Claude Code Implementation
 
-Last Updated: February 5, 2026 (State-driven hotspots pattern documented)
+Last Updated: February 5, 2026 (Scene transition cleanup, procedural NPCs)
 
 ---
 
@@ -73,7 +73,10 @@ These scenes exist but use the old scene-class pattern instead of the data-drive
 
 ### Data-Driven Room Files
 - [x] `interior.js` — Complete with hotspots, walkable polygon, lighting, itemInteractions
-- [ ] Other rooms need data files if using RoomScene pattern
+- [x] `laboratory.js` — Data-driven with procedural drawing
+- [x] `backyard.js` — Data-driven with procedural drawing, bulkhead to basement
+- [x] `earls_yard.js` — Data-driven with procedural Earl NPC
+- [x] `basement.js` — Data-driven with procedural Frank NPC, nuclear generator, brain jar
 
 ---
 
@@ -359,6 +362,115 @@ TSH.State.on('flagChanged', (data) => {
 | Examine text | Different description after learning the truth |
 | Available actions | "Take" only available when alien is on roof |
 | Position | Clock on wall → clock on floor after falling |
+
+---
+
+## 3.2 Procedural NPC Drawing
+
+NPCs like Earl (bigfoot) and Frank (Frankenstein's monster) are drawn procedurally in the room's drawing function rather than using sprite assets. This keeps the art style consistent with the procedural backgrounds.
+
+**Pattern:**
+```javascript
+function drawFrank(g, x, floorY) {
+    const p = 2;  // Pixel scale
+    const frankHeight = p * 181;  // 1.15x Nate's height
+
+    // Draw from bottom up: legs, body, arms, neck, head, hair
+    // Use simple rectangles for chunky pixel-art style
+    g.fillStyle(0x1a1a1a);  // Black suit
+    g.fillRect(x - p*12, floorY - p*70, p*10, p*70);  // Left leg
+    // ... more drawing code
+}
+```
+
+**Key Points:**
+- Use `p = 2` pixel scale (same as room backgrounds)
+- Height ratio matches NPC data (e.g., `heightRatio: 1.15` for 1.15x Nate's height)
+- Draw in main room drawing function, called from `drawBasementRoom()`
+- Add a light source in room's `lighting.sources[]` to illuminate the NPC
+- Simple dot eyes and line mouth for facial features
+
+**NPCs with Procedural Drawing:**
+| NPC | Room | Features |
+|-----|------|----------|
+| Earl | earls_yard.js | Brown fur, gray hat, friendly bigfoot |
+| Frank | basement.js | Green skin, black suit, neck bolts |
+
+**Hotspot for Procedural NPCs:**
+Since the NPC is drawn procedurally (not a sprite), add a hotspot for interaction:
+```javascript
+hotspots: [
+    {
+        id: 'frank_npc',
+        x: 1240, y: 0.52, w: 80, h: 0.40,
+        interactX: 1280, interactY: 0.82,
+        name: 'Frank',
+        type: 'npc',
+        verbs: { action: 'Talk to', look: 'Look at' },
+        responses: { look: "...", action: null }
+    }
+]
+```
+
+---
+
+## 3.3 Scene Transition Cleanup (Critical)
+
+**Problem:** When using `scene.start()` to transition between rooms, Phaser reuses the same scene instance. Interactive objects (hotspot zones, exit zones) and pending callbacks from the previous room can persist, causing:
+- Old hotspots remaining clickable in the new room
+- Hotspot labels from old rooms appearing
+- WalkTo callbacks executing actions on stale hotspots
+- Room reloading loops
+
+**Solution:** RoomScene implements `cleanupPreviousRoom()` called at the very start of `create()`:
+
+```javascript
+cleanupPreviousRoom() {
+    // Cancel ALL tweens (prevents stale walkTo callbacks)
+    if (this.walkTween) {
+        this.walkTween.stop();
+        this.walkTween = null;
+    }
+    this.tweens.killAll();
+    this.isWalking = false;
+
+    // Clean up hotspots (from BaseScene)
+    this.cleanupHotspots();
+
+    // Clean up exit zones
+    if (this.exitZones) {
+        this.exitZones.forEach(zone => {
+            zone.disableInteractive();
+            zone.removeAllListeners();
+            zone.destroy();
+        });
+    }
+    this.exitZones = [];
+
+    // Clean up NPC sprites, pickup overlays, layers, player
+    // ... (destroy and clear arrays/objects)
+}
+```
+
+**BaseScene.cleanupHotspots():**
+```javascript
+cleanupHotspots() {
+    this.hotspots.forEach(hotspot => {
+        if (hotspot.zone) {
+            hotspot.zone.disableInteractive();  // Remove from input manager
+            hotspot.zone.removeAllListeners();
+            hotspot.zone.destroy();
+        }
+    });
+    this.hotspots = [];
+    this.currentHoveredHotspot = null;
+}
+```
+
+**Additional Safeguards:**
+1. **Stale hotspot validation** in `setCrosshairHover()` and `handleDesktopPointerDown()` - reject hotspots not in current room's list
+2. **Stale action rejection** in `executeAction()` - validates hotspot belongs to current room before executing
+3. **Try-catch in cleanup** - handles zones already in destroyed state during transitions
 
 ---
 

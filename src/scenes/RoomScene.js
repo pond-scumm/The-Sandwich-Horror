@@ -148,6 +148,83 @@ class RoomScene extends BaseScene {
         });
     }
 
+    // Clean up ALL interactive objects from previous room before creating new ones
+    // This is critical for scene reuse - Phaser's input system retains old zone references
+    cleanupPreviousRoom() {
+        console.log('[RoomScene] Cleaning up previous room...');
+
+        // CRITICAL: Cancel ALL tweens to prevent callbacks from old scene executing
+        // This fixes the bug where walkTo callbacks persist across scene transitions
+        if (this.walkTween) {
+            this.walkTween.stop();
+            this.walkTween = null;
+        }
+        if (this.bobTween) {
+            this.bobTween.stop();
+            this.bobTween = null;
+        }
+        // Cancel ALL tweens in the scene to be safe
+        this.tweens.killAll();
+
+        // Reset walking state
+        this.isWalking = false;
+
+        // Clean up hotspots (from BaseScene)
+        if (this.cleanupHotspots) {
+            this.cleanupHotspots();
+        }
+
+        // Clean up exit zones
+        if (this.exitZones && this.exitZones.length > 0) {
+            this.exitZones.forEach(zone => {
+                if (zone) {
+                    if (zone.input) zone.input.enabled = false;
+                    zone.removeAllListeners();
+                    zone.destroy();
+                }
+            });
+        }
+        this.exitZones = [];
+
+        // Clean up NPC sprites
+        if (this.npcSprites && Object.keys(this.npcSprites).length > 0) {
+            Object.values(this.npcSprites).forEach(sprite => {
+                if (sprite) sprite.destroy();
+            });
+        }
+        this.npcSprites = {};
+
+        // Clean up pickup overlays
+        if (this.pickupOverlays && Object.keys(this.pickupOverlays).length > 0) {
+            Object.values(this.pickupOverlays).forEach(overlay => {
+                if (overlay) overlay.destroy();
+            });
+        }
+        this.pickupOverlays = {};
+
+        // Clean up layers (rendered graphics/sprites)
+        if (this.layers && this.layers.length > 0) {
+            this.layers.forEach(layer => {
+                if (layer) layer.destroy();
+            });
+        }
+        this.layers = [];
+
+        // Clean up player sprite
+        if (this.player) {
+            this.player.destroy();
+            this.player = null;
+        }
+
+        // Clean up any lingering graphics
+        if (this.walkableAreaDebug) {
+            this.walkableAreaDebug.destroy();
+            this.walkableAreaDebug = null;
+        }
+
+        console.log('[RoomScene] Previous room cleanup complete');
+    }
+
     create() {
         // Redirect to legacy scene if no room data exists
         if (this.shouldRedirect) {
@@ -156,10 +233,25 @@ class RoomScene extends BaseScene {
             return;
         }
 
+        // CRITICAL: Clean up ALL interactive objects from previous room FIRST
+        // This fixes bugs where hotspots/zones from previous rooms persist
+        this.cleanupPreviousRoom();
+
         const { width, height } = this.scale;
         const room = this.roomData;
 
         console.log('[RoomScene] Creating room:', this.roomId);
+
+        // Reset transition flags
+        this.transitionInProgress = false;
+
+        // Startup lockout - prevent transitions for first 500ms after scene creation
+        // This prevents old input events from triggering immediate transitions
+        this.startupLockout = true;
+        this.time.delayedCall(500, () => {
+            this.startupLockout = false;
+            console.log('[RoomScene] Startup lockout released');
+        });
 
         // Launch UIScene in parallel if not already running
         if (!this.scene.isActive('UIScene')) {
@@ -542,11 +634,24 @@ class RoomScene extends BaseScene {
     executeAction(action, hotspot) {
         const hsData = hotspot._data;
 
+        console.log('[RoomScene] executeAction:', action, 'hotspot:', hsData?.id, 'name:', hotspot.name);
+        console.log('[RoomScene] Current room:', this.roomId, 'Hotspot trigger:', hsData?.actionTrigger);
+
+        // CRITICAL: Check if this hotspot belongs to the current room
+        // This prevents stale callbacks from previous rooms executing actions
+        const currentRoomHotspots = this.roomData?.hotspots || [];
+        const hotspotBelongsToRoom = currentRoomHotspots.some(h => h.id === hsData?.id);
+        if (!hotspotBelongsToRoom) {
+            console.warn('[RoomScene] Rejecting action from stale hotspot:', hsData?.id, '- not in current room:', this.roomId);
+            return;
+        }
+
         // Handle actionTrigger (transitions, custom actions)
         if ((action === 'Use' || action === hotspot.verbLabels?.actionVerb) && hsData?.actionTrigger) {
             const trigger = hsData.actionTrigger;
 
             if (trigger.type === 'transition') {
+                console.log('[RoomScene] Transition action from hotspot:', hsData?.id, '-> target:', trigger.target);
                 this.walkTo(hotspot.interactX, hotspot.interactY, () => {
                     this.transitionToScene(trigger.target, trigger.spawnPoint);
                 });
@@ -646,6 +751,8 @@ class RoomScene extends BaseScene {
 
     createExitZones(height) {
         const room = this.roomData;
+        this.exitZones = [];  // Initialize array to store exit zones for cleanup
+
         if (!room.exits || room.exits.length === 0) return;
 
         room.exits.forEach(exit => {
@@ -666,6 +773,9 @@ class RoomScene extends BaseScene {
             const zone = this.add.zone(x, height * 0.5, w, h)
                 .setInteractive()
                 .setOrigin(0.5);
+
+            // Store zone for cleanup
+            this.exitZones.push(zone);
 
             zone.on('pointerdown', (pointer) => {
                 if (this.inventoryOpen) return;
@@ -903,7 +1013,23 @@ class RoomScene extends BaseScene {
     // ========== SCENE TRANSITION ==========
 
     transitionToScene(targetRoomId, spawnPoint) {
+        // Prevent multiple transitions
+        if (this.transitionInProgress) {
+            console.log('[RoomScene] Transition blocked - already in progress');
+            return;
+        }
+
+        // Prevent transitions during startup (first 500ms after create)
+        if (this.startupLockout) {
+            console.log('[RoomScene] Transition blocked - startup lockout');
+            return;
+        }
+
         console.log('[RoomScene] Transitioning to:', targetRoomId, 'spawn:', spawnPoint);
+        console.log('[RoomScene] Current room:', this.roomId);
+        console.log('[RoomScene] Transition triggered from:', new Error().stack);
+
+        this.transitionInProgress = true;
 
         // Hide arrow cursor before transition
         this.hideArrowCursor();

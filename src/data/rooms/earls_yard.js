@@ -50,7 +50,9 @@
                 // Grill coals - warm orange glow
                 { id: 'grill_coals', x: 950, y: 0.72, radius: 180, color: 0xff8844, intensity: 1.2 },
                 // Airstream interior warm light
-                { id: 'airstream_interior', x: 640, y: 0.55, radius: 250, color: 0xffddaa, intensity: 0.8 }
+                { id: 'airstream_interior', x: 640, y: 0.55, radius: 250, color: 0xffddaa, intensity: 0.8 },
+                // Earl illumination - makes Earl visible in the lighting
+                { id: 'earl_light', x: 920, y: 0.60, radius: 180, color: 0xffcc66, intensity: 0.8 }
             ]
         },
 

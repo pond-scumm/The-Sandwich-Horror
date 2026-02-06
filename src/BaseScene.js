@@ -182,6 +182,13 @@
             create() {
                 const { width, height } = this.scale;
 
+                // CRITICAL: Destroy all old hotspot zones BEFORE resetting the array
+                // This fixes the bug where hotspots from previous rooms persist in Phaser's input system
+                this.cleanupHotspots();
+
+                // Register shutdown handler to clean up when scene stops
+                this.events.once('shutdown', this.cleanupHotspots, this);
+
                 // Reset scene-specific state (constructor doesn't re-run on scene.start())
                 this.hotspots = [];
                 this.inventoryOpen = TSH.State.isInventoryOpen();
@@ -561,6 +568,16 @@
                 // Check hotspots (use hover state set by zone pointerover)
                 const hotspot = this.currentHoveredHotspot;
                 if (hotspot) {
+                    // Validate hotspot belongs to current room (prevents stale hotspots from previous rooms)
+                    const hotspotId = hotspot._data?.id || hotspot.id;
+                    const isValidHotspot = this.hotspots.some(h => (h._data?.id || h.id) === hotspotId);
+                    if (!isValidHotspot) {
+                        console.warn('[BaseScene] Ignoring stale hotspot:', hotspotId);
+                        this.currentHoveredHotspot = null;
+                        this.setCrosshairHover(null);
+                        return;
+                    }
+
                     if (pointer.rightButtonDown()) {
                         this.clickedUI = true;
                         // Right-click with item selected = deselect item
@@ -1406,7 +1423,41 @@
 
             // ========== HOTSPOTS ==========
 
+            // Clean up all hotspot zones - removes them from Phaser's input system
+            cleanupHotspots() {
+                if (this.hotspots && this.hotspots.length > 0) {
+                    console.log('[BaseScene] Cleaning up', this.hotspots.length, 'hotspots');
+                    this.hotspots.forEach(hotspot => {
+                        if (hotspot.zone) {
+                            try {
+                                // CRITICAL: disableInteractive() removes zone from Phaser's input manager
+                                // This is required to stop it from receiving pointer events
+                                if (hotspot.zone.input) {
+                                    hotspot.zone.disableInteractive();
+                                }
+                                if (hotspot.zone.removeAllListeners) {
+                                    hotspot.zone.removeAllListeners();
+                                }
+                                if (hotspot.zone.scene) {
+                                    hotspot.zone.destroy();
+                                }
+                            } catch (e) {
+                                // Zone may already be destroyed during scene transition
+                                console.log('[BaseScene] Zone cleanup error (safe to ignore):', e.message);
+                            }
+                        }
+                    });
+                    this.hotspots = [];
+                }
+
+                // Clear the current hover state directly (without calling setCrosshairHover
+                // which may try to draw on graphics that don't exist yet during early cleanup)
+                this.currentHoveredHotspot = null;
+            }
+
             createHotspots(hotspotData) {
+                // Ensure old hotspots are cleaned up first
+                this.cleanupHotspots();
                 this.hotspots = [];
 
                 hotspotData.forEach(spot => {
@@ -1631,6 +1682,16 @@
             }
 
             setCrosshairHover(hotspot) {
+                // Validate hotspot belongs to current room (prevents stale hotspots from previous rooms)
+                if (hotspot) {
+                    const hotspotId = hotspot._data?.id || hotspot.id;
+                    const isValidHotspot = this.hotspots && this.hotspots.some(h => (h._data?.id || h.id) === hotspotId);
+                    if (!isValidHotspot) {
+                        // Stale hotspot - ignore it
+                        hotspot = null;
+                    }
+                }
+
                 this.currentHoveredHotspot = hotspot;
                 const selectedItem = this.selectedItem;
 
