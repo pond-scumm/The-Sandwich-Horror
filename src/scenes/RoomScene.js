@@ -296,7 +296,8 @@ class RoomScene extends BaseScene {
         }
 
         // Handle first visit
-        this.handleFirstVisit();
+        // DISABLED FOR FASTER TESTING - uncomment to restore first-time dialogue
+        // this.handleFirstVisit();
 
         // Handle room audio (music, ambient)
         this.handleRoomAudio();
