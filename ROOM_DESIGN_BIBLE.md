@@ -4,6 +4,43 @@
 
 ---
 
+## 0. Writing Nate's Responses (CRITICAL)
+
+**Every hotspot interaction is a conversation between the player and Nate.** The player suggests an action ("Hey Nate, USE that cooler"), and Nate responds conversationally about what he's experiencing. He's not narrating a story—he's talking *to* the player.
+
+### The Golden Rule
+
+**Nate can use "I" when conversing, but NEVER when describing his physical actions in that moment.**
+
+### Examples
+
+| Situation | Wrong (Narration) | Right (Conversation) |
+|-----------|-------------------|----------------------|
+| Player asks Nate to knock | "I knock on the door. No answer." | "No answer. Earl's out here by the grill." |
+| Player asks Nate to peek | "I peek through the window. Nice curtains." | "Nice curtains through there. A small kitchen. Some photos." |
+| Player asks Nate to check heat | "I lean in and feel the heat. Those coals are perfect." | "Wow, that's HOT. Those coals are perfect." |
+| Player asks about going into woods | "I like it here where there's light." ✓ | (This is fine—he's expressing preference) |
+| Player asks about tree climbing | "I'm not much of a tree climber." ✓ | (This is fine—he's talking about himself) |
+
+### The Test
+
+Ask: "Is Nate describing a physical action he's performing right now in response to the player's command?"
+- **YES** → Remove the narration, jump to the result/reaction
+- **NO** → It's probably fine (thoughts, feelings, observations, preferences are all conversational)
+
+### Response Writing Checklist
+
+When writing hotspot responses:
+1. ✓ Jump straight to what Nate observes or experiences
+2. ✓ Let him express opinions, preferences, and thoughts using "I"
+3. ✓ Keep it playful, enthusiastic, and conversational
+4. ✗ Don't describe the physical action the player just commanded
+5. ✗ Don't write stage directions ("I approach", "I reach out", "I examine")
+
+See CREATIVE_BIBLE.md for full character voice guidelines.
+
+---
+
 ## 1. Resolution & Canvas
 
 | Property | Value | Notes |
@@ -134,40 +171,87 @@ sprite.setTint(0xffffff);  // Neutral (no tint)
 
 All rooms use a **3/4 top-down side view** -- a flat elevation with a slightly angled floor plane to suggest depth. This is the same perspective as classic LucasArts adventure games (Monkey Island, Full Throttle, Thimbleweed Park).
 
+The room should feel like **a space the player is looking into**, not a flat elevation drawing. Objects must appear to be standing *on* a floor that recedes into the scene, not painted on a wall.
+
+### Understanding `floorY`
+
+**`floorY` is the back of the room** -- the line where the back wall meets the floor. It is NOT a universal baseline for all objects.
+
 ```
     +-----------------------------+
     |                             |  <- Back wall (flat, vertical)
     |   [window]  [painting]      |
     |                             |
-    |   ####  <shelf>   ####      |  <- Furniture against wall
-    +-----------------------------+  <- Floor line (floorY)
-    |  .......................... |  <- Floor plane (slight depth)
-    |    ###   ###   ###          |  <- Foreground furniture
+    |   ####  <shelf>   ####      |  <- Furniture against back wall (base at floorY)
+    +=============================+  <- floorY: wall-floor boundary
+    |     ####          ####      |  <- Mid-floor zone (base BELOW floorY)
+    |                             |  <- Visible floor space
+    |        ####    ####         |  <- Foreground zone (lowest, slightly larger)
     +-----------------------------+
 ```
+
+Only objects physically against the back wall should have their base at `floorY`. Everything else sits lower.
+
+### Depth Zones
+
+Each camera preset defines a walkable band. Within that band, three depth zones control where objects are placed and how large they appear:
+
+**MEDIUM camera (walkable 0.72–0.92):**
+
+| Zone | y-range | Scale | Use for |
+|------|---------|-------|---------|
+| **Back wall** | 0.72 (floorY) | 1.0x | Shelves, wall-mounted items, furniture pushed against the wall |
+| **Mid-floor** | 0.74–0.78 | 1.0–1.05x | Tables, chairs, large freestanding furniture |
+| **Foreground** | 0.80–0.85 | 1.05–1.1x | Items near the viewer, foreground props |
+
+**FAR camera (walkable 0.78–0.92):**
+
+| Zone | y-range | Scale | Use for |
+|------|---------|-------|---------|
+| **Back wall** | 0.78 (floorY) | 1.0x | Wall-mounted, against-wall furniture |
+| **Mid-floor** | 0.80–0.84 | 1.0–1.05x | Freestanding furniture |
+| **Foreground** | 0.85–0.88 | 1.05–1.1x | Foreground props |
+
+**CLOSE camera (walkable 0.68–0.90):**
+
+| Zone | y-range | Scale | Use for |
+|------|---------|-------|---------|
+| **Back wall** | 0.68 (floorY) | 1.0x | Wall-mounted, against-wall furniture |
+| **Mid-floor** | 0.70–0.76 | 1.0–1.05x | Freestanding furniture |
+| **Foreground** | 0.78–0.84 | 1.05–1.1x | Foreground props |
+
+Exact y-values are per room — these are guidelines, not rigid constraints.
 
 ### Depth Rules
 
 1. **Back wall** is a flat vertical surface. All wall-mounted items are drawn flat with no perspective distortion
-2. **Floor** extends from `floorY` to the bottom of the screen
-3. **Furniture depth** is faked using:
-   - **Side panels:** A narrow rectangle on the left edge of furniture, drawn in a darker color, suggesting the side is visible. Width is typically `p*10` to `p*12` (20-24px at p=2)
-   - **"Pulled forward" placement:** Items not against the wall get a Y-offset of +15 to +25px below `floorY`
-   - **Value shift:** Objects closer to the viewer (lower on screen) get slightly higher contrast and warmer colors
-4. **No diagonal lines.** All edges are axis-aligned rectangles. Curves and angles are suggested through stepped pixel patterns only
-5. **No true perspective.** Parallel lines stay parallel. Objects don't get smaller with distance
+2. **Floor** extends from `floorY` to the bottom of the screen. There should be **meaningful visible floor space** between the wall-floor line and the bottom of the frame
+3. **Objects further from the viewer** (closer to the back wall) are positioned higher in the frame and drawn at 1.0x scale
+4. **Objects closer to the viewer** are positioned lower in the frame and drawn up to 1.1x scale. Keep scaling subtle — depth comes mainly from vertical staggering and overlap, not size changes
+5. **Stagger vertical placement.** Avoid placing all objects at the same y-baseline. Vary their depth positions to break the flat-elevation look
+6. **Overlap creates depth.** Objects in the mid-floor or foreground should partially overlap objects behind them. A foreground chair might clip the bottom of a back-wall desk. This occlusion is the strongest depth cue
+7. **Furniture depth** is additionally faked using:
+   - **Side panels:** A narrow rectangle on the left edge, drawn in a darker color, suggesting a visible side face. Width is typically `p*10` to `p*12` (20-24px at p=2)
+   - **Value shift:** Objects closer to the viewer get slightly higher contrast and warmer colors
+8. **No diagonal lines.** All edges are axis-aligned rectangles. Curves and angles are suggested through stepped pixel patterns only
+
+### Floor Hotspot Rule
+
+**No hotspots in the walkable band unless the item is plot-critical.** Decorative floor items (rugs, floor patterns, floor stains) should not have hotspots — they interfere with walking. If a floor item needs a hotspot for puzzle purposes (trapdoor, dropped item), that's fine, but it should be the exception.
 
 ### Layering / Draw Order (Back to Front)
 
-Items drawn later appear in front of earlier items:
+Items drawn later appear in front of earlier items. **Draw order follows depth — back wall first, foreground last:**
 
 1. Back wall (panels, wallpaper texture, crown molding, wainscoting)
 2. Floor (boards, base texture)
 3. Wall-mounted furniture (bookshelves, windows, fireplace, wall clocks)
-4. Floor-level furniture against wall (desks, tables)
+4. Floor-level furniture against wall (desks, tables at `floorY`)
 5. Floor items (rugs, floor markings)
-6. Mid-ground furniture (chairs, freestanding tables)
-7. Foreground objects (items closest to camera)
+6. Mid-floor furniture (chairs, freestanding tables — below `floorY`)
+7. Foreground objects (items closest to camera — lowest y, up to 1.1x scale)
+
+This matches the hotspot array ordering rule (Section 7A, Rule 7): background hotspots first, foreground hotspots last.
 
 ---
 

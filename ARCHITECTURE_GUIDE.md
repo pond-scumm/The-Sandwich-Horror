@@ -291,6 +291,8 @@ TSH.Rooms.laboratory = {
                     useResponse: "TRIGGER_FINALE"
                 }
             }
+            // Note: Responses should be conversational, not narrative. See CREATIVE_BIBLE.md
+            // and ROOM_DESIGN_BIBLE.md Section 0 for Nate's voice guidelines.
         }
     ],
 
@@ -370,6 +372,17 @@ TSH.State.on('flagChanged', (data) => {
 | Examine text | Different description after learning the truth |
 | Available actions | "Take" only available when alien is on roof |
 | Position | Clock on wall → clock on floor after falling |
+
+**Writing Hotspot Responses:**
+
+All responses should follow Nate's conversational voice (see CREATIVE_BIBLE.md and ROOM_DESIGN_BIBLE.md Section 0). Key rule: **Never narrate Nate's physical actions**—he's responding to the player's commands, not describing a story.
+
+- ✗ Wrong: `"I knock on the door. No answer."`
+- ✓ Right: `"No answer. Must be out."`
+- ✗ Wrong: `"I examine the device closely."`
+- ✓ Right: `"Brass, glass, glowing... I have no idea what this is."`
+
+Using "I" is fine when expressing thoughts/feelings (`"I need all four components first"`) but wrong when describing physical actions in the moment.
 
 ---
 

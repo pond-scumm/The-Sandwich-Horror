@@ -18,20 +18,24 @@
     // When an element moves, change it here and both systems stay in sync.
     // =========================================================================
 
+    // Depth offsets from floorY (0.72) for MEDIUM camera:
+    //   Back wall = 0.72 (floorY), Mid-floor = 0.76, Foreground = 0.79-0.80
+    //   Drawing uses: treeFloorY = 0.72 + 60px, midFloorY = 0.72 + 30px, foregroundY = 0.72 + 50px
+    //   LAYOUT y-values match where visual elements actually appear after offsets.
     const LAYOUT = {
         woods:            { x: 640,  y: 0.35, w: 1280, h: 0.35 },
-        tree_left:        { x: 120,  y: 0.38, w: 120, h: 0.60 },
-        tree_right:       { x: 1160, y: 0.38, w: 110, h: 0.60 },
+        tree_left:        { x: 120,  y: 0.48, w: 120, h: 0.60 },  // Foreground: drawn at treeFloorY (0.80)
+        tree_right:       { x: 1160, y: 0.48, w: 110, h: 0.60 },  // Foreground: drawn at treeFloorY (0.80)
         string_lights:    { x: 640,  y: 0.22, w: 1000, h: 0.08 },
-        flamingo:         { x: 320,  y: 0.66, w: 40,  h: 0.18 },
-        airstream:        { x: 640,  y: 0.42, w: 550, h: 0.45 },
+        flamingo:         { x: 320,  y: 0.70, w: 40,  h: 0.18 },  // Mid-floor (drawn at midFloorY ~0.76)
+        airstream:        { x: 637,  y: 0.42, w: 695, h: 0.53 },  // Back wall (against tree line)
         airstream_door:   { x: 464,  y: 0.52, w: 100, h: 0.34 },
         airstream_window: { x: 781,  y: 0.36, w: 150, h: 0.15 },
-        cooler:           { x: 1040, y: 0.69, w: 90,  h: 0.18 },
-        radio:            { x: 650,  y: 0.63, w: 70,  h: 0.19 },
-        grill:            { x: 780,  y: 0.61, w: 110, h: 0.24 },
-        earl:             { x: 920,  y: 0.46, w: 80,  h: 0.50 },
-        ladder:           { x: 1160, y: 0.52, w: 50,  h: 0.32 },
+        cooler:           { x: 1040, y: 0.73, w: 89,  h: 0.09 },  // Foreground (drawn at foregroundY ~0.79)
+        radio:            { x: 650,  y: 0.67, w: 70,  h: 0.19 },  // Mid-floor (drawn at midFloorY ~0.76)
+        grill:            { x: 780,  y: 0.69, w: 110, h: 0.24 },  // Mid-floor (drawn at midFloorY+5 ~0.78)
+        earl:             { x: 920,  y: 0.50, w: 80,  h: 0.50 },  // Mid-floor (drawn at midFloorY ~0.76)
+        ladder:           { x: 1160, y: 0.70, w: 60,  h: 0.38 },  // Foreground (drawn at treeFloorY ~0.80)
     };
 
     // =========================================================================
@@ -47,12 +51,27 @@
         cameraPreset: 'MEDIUM',
 
         walkableArea: {
-            // MEDIUM camera preset: walkable band 0.72-0.92
+            // Custom polygon tracing the walkable yard area
             polygon: [
-                { x: 0, y: 0.72 },
-                { x: 1280, y: 0.72 },
-                { x: 1280, y: 0.92 },
-                { x: 0, y: 0.92 }
+                { x: 107, y: 0.839 },
+                { x: 239, y: 0.815 },
+                { x: 380, y: 0.829 },
+                { x: 387, y: 0.750 },
+                { x: 535, y: 0.740 },
+                { x: 585, y: 0.740 },
+                { x: 590, y: 0.800 },
+                { x: 635, y: 0.826 },
+                { x: 767, y: 0.826 },
+                { x: 891, y: 0.829 },
+                { x: 1036, y: 0.822 },
+                { x: 1151, y: 0.810 },
+                { x: 1256, y: 0.806 },
+                { x: 1261, y: 0.908 },
+                { x: 1247, y: 0.965 },
+                { x: 819, y: 0.985 },
+                { x: 573, y: 0.968 },
+                { x: 189, y: 0.982 },
+                { x: 119, y: 0.975 }
             ]
         },
 
@@ -63,16 +82,20 @@
             sources: [
                 // Moonlight filtered through trees
                 { id: 'moon_filtered', x: 640, y: 0.10, radius: 400, color: 0xaabbdd, intensity: 0.5 },
-                // String lights warm glow
-                { id: 'string_1', x: 200, y: 0.45, radius: 120, color: 0xffcc66, intensity: 0.6 },
-                { id: 'string_2', x: 400, y: 0.48, radius: 120, color: 0xffcc66, intensity: 0.6 },
-                { id: 'string_3', x: 600, y: 0.45, radius: 120, color: 0xffcc66, intensity: 0.6 },
-                { id: 'string_4', x: 800, y: 0.48, radius: 120, color: 0xffcc66, intensity: 0.6 },
-                { id: 'string_5', x: 1000, y: 0.45, radius: 120, color: 0xffcc66, intensity: 0.6 },
+                // String lights - colored bulbs at actual positions
+                { id: 'string_red', x: 191, y: 0.222, radius: 100, color: 0xff4444, intensity: 0.5 },
+                { id: 'string_green', x: 330, y: 0.222, radius: 100, color: 0x44ff44, intensity: 0.5 },
+                { id: 'string_purple', x: 475, y: 0.215, radius: 100, color: 0xaa44ff, intensity: 0.5 },
+                { id: 'string_yellow', x: 609, y: 0.222, radius: 100, color: 0xffff44, intensity: 0.5 },
+                { id: 'string_pink', x: 747, y: 0.225, radius: 100, color: 0xff44ff, intensity: 0.5 },
+                { id: 'string_blue', x: 891, y: 0.222, radius: 100, color: 0x4444ff, intensity: 0.5 },
+                { id: 'string_orange', x: 1027, y: 0.225, radius: 100, color: 0xffaa44, intensity: 0.5 },
+                // Airstream door warm light
+                { id: 'airstream_door', x: 463, y: 0.442, radius: 140, color: 0xffddaa, intensity: 0.9 },
+                // Airstream window warm light
+                { id: 'airstream_window', x: 774, y: 0.356, radius: 120, color: 0xffddaa, intensity: 0.7 },
                 // Grill coals - warm orange glow
-                { id: 'grill_coals', x: 950, y: 0.72, radius: 180, color: 0xff8844, intensity: 1.2 },
-                // Airstream interior warm light
-                { id: 'airstream_interior', x: 640, y: 0.55, radius: 250, color: 0xffddaa, intensity: 0.8 },
+                { id: 'grill_coals', x: 783, y: 0.68, radius: 200, color: 0xff6633, intensity: 1.4 },
                 // Earl illumination - makes Earl visible in the lighting
                 { id: 'earl_light', x: 920, y: 0.60, radius: 180, color: 0xffcc66, intensity: 0.8 }
             ]
@@ -157,7 +180,7 @@
                 verbs: { action: 'Knock', look: 'Examine' },
                 responses: {
                     look: "A vintage Airstream trailer, lovingly maintained. Warm light glows from inside. This is Earl's home, and it's beautiful.",
-                    action: "I knock on the door. No answer—Earl's out here with me. Feels rude to go in without permission."
+                    action: "No answer. Earl's out here by the grill anyway. Feels rude to just walk in."
                 }
             },
 
@@ -169,8 +192,8 @@
                 name: 'Large Tree',
                 verbs: { action: 'Climb', look: 'Examine' },
                 responses: {
-                    look: "A big old oak tree. Provides nice shade during the day, I bet.",
-                    action: "I'm not much of a tree climber. Plus, Earl might think that's weird."
+                    look: "A big old oak tree. Probably provides nice shade during the day.",
+                    action: "Tree climbing was never my strong suit. Also, Earl might think that's weird."
                 }
             },
             {
@@ -181,7 +204,7 @@
                 verbs: { action: 'Climb', look: 'Examine' },
                 responses: {
                     look: "Another big tree. This place is framed beautifully.",
-                    action: "Still not climbing it."
+                    action: "Still a no on the tree climbing."
                 }
             },
             {
@@ -202,8 +225,8 @@
                 name: 'Airstream Door',
                 verbs: { action: 'Knock', look: 'Examine' },
                 responses: {
-                    look: "The Airstream's front door. An aluminum door with a warm glow coming through the window. Steps lead up to it.",
-                    action: "I knock on the door. No answer from inside. Earl's out here by the grill."
+                    look: "The Airstream's front door. Aluminum with a warm glow coming through the window. Nice little steps leading up.",
+                    action: "No answer. Earl's out here by the grill."
                 }
             },
             {
@@ -214,7 +237,7 @@
                 verbs: { action: 'Peek', look: 'Look at' },
                 responses: {
                     look: "A large window on the side of the Airstream. Warm light spills out. Looks cozy in there.",
-                    action: "I peek through the window. Nice curtains. A small kitchen. Some photos on the wall. Feels wrong to snoop."
+                    action: "Nice curtains. A small kitchen. Some photos on the wall. Feels wrong to snoop though."
                 }
             },
 
@@ -224,10 +247,10 @@
                 ...LAYOUT.flamingo,
                 interactX: LAYOUT.flamingo.x, interactY: 0.82,
                 name: 'Pink Flamingo',
-                verbs: { action: 'Poke', look: 'Examine' },
+                verbs: { action: 'Pat', look: 'Examine' },
                 responses: {
                     look: "A bright pink plastic lawn flamingo. Tacky, beloved, and absolutely perfect.",
-                    action: "I give it a little pat on the head. The flamingo does not react. Still perfect."
+                    action: "The flamingo remains stoic. Still perfect."
                 }
             },
 
@@ -239,8 +262,8 @@
                 name: 'Cooler',
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
-                    look: "A green cooler, probably full of drinks. Condensation on the outside—it's cold.",
-                    action: "I peek inside. Sodas! Root beer, cola, lemon-lime... Earl's prepared for company."
+                    look: "A green cooler, probably full of drinks. Condensation on the outside—nice and cold.",
+                    action: "Sodas! Root beer, cola, lemon-lime... Earl's prepared for company."
                 }
             },
             {
@@ -248,10 +271,10 @@
                 ...LAYOUT.radio,
                 interactX: LAYOUT.radio.x, interactY: 0.82,
                 name: 'Old Radio',
-                verbs: { action: 'Turn on', look: 'Examine' },
+                verbs: { action: 'Listen', look: 'Examine' },
                 responses: {
-                    look: "An old red radio sitting on a small wooden table. The antenna is fully extended. It's playing Earl's favorite tunes.",
-                    action: "The radio's already on, playing some mellow music. The sound has that warm, tinny quality of vintage electronics."
+                    look: "An old red radio sitting on a small wooden table. Antenna fully extended. Playing Earl's favorite tunes.",
+                    action: "It's already on, playing some mellow music. That warm, tinny quality of vintage electronics. Perfect."
                 }
             },
             {
@@ -262,7 +285,7 @@
                 verbs: { action: 'Check', look: 'Examine' },
                 responses: {
                     look: "A classic charcoal grill with glowing coals inside. Smells AMAZING. Burgers are definitely happening.",
-                    action: "I lean in and feel the heat. Those coals are perfect. Earl knows what he's doing."
+                    action: "Wow, that's HOT. Those coals are perfect. Earl knows what he's doing."
                 }
             },
             {
@@ -346,10 +369,10 @@
         WOODS_LIGHT: 0x1a3a1a,
 
         // Grass (well-maintained)
-        GRASS_DARK: 0x2a4a25,
-        GRASS_MID: 0x3a5a30,
-        GRASS_LIGHT: 0x4a6a3a,
-        GRASS_BRIGHT: 0x5a7a45,
+        GRASS_DARK: 0x1a2a15,
+        GRASS_MID: 0x2a3a20,
+        GRASS_LIGHT: 0x3a4a2a,
+        GRASS_BRIGHT: 0x4a5a35,
 
         // Tree bark
         BARK_DARK: 0x2a1a10,
@@ -505,10 +528,10 @@
         const bulbColors = [
             { main: 0xff4444, glow: 0xff6666 },  // Red
             { main: 0x44ff44, glow: 0x66ff66 },  // Green
-            { main: 0x4444ff, glow: 0x6666ff },  // Blue
+            { main: 0xaa44ff, glow: 0xcc66ff },  // Purple
             { main: 0xffff44, glow: 0xffff66 },  // Yellow
-            { main: 0xff44ff, glow: 0xff66ff },  // Magenta
-            { main: 0x44ffff, glow: 0x66ffff },  // Cyan
+            { main: 0xff44ff, glow: 0xff66ff },  // Pink
+            { main: 0x4444ff, glow: 0x6666ff },  // Blue
             { main: 0xffaa44, glow: 0xffcc66 }   // Orange
         ];
 
@@ -914,25 +937,27 @@
     function drawLadder(g, x, floorY, leanHeight) {
         const ladderTop = floorY - leanHeight;
         const rungSpacing = p * 18;
-        const railWidth = p * 3;
+        const railWidth = p * 4;       // Thicker rails
+        const ladderWidth = p * 24;    // Wider spread between rails
+        const halfW = ladderWidth / 2;
 
         // Left rail
         g.fillStyle(COLORS.METAL_MID);
-        g.fillRect(x - p*8, ladderTop, railWidth, leanHeight);
+        g.fillRect(x - halfW, ladderTop, railWidth, leanHeight);
 
         // Right rail
-        g.fillRect(x + p*5, ladderTop, railWidth, leanHeight);
+        g.fillRect(x + halfW - railWidth, ladderTop, railWidth, leanHeight);
 
-        // Rungs
+        // Rungs (thicker, spanning full width)
         for (let ry = ladderTop + p*12; ry < floorY - p*8; ry += rungSpacing) {
             g.fillStyle(COLORS.METAL_LIGHT);
-            g.fillRect(x - p*8, ry, p*16, p*2);
+            g.fillRect(x - halfW, ry, ladderWidth, p*3);
         }
 
         // Highlights on rails
         g.fillStyle(COLORS.METAL_LIGHT);
-        g.fillRect(x - p*7, ladderTop + p*2, p, leanHeight - p*4);
-        g.fillRect(x + p*6, ladderTop + p*2, p, leanHeight - p*4);
+        g.fillRect(x - halfW + p, ladderTop + p*2, p, leanHeight - p*4);
+        g.fillRect(x + halfW - railWidth + p, ladderTop + p*2, p, leanHeight - p*4);
     }
 
     // =========================================================================
@@ -979,33 +1004,31 @@
             g.fillRect(tx + p*5, floorY - bladeHeight, p*2, bladeHeight);
         }
 
-        // === AIRSTREAM (centerpiece - large but not overwhelming, ~1.25x Nate's height) ===
+        // === AIRSTREAM (centerpiece - at back wall / tree line) ===
         const airstreamWidth = worldWidth * 0.55;  // ~704px - prominent but leaves room
         const airstreamHeight = p * 197;  // ~394px, about 1.25x Nate's height
         drawAirstream(g, LAYOUT.airstream.x, floorY, airstreamWidth, airstreamHeight);
 
-        // === LARGE TREES (framing the scene, in front of Airstream, pulled forward for depth) ===
-        drawTree(g, LAYOUT.tree_left.x, floorY, height);
-        drawTree(g, LAYOUT.tree_right.x, floorY, height);
+        // === LARGE TREES (foreground framing — extend well below floorY into the grass) ===
+        const treeFloorY = floorY + p * 30;  // Trees are closer to camera, bases sit lower
+        drawTree(g, LAYOUT.tree_left.x, treeFloorY, height);
+        drawTree(g, LAYOUT.tree_right.x, treeFloorY, height);
 
         // === STRING LIGHTS (in front of Airstream, raised high) ===
         drawStringLights(g, LAYOUT.tree_left.x, height * 0.20, 1040);
 
-        // === YARD ITEMS (in front of Airstream) ===
-        drawFlamingo(g, LAYOUT.flamingo.x, floorY);
-        drawCooler(g, LAYOUT.cooler.x, floorY, 1.5);
+        // === YARD ITEMS — mid-floor depth zone (below floorY) ===
+        const midFloorY = floorY + p * 15;    // Mid-floor: items in the yard, not against wall
+        const foregroundY = floorY + p * 25;   // Foreground: closest to camera
 
-        // === TABLE WITH RADIO (between door and grill) ===
-        drawTableWithRadio(g, LAYOUT.radio.x, floorY);
+        drawFlamingo(g, LAYOUT.flamingo.x, midFloorY);
+        drawTableWithRadio(g, LAYOUT.radio.x, midFloorY);
+        drawGrill(g, LAYOUT.grill.x, midFloorY + p * 5);  // Grill slightly in front of table
+        drawEarl(g, LAYOUT.earl.x, midFloorY);
+        drawCooler(g, LAYOUT.cooler.x, foregroundY, 1.5);  // Cooler in foreground
 
-        // === GRILL (under the Airstream window) ===
-        drawGrill(g, LAYOUT.grill.x, floorY);
-
-        // === EARL THE BIGFOOT (well to the right of the grill) ===
-        drawEarl(g, LAYOUT.earl.x, floorY);
-
-        // === LADDER (centered on right tree) ===
-        drawLadder(g, LAYOUT.ladder.x, floorY, p*120);
+        // === LADDER (in front of right tree, base below tree line) ===
+        drawLadder(g, LAYOUT.ladder.x, treeFloorY, p*120);
     }
 
 })();

@@ -181,8 +181,25 @@ Nathaniel embodies forward motion. He doesn't know much, but he wants to engage.
 - Enthusiastic curiosity: "I have no idea what this is but I want one."
 - Light humor: "That's not a table, that's a mail fort."
 
+**The Conversational Framing:**
+
+Think of every interaction as a conversation between the player and Nate. The player says "Hey Nate, USE that cooler" and Nate responds naturally. He's not narrating a story—he's talking *to* the player about what he's experiencing.
+
+**Using "I" is FINE when conversing:**
+- "I like it here where there's light and burgers." ✓
+- "Pretty sure I'd get lost immediately." ✓
+- "I'm not much of a tree climber." ✓
+
+**Using "I" is WRONG when narrating physical actions:**
+- "I knock on the door." ✗ → "No answer." ✓
+- "I peek through the window." ✗ → "Nice curtains through there." ✓
+- "I lean in and feel the heat." ✗ → "Wow, that's HOT." ✓
+- "I give it a little pat." ✗ → "The flamingo remains stoic." ✓
+
+**The test:** If Nate is describing what he's *doing* in that moment, it's narration. If he's talking about his thoughts, feelings, observations, or preferences, it's conversation.
+
 **What Nathaniel Does NOT Do:**
-- Narrate his own actions ("I examine the candle" — just react to it instead)
+- Narrate his physical actions in the moment ("I examine the candle", "I knock", "I peek")
 - Be too deadpan or literal (don't just describe what things are)
 - Go too extreme (no ALL CAPS, no ?! combinations)
 - Mock or be mean to people (situations are fair game, people are not)
