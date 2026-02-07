@@ -1,7 +1,7 @@
 # The Sandwich Horror — Architecture Guide
 ## For Claude Code Implementation
 
-Last Updated: February 5, 2026 (Audio persistence, alien room, SFX fixes)
+Last Updated: February 7, 2026 (Documentation consolidation — hotspot schema, implementation status, terminology cleanup)
 
 ---
 
@@ -13,72 +13,78 @@ This document captures all architecture decisions made during planning. Claude C
 
 ---
 
-## Context Management Rule
+## 0. How to Use This Guide
 
-Before starting any multi-file refactor or multi-step change: estimate whether the implementation will require more context than is currently available. If compaction is likely to occur mid-change, stop and alert the developer before writing any code. Say: *"This change is complex enough that I may need to compact mid-work. Want to compact now so I start with a clean context?"* Always compact before starting, never mid-implementation.
+**Don't read this entire document every session.** Read the Always Read sections, then use the task table to find what else you need.
 
-When resuming after compaction, re-read this guide and check `git log --oneline -10` before continuing work.
+### Always Read
+These sections are foundational — every task depends on them:
+- **Implementation Status** — Know what's built and what isn't before proposing work
+- **§1 Global Namespace** — TSH structure
+- **§2 Game State** — Flags, inventory, events, UI state (the core API for everything)
+- **§3 Rooms Are Data-Driven** — Room data format, hotspot schema, pickupOverlays
+- **§3.1 State-Driven Hotspots** — How hotspots respond to game state
+- **§14 What NOT to Do** — Common mistakes to avoid
+- **§22 Development Workflow** — Versioning, incremental implementation, commit rules
+
+### Read When Relevant
+| Task | Also Read |
+|------|-----------|
+| Building or modifying a room | §3.2 NPC Drawing, §3.3 Transition Cleanup, §8 Audio, §12 Tech Specs. Also read ROOM_DESIGN_BIBLE.md |
+| Writing dialogue or hotspot responses | §5 Item Combinations (for combination dialogue), §16 Conversation Mode. Also read CREATIVE_BIBLE.md for Nate's voice |
+| Working on audio | §8 Audio System (full section) |
+| Implementing puzzle logic | §4 Async/Await, §5 Item Combinations, §9 Entity States |
+| Working on inventory or items | §5 Item Combinations, §6 Item Icons, §15 Interaction Systems |
+| Mobile or UX work | §15 Interaction Systems, §17 Mobile Optimization, §18 Settings Menu, §19 Hotspot Highlighting |
+| Modifying UI elements | §2 UIScene subsection, §18 Settings Menu, §19 Hotspot Highlighting |
+| Scene transitions | §3.3 Transition Cleanup |
+| Debugging or testing | §20 Debug Overlay, §21 Testing Checklist |
+| Save/Load work | §7 Save/Load |
+
+### After Compaction
+If context was compacted mid-session, re-read the Always Read sections and `git log --oneline -10` before continuing. Do not rely on compacted memory for in-progress edits — re-read any file you were modifying. Before starting any multi-file refactor, estimate whether compaction is likely mid-change — if so, alert the developer and compact first.
 
 ---
 
 ## Implementation Status
 
-### Complete
-- [x] TSH namespace and global structure (`src/TSH.js`)
-- [x] GameState with flags, inventory, NPC states (`src/GameState.js`)
-- [x] Save/Load system (`src/SaveSystem.js`)
-- [x] BaseScene with player, movement, dialogue bubbles (`src/BaseScene.js`)
-- [x] RoomScene data-driven room renderer (`src/scenes/RoomScene.js`)
-- [x] Inventory UI (button toggle, slots, selection, item cursor)
-- [x] Items data definitions (`src/data/items/items.js`)
-- [x] Combinations data definitions (`src/data/items/combinations.js`)
-- [x] Hotspot system with polygon support
-- [x] useItemOnHotspot (reads `itemInteractions` from room data)
-- [x] actionTrigger for scene transitions
-- [x] Debug overlay with coordinate display, hotspot visualization, walkable polygon
-- [x] Polygon walkable areas with smart movement (nearest point projection)
-- [x] 2-action interaction system (left-click Use/Talk, right-click Examine)
-- [x] Interior room data file with 18 hotspots and draft dialogue (`src/data/rooms/interior.js`)
-- [x] NPC conversation system (`enterConversation`, `showDialogueOptions`, `exitConversation`, `showConversationLine` in BaseScene.js)
-- [x] Audio manager with channel-based music, SFX, volume categories (`src/AudioManager.js`)
-- [x] Room music integration with auto-preload and smart continuity (`RoomScene.js`)
-- [x] SFX registry with action hooks for inventory, items, UI (`src/data/audio/sfx.js`)
-- [x] Footstep system with walk/run variants, left/right alternation, randomized selection
-- [x] Settings menu with gear icon button, blur overlay, X close button
-- [x] Fullscreen toggle checkbox in settings menu
-- [x] Volume sliders (Master, Music, Effects) with mute buttons and percentage display
-- [x] Hotspot highlighting system (Shift key on desktop, long-press on mobile)
-- [x] Character placeholder sprites with camera preset scaling (`nate_placeholder.png`, `hector_placeholder.png`)
-- [x] Procedural item icons system (`src/data/items/icons.js`) with p=4 chunky pixel style
-- [x] Event emitter system in TSH.State (Phase 1 of UIScene refactor)
-- [x] UI state management in TSH.State (Phase 2 of UIScene refactor)
-- [x] UIScene with cursor management (Phase 3 of UIScene refactor)
-- [x] UIScene with inventory/settings buttons (Phase 4a of UIScene refactor)
-- [x] UIScene with inventory panel (Phase 4b of UIScene refactor)
-- [x] Combination logic in TSH.Combinations with showDialog event (Phase 4d of UIScene refactor)
+### Built
+- TSH namespace and global structure (`src/TSH.js`)
+- GameState with flags, inventory, NPC states, event emitter (`src/GameState.js`)
+- Save/Load system (`src/SaveSystem.js`)
+- BaseScene with player, movement, dialogue bubbles (`src/BaseScene.js`)
+- RoomScene data-driven room renderer (`src/scenes/RoomScene.js`)
+- UIScene with cursor management, inventory panel, settings buttons (`src/scenes/UIScene.js`)
+- Inventory UI (button toggle, slots, selection, item cursor, item-on-item combinations)
+- Item pickup from hotspots (`giveItem`, `removeAfterPickup`, `pickupFlag`)
+- State-driven hotspots (via `actionTrigger`, conditional NPCs, conditional dialogue options)
+- Items and combinations data (`src/data/items/items.js`, `combinations.js`)
+- Hotspot system with polygon support and highlighting (Shift/long-press)
+- 2-action interaction system (left-click Use/Talk, right-click Examine)
+- NPC conversation system (`enterConversation`, `showDialogueOptions`, etc.)
+- Audio manager with channel-based music, SFX, volume categories (`src/AudioManager.js`)
+- Room music with auto-preload, smart continuity, and audio persistence (`pauseIn`)
+- SFX registry with action hooks (`src/data/audio/sfx.js`)
+- Footstep system with walk/run variants, left/right alternation
+- Settings menu with fullscreen toggle, volume sliders, mute buttons
+- Character placeholder sprites with camera preset scaling
+- Procedural item icons system (`src/data/items/icons.js`)
+- Debug overlay with coordinate display, hotspot visualization, walkable polygon
 
-### TODO (Not Yet Implemented)
-- [x] **Item-on-item combinations** — Click item B while item A is selected to combine (`tryCombineItems` in BaseScene.js)
-- [x] **Item pickup from hotspots** — `giveItem`, `removeAfterPickup`, `pickupFlag` supported in RoomScene.js
-- [x] **State-driven hotspots** — Pattern documented below; use when building/redesigning rooms with puzzle logic
-- [ ] **Cutscene/sequence system** — No async/await wrappers for walkTo/showDialog to enable scripted sequences
+### Not Yet Built
+- **Cutscene/sequence system** — No async/await wrappers for walkTo/showDialog to enable scripted sequences
+- **Dialogue spreadsheet import** — Planned system for managing dialogue content via spreadsheet
 
-### Legacy Scene Classes (Exist but Not Data-Driven)
-These scenes exist but use the old scene-class pattern instead of the data-driven RoomScene approach:
-- `LaboratoryScene.js` — Has hotspots, dialogue trees, NPC conversation
-- `BackyardScene.js` — Has Earl NPC with conversation
-- `GardenScene.js`, `ForestScene.js`, `GameScene.js`, `NeighborYardScene.js`, `AtticScene.js`
+### Legacy Scene Classes
+These scenes use the old scene-class pattern instead of data-driven RoomScene:
+- `LaboratoryScene.js`, `BackyardScene.js`, `NeighborYardScene.js`, `AtticScene.js`
 
-**Decision needed:** Convert these to data-driven room files, or keep as legacy?
+Legacy scenes will be converted to data-driven format when their rooms are next touched. No bulk conversion planned.
 
 ### Data-Driven Room Files
-- [x] `interior.js` — Complete with hotspots, walkable polygon, lighting, itemInteractions, stairway to second floor
-- [x] `laboratory.js` — Data-driven with procedural drawing
-- [x] `backyard.js` — Data-driven with procedural drawing, bulkhead to basement
-- [x] `earls_yard.js` — Data-driven with procedural Earl NPC
-- [x] `basement.js` — Data-driven with procedural Frank NPC, nuclear generator, brain jar
-- [x] `second_floor.js` — Upstairs hallway with bedroom doors, stairwell, attic access, portraits
-- [x] `alien_room.js` — Harry's bedroom with TV, couch, lava lamp, mass extinction device, procedural alien NPC
+- `interior.js`, `laboratory.js`, `backyard.js`, `earls_yard.js`, `basement.js`
+- `second_floor.js`, `alien_room.js`, `franks_room.js`, `roof.js`
+- `front_of_house.js`, `back_lab.js`, `secure_storage.js`, `hectors_room.js`
 
 ---
 
@@ -245,9 +251,7 @@ Each room is a plain JavaScript data object, NOT a giant scene class with drawin
 TSH.Rooms.laboratory = {
     id: 'laboratory',
     name: "Hector's Laboratory",
-    background: 'assets/backgrounds/laboratory.png',
-    music: 'lab_ambient',
-    worldWidth: 640,   // 640 = scrolling (2x screen), 320 = static
+    worldWidth: 2560,           // Room width in pixels (1280 = no scroll)
 
     walkableArea: { minY: 0.72, maxY: 0.92 },
 
@@ -265,9 +269,10 @@ TSH.Rooms.laboratory = {
     npcs: [
         {
             id: 'hector_head',
+            sprite: 'hector_placeholder',
             condition: (flags) => flags.hector.head_found && !flags.story.game_complete,
             position: { x: 400, y: 0.60 },
-            dialogue: 'hector_head'
+            heightRatio: 0.5
         }
     ],
 
@@ -279,45 +284,104 @@ TSH.Rooms.laboratory = {
             x: 300, y: 0.40, w: 80, h: 0.35,
             interactX: 300, interactY: 0.82,
             name: 'Portal Device',
-            verbLabels: { actionVerb: 'Examine', lookVerb: 'Look at', talkVerb: 'Talk to' },
-            states: {
-                default: {
-                    lookResponse: "The portal device. Heavily damaged.",
-                    useResponse: "I need all four components first."
-                },
-                ready: {
-                    condition: (flags) => flags.story.all_components_installed,
-                    lookResponse: "All four components installed. Ready to go.",
-                    useResponse: "TRIGGER_FINALE"
-                }
+            verbs: { action: 'Examine', look: 'Look at' },
+            responses: {
+                look: "The portal device. Heavily damaged.",
+                action: "I need all four components first."
             }
-            // Note: Responses should be conversational, not narrative. See CREATIVE_BIBLE.md
-            // and ROOM_DESIGN_BIBLE.md Section 0 for Nate's voice guidelines.
+            // Responses should follow Nate's voice — see CREATIVE_BIBLE.md
+        },
+        {
+            id: 'npc_example',
+            x: 800, y: 0.52, w: 60, h: 0.30,
+            interactX: 750, interactY: 0.82,
+            name: 'Earl',
+            type: 'npc',                                    // Makes default action "Talk to"
+            verbs: { action: 'Talk to', look: 'Look at' },
+            responses: { look: "A very large, very hairy neighbor." },
+            actionTrigger: { type: 'action', action: 'talk_to_earl' }
+        },
+        {
+            id: 'pickup_example',
+            x: 200, y: 0.65, w: 30, h: 0.05,
+            interactX: 200, interactY: 0.82,
+            name: 'Matches',
+            verbs: { action: 'Take', look: 'Look at' },
+            responses: { look: "A box of matches.", action: "Might come in handy." },
+            giveItem: 'matches',                            // Item ID to add to inventory
+            pickupFlag: 'story.found_matches',              // Flag to set on pickup
+            removeAfterPickup: true                         // Hide hotspot after pickup
         }
     ],
 
-    // Dynamic item visuals that disappear when picked up
+    // Dynamic item visuals that disappear when picked up.
+    // Each overlay links to a hotspot. When the player picks up the item,
+    // the overlay is hidden. Use for items that should be visually present
+    // in the room before pickup.
     pickupOverlays: [
         {
-            hotspotId: 'matches',     // Links to hotspot (destroyed when item picked up)
-            itemId: 'matches',        // Item ID (overlay hidden if player has this item)
-            x: 984, y: 0.365,         // Position (y is proportional)
-            depth: 55,                // Render depth
+            hotspotId: 'pickup_example',
+            itemId: 'matches',
+            x: 200, y: 0.65, depth: 55,
             draw: (g, x, y, height) => {
-                // Custom graphics drawing function
                 g.fillStyle(0x8B4513, 1);
                 g.fillRect(x, y, 20, 12);
             }
         }
+    ],
+
+    // Responses when using inventory items on hotspots
+    itemInteractions: {
+        portal_device: {
+            component_item: "That fits perfectly!",
+            default: "That doesn't work on the portal device."
+        },
+        _default: "I can't use {item} on {hotspot}."    // {item} and {hotspot} are replaced
+    },
+
+    // First-visit entrance dialogue
+    // [DISABLED — re-enable when testing is less frequent]
+    firstVisit: {
+        dialogue: "Whoa, look at this place!",
+        delay: 500                                          // ms before showing
+    },
+
+    // Audio config (see §8 for full audio docs)
+    audio: {
+        music: { key: 'lab_theme', volume: 0.7, fade: 1000 },
+        layers: [
+            { key: 'generator_hum', channel: 'ambient', volume: 0.3 }
+        ],
+        continueFrom: ['back_lab'],
+        pauseIn: ['interior']
+    },
+
+    // Procedural drawing via layers array (supports parallax)
+    layers: [
+        {
+            type: 'procedural',
+            name: 'background',
+            depth: 0,
+            scrollFactor: 1.0,
+            draw: (g, scene, worldWidth, height) => { /* drawing code */ }
+        }
     ]
+    // OR legacy single-function alternative (no parallax):
+    // drawRoom: (g, scene, worldWidth, height) => { /* drawing code */ }
 }
 ```
 
-A single scene class (or small number of classes) reads this data and renders any room. This replaces the current approach of one massive scene class per room.
+A single scene class (`RoomScene.js`) reads this data and renders any room.
+
+**Hotspot Data Format:** Room data uses `verbs` and `responses` objects. RoomScene internally transforms these to `verbLabels` and `lookResponse`/`useResponse`/`talkResponse` — but room data files should always use the `verbs`/`responses` format shown above.
+
+**Per-Hotspot State Switching [PLANNED — NOT YET IMPLEMENTED]:** A future enhancement will allow hotspots to define a `states` object with conditions and per-state responses, so a single hotspot can automatically switch its name, responses, and available actions based on game flags. This will likely be implemented through the dialogue spreadsheet pipeline. Until then, use the `getHotspotData()` pattern (§3.1) to build different hotspot arrays based on `TSH.State`.
 
 **Hotspot Array Ordering:** Phaser creates input zones in array order. Later zones sit on top and receive pointer events first. Always place large background hotspots (e.g., `woods_background`, full vehicle bodies) at the start of the array, and smaller overlapping hotspots (e.g., sub-elements like doors/windows, props on top of backgrounds) later. Array order = bottom to top for input priority.
 
 **LAYOUT Pattern (Procedural Rooms):** Rooms with procedural drawing must define a shared `LAYOUT` object that both drawing functions and hotspot definitions reference, preventing position drift when elements are moved. See ROOM_DESIGN_BIBLE.md Section 7A for full specification.
+
+**Layers Array:** Rooms can define a `layers` array instead of a single `drawRoom` function. Each layer has a `type` (`'procedural'` or `'image'`), a `scrollFactor` for parallax (1.0 = moves with camera, 0.5 = half speed), and a `depth` for z-ordering. Layers are rendered back-to-front.
 
 ---
 
@@ -341,9 +405,11 @@ getHotspotData(height) {
         id: 'teleporter',
         name: TSH.State.getFlag('finale.knows_teleporter_truth')
             ? 'Cloning Device' : 'Teleporter',
-        lookResponse: TSH.State.getFlag('finale.knows_teleporter_truth')
-            ? 'The cloning machine. Hector failed to mention the death ray.'
-            : 'Some kind of teleportation device?',
+        responses: {
+            look: TSH.State.getFlag('finale.knows_teleporter_truth')
+                ? 'The cloning machine. Hector failed to mention the death ray.'
+                : 'Some kind of teleportation device?'
+        },
         ...
     });
 
@@ -375,14 +441,7 @@ TSH.State.on('flagChanged', (data) => {
 
 **Writing Hotspot Responses:**
 
-All responses should follow Nate's conversational voice (see CREATIVE_BIBLE.md and ROOM_DESIGN_BIBLE.md Section 0). Key rule: **Never narrate Nate's physical actions**—he's responding to the player's commands, not describing a story.
-
-- ✗ Wrong: `"I knock on the door. No answer."`
-- ✓ Right: `"No answer. Must be out."`
-- ✗ Wrong: `"I examine the device closely."`
-- ✓ Right: `"Brass, glass, glowing... I have no idea what this is."`
-
-Using "I" is fine when expressing thoughts/feelings (`"I need all four components first"`) but wrong when describing physical actions in the moment.
+All responses should follow Nate's conversational voice. See CREATIVE_BIBLE.md for full voice guidelines.
 
 ---
 
@@ -393,21 +452,21 @@ NPCs like Earl (bigfoot) and Frank (Frankenstein's monster) are drawn procedural
 **Pattern:**
 ```javascript
 function drawFrank(g, x, floorY) {
-    const p = 2;  // Pixel scale
-    const frankHeight = p * 181;  // 1.15x Nate's height
+    const p = 4;  // Pixel scale — see ROOM_DESIGN_BIBLE for pixel conventions
+    const frankHeight = p * 90;  // ~1.15x Nate's height
 
     // Draw from bottom up: legs, body, arms, neck, head, hair
     // Use simple rectangles for chunky pixel-art style
     g.fillStyle(0x1a1a1a);  // Black suit
-    g.fillRect(x - p*12, floorY - p*70, p*10, p*70);  // Left leg
+    g.fillRect(x - p*6, floorY - p*35, p*5, p*35);  // Left leg
     // ... more drawing code
 }
 ```
 
 **Key Points:**
-- Use `p = 2` pixel scale (same as room backgrounds)
+- Pixel scale (`p` value) is an art convention — see ROOM_DESIGN_BIBLE.md for current standard
 - Height ratio matches NPC data (e.g., `heightRatio: 1.15` for 1.15x Nate's height)
-- Draw in main room drawing function, called from `drawBasementRoom()`
+- Draw in main room drawing function, called from the room's layer draw function
 - Add a light source in room's `lighting.sources[]` to illuminate the NPC
 - Simple dot eyes and line mouth for facial features
 
@@ -818,11 +877,11 @@ create() {
 
 ---
 
-## 9. NPC States
+## 9. Entity States
 
-Tracked as string enums in `TSH.State`:
+Tracked as string enums in `TSH.State`. Non-NPC objects (like the generator) can also have tracked states using the same API.
 
-| NPC | Valid States |
+| Entity | Valid States |
 |-----|-------------|
 | hector_body | pre_experiment, running_loose, coat_dropped, captured, reunited |
 | hector_head | pre_experiment, in_locker, locker_closed, on_shelf, reunited |
@@ -923,7 +982,7 @@ src/
 - Don't use Phaser registry for game state (use TSH.State)
 - Don't write monolithic scene classes with inline drawing code
 - Don't use callback pyramids (use async/await)
-- Don't put dialogue strings inside scene files (use dialogue data files)
+- Don't put dialogue strings inside scene classes — dialogue belongs in room data files (`responses` objects in hotspot definitions). A dialogue spreadsheet system is planned for future content management.
 - Don't hardcode puzzle logic inside hotspot handlers (use action functions)
 - Don't create separate CSS/JS files — this is a single-page game
 
@@ -996,7 +1055,7 @@ When player left-clicks on an NPC, the game enters conversation mode:
 **Exiting:**
 - One option is always available to end conversation ("Goodbye", "That's all", etc.)
 - Selecting exit option returns to normal gameplay
-- Movement, verb coin, and world interactions re-enable
+- Movement and world interactions re-enable
 
 **Dialogue Flow:**
 1. Player clicks dialogue option
@@ -1010,7 +1069,6 @@ When player left-clicks on an NPC, the game enters conversation mode:
 ## 17. Mobile Optimization
 
 ### Touch Targets
-- Verb coin actions: Minimum 60px, recommended 70px
 - All interactive UI: Minimum 44px (Apple guidelines)
 - Inventory items: Comfortable tap size with spacing
 
@@ -1020,10 +1078,11 @@ When player left-clicks on an NPC, the game enters conversation mode:
 - Test on actual mobile devices, not just desktop resize
 
 ### Mobile Detection
-- Uses `window.matchMedia('(pointer: coarse)').matches` to detect mobile
+- **Standard method:** `window.matchMedia('(pointer: coarse)').matches`
 - This checks if primary input is touch (not just touch-capable)
 - Correctly identifies touchscreen laptops as desktop when using mouse
 - Set in `BaseScene.create()` as `this.isMobile`
+- UIScene (which doesn't extend BaseScene) sets its own `this.isMobile` using the same `matchMedia` check
 
 ### Cursor Behavior
 - Crosshair cursor: Hidden on mobile (`this.isMobile`), visible on desktop

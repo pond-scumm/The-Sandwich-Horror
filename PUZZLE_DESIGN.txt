@@ -1,4 +1,7 @@
 ﻿The Sandwich Horror                Puzzle Document
+
+> **Working design document.** Single source of truth for puzzle specifics. Claude Code reads this only when implementing specific puzzle chains. Treat as guidance, not gospel. Dialogue here is conceptual/placeholder — Chris writes final dialogue separately.
+
 The Sandwich Horror
  C:\Users\cmallon\Pictures\Personal\Game\tumblr_nuqgx97UnS1trynmyo1_500.jpg 
 
@@ -232,7 +235,7 @@ Nate isn’t going to sit idly by while Hector rescues himself. This night is a 
 Solution:
 
 
-        Nate finds….. Stuff. And opens the door with it. Probably 2 things that he combines into a key of some sort. A retina scanner? A finger print? That’s overdone.
+        [TBD] Nate finds….. Stuff. And opens the door with it. Probably 2 things that he combines into a key of some sort. A retina scanner? A finger print? That's overdone.
 
 
 Eventually Nate opens the locked door to find an empty room. He hears banging coming from a locker against the wall. He opens it to discover Hector. But to Nate’s surprise, Hector’s body comes running out of the locker, leaving his head behind on a shelf. Hector seems no worse for wear despite being decapitated. 
@@ -326,7 +329,7 @@ Solution:
 First he finds a box of "Moon Shoes" (or Satellite Shoes). The box clearly describes that they are for ‘jumping’ and ‘getting some height’. Nate thinks this is the right track. But the moon shoes are broken! They need two springs. The first spring can be found easily enough by exploring the lab. Opening a cabinet on the experiment causes a spring to explode out. The second can be found in a lumpy mattress in Frank's bedroom. Nate picks up a scalpel from the lab that he can use to cut the mattress and retrieve the spring. But it turns out, the shoes don't get him high enough. He'll need something more.
 
 
-Meanwhile, Nate explores the backyard. He finds a tall fence with glowing lights, cool music, and delicious smells coming from the other side. Nate can talk-to the fence. The eyes of Earl the neighbor appear and start to talk to Nate. By saying the right things, Nate can score an invite to his yard and a hidden door opens in the fence. In Earl's backyard, Nate can see a ladder. Maybe THIS will help reach the clock. Nate tries to take it but Earl stops him. Nate asks if he can borrow it and Earl says he couldn't possibly loan Hector more stuff until some of it's returned.  Earl tells Nate that Hector borrowed (something) three years ago and hasn't returned it. Nate goes off looking for the borrowed/stolen item. He discovers it being put to an unexpected use (something like holding up a coffee table but more surprising). He returns the item and receives the ladder. But the ladder isn't tall enough either!
+Meanwhile, Nate explores the backyard. He finds a tall fence with glowing lights, cool music, and delicious smells coming from the other side. Nate can talk-to the fence. The eyes of Earl the neighbor appear and start to talk to Nate. By saying the right things, Nate can score an invite to his yard and a hidden door opens in the fence. In Earl's backyard, Nate can see a ladder. Maybe THIS will help reach the clock. Nate tries to take it but Earl stops him. Nate asks if he can borrow it and Earl says he couldn't possibly loan Hector more stuff until some of it's returned.  Earl tells Nate that Hector borrowed [TBD - what item?] three years ago and hasn't returned it. Nate goes off looking for the borrowed/stolen item. He discovers it being put to an unexpected use (something like holding up a coffee table but more surprising). He returns the item and receives the ladder. But the ladder isn't tall enough either!
 
 
 Nate must combine the ladder and the Moon Shoes to reach the clock. Jumping off the ladder results in the extra oomph needed… to soar past the clock and hit the ceiling. But the resulting crash causes the clock to fall off the wall anyway, hitting Nate in the head. Can't argue with results. Nate, ever the scientist, declares, "That shouldn't have worked. Newton would be furious."
@@ -390,7 +393,7 @@ Puzzle #10: Stabilizer Cortex - a.k.a. Neural CPU
 
 
 
-Damage Report: The stabilizer core is a central processing unit responsible for maintaining order through an advanced intelligence assisted process, composed of a composite of neural plasticities. The explosion has disrupted the core's delicate balance, causing rifts in spacetime and unpredictable energy fluctuations. Replacing the Stabilizer Coretex is essential to restore order and prevent further damage.
+Damage Report: The stabilizer core is a central processing unit responsible for maintaining order through an advanced intelligence assisted process, composed of a composite of neural plasticities. The explosion has disrupted the core's delicate balance, causing rifts in spacetime and unpredictable energy fluctuations. Replacing the Stabilizer Cortex is essential to restore order and prevent further damage.
 
 
 Nate explores the house until he finds a basement bulkhead. Inside he discovers a Frankenstein chilling out, wearing glasses and reading the TV Guide (circling shows he wants to watch in case the Alien ever lets him watch TV). There is also a brain in a jar (obviously labeled "abnormal"). Nate can connect the dots: Neural CPU sounds a lot like a brain, let's try to hook this into the machine. It powers up but goes haywire. Nate quickly removes it. 
@@ -414,7 +417,7 @@ Solution:
 Nate needs 2 things: a replacement trophy, and convincing Hector disguise.
 
 
-For the trophy, Nate collects a couple of items and tapes them together haphazardly with scotch tape. Then he spray paints the whole thing gold and writes the Rival's name on it in sharpie.
+For the trophy, Nate collects a couple of items [TBD - which items?] and tapes them together haphazardly with scotch tape. Then he spray paints the whole thing gold and writes the Rival's name on it in sharpie.
 
 
 For the costume, Nate collects a lab coat from the lab (a previous puzzle to get the coat to drop from the arm), and retrieves a pair of Hector's iconic goggles from Hector's closet. Perhaps he also needs a distinguished moustache with sharpie. (Note: to get the goggles from Hector's closet is another small puzzle. Hector won't let Nate access his private quarters. "Restricted Area!" he yells. So Nate simply needs to close the locker Hector's head is in and he can walk up unnoticed) 
@@ -457,7 +460,7 @@ One final hiccup: The experiment was run in a specific direction. If Nate does t
 Solution: 
 
 
-Nate needs to 'reverse the polarity' to get the experiment to run in reverse and fix the damage rather than create more. This could be as simple as flipping a sign around, swapping a component backwards, or perhaps as complicated as running the ignition sequence from the beginning in reverse. TBD.
+Nate needs to 'reverse the polarity' to get the experiment to run in reverse and fix the damage rather than create more. This could be as simple as flipping a sign around, swapping a component backwards, or perhaps as complicated as running the ignition sequence from the beginning in reverse. [TBD]
 
 
 Cut-Scene: Everything In Its Right Place

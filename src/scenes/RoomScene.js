@@ -318,7 +318,7 @@ class RoomScene extends BaseScene {
         if (!room.lighting?.enabled) return;
 
         this.lights.enable();
-        const isMobile = this.sys.game.device.input.touch;
+        const isMobile = this.isMobile;
 
         // Get ambient color from room data or TSH.Style
         let ambientColor;

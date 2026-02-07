@@ -79,7 +79,7 @@ class UIScene extends Phaser.Scene {
         const { width, height } = this.scale;
 
         // Detect mobile
-        this.isMobile = !this.sys.game.device.os.desktop;
+        this.isMobile = window.matchMedia('(pointer: coarse)').matches;
 
         // Initialize pointer position to center of screen
         this.lastPointerX = width / 2;

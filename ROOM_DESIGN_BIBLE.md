@@ -4,52 +4,11 @@
 
 ---
 
-## 0. Writing Nate's Responses (CRITICAL)
+## 0. Writing Nate's Responses
 
-**Every hotspot interaction is a conversation between the player and Nate.** The player suggests an action ("Hey Nate, USE that cooler"), and Nate responds conversationally about what he's experiencing. He's not narrating a story—he's talking *to* the player.
+**See CREATIVE_BIBLE.md for full Nathaniel voice guidelines** — personality, examples, the "I" rule, narration test, response checklist, and editing guidelines all live there.
 
-### The Golden Rule
-
-**Nate can use "I" when conversing, but NEVER when describing his physical actions in that moment.**
-
-### Examples
-
-| Situation | Wrong (Narration) | Right (Conversation) |
-|-----------|-------------------|----------------------|
-| Player asks Nate to knock | "I knock on the door. No answer." | "No answer. Earl's out here by the grill." |
-| Player asks Nate to peek | "I peek through the window. Nice curtains." | "Nice curtains through there. A small kitchen. Some photos." |
-| Player asks Nate to check heat | "I lean in and feel the heat. Those coals are perfect." | "Wow, that's HOT. Those coals are perfect." |
-| Player asks about going into woods | "I like it here where there's light." ✓ | (This is fine—he's expressing preference) |
-| Player asks about tree climbing | "I'm not much of a tree climber." ✓ | (This is fine—he's talking about himself) |
-
-### The Test
-
-Ask: "Is Nate describing a physical action he's performing right now in response to the player's command?"
-- **YES** → Remove the narration, jump to the result/reaction
-- **NO** → It's probably fine (thoughts, feelings, observations, preferences are all conversational)
-
-### Response Writing Checklist
-
-When writing hotspot responses:
-1. ✓ Jump straight to what Nate observes or experiences
-2. ✓ Let him express opinions, preferences, and thoughts using "I"
-3. ✓ Keep it playful, enthusiastic, and conversational
-4. ✗ Don't describe the physical action the player just commanded
-5. ✗ Don't write stage directions ("I approach", "I reach out", "I examine")
-
-### The "I" Rule
-
-Nate speaks in first person. He says "I can see," "I can't reach," "I'm not stealing." He's a person talking, not a telegram.
-
-The ONLY "I" to remove is when narrating the physical action the player just commanded: "I knock on the door. No answer." becomes just "No answer." The click already IS the knock — Nate doesn't need to describe what he just did.
-
-Everything else keeps "I" and keeps its natural energy and length. "Conversational" means how a real person talks to a friend, not how someone writes a text message in a hurry.
-
-### When Editing Existing Dialogue
-
-The bar for changing a working line is high. If a line already sounds like something a real person would say, leave it alone. Don't "tighten" dialogue by stripping out words — that kills voice. Only change a line if it violates the narration rule above, or if it's flat/generic and could be funnier or more specific.
-
-See CREATIVE_BIBLE.md for full character voice guidelines.
+**Quick reminder:** Every hotspot response is a conversation between the player and Nate. He can use "I" freely for thoughts and feelings, but never to narrate the physical action the player just commanded ("I knock on the door" → just "No answer.").
 
 ---
 
@@ -67,6 +26,7 @@ See CREATIVE_BIBLE.md for full character voice guidelines.
 - Every coordinate, dimension, and offset in drawing code must be a multiple of `p` (4)
 - This maintains a consistent pixel-art grid throughout all backgrounds
 - The only exception is sub-pixel work within dithering patterns
+- **Standard going forward:** `p = 4` for all new rooms. Some older rooms use `p = 2` — these are fine as-is and don't need conversion
 
 ### Room Width
 
@@ -108,7 +68,7 @@ Background textures are **static**. No animated tiles, no parallax scrolling, no
 - **Doors** are always ~1.5× Nate's height (~473px)
 - **Standard furniture** (tables, chairs) scales proportionally to Nate
 - **Wall features** (windows, paintings) scale to the room architecture, not to Nate
-- **Walkable area** is the bottom band of the screen. Characters walk left-right only. The `minY` and `maxY` values define this band as a fraction of screen height
+- **Walkable area** is the bottom band of the screen. Characters walk left-right only. The `minY` and `maxY` values define this band as a fraction of screen height. For rooms that need irregular walkable boundaries, polygon walkable areas are supported — see Architecture Guide for details
 
 ---
 
@@ -350,11 +310,7 @@ The two systems complement each other:
 
 The lighting system is lightweight and adds significant atmosphere. Always include it.
 
-Mobile devices may need brighter ambient light:
-```javascript
-const isMobile = this.sys.game.device.input.touch;
-this.lights.setAmbientColor(isMobile ? 0xb8a090 : 0x9a8878);
-```
+Mobile devices may need brighter ambient light. Use the `ambientMobile` property in room data lighting config to set a brighter value for mobile (see Architecture Guide §17 for the detection method used).
 
 ### Sprite Lighting
 
@@ -620,6 +576,171 @@ class [RoomName]Scene extends BaseScene {
 
 ---
 
+## 9A. Data-Driven Room Template
+
+Most rooms use the data-driven format (`TSH.Rooms.room_id = { ... }`) instead of scene classes. This is the complete template showing every supported field. Copy this as a starting point for new rooms.
+
+> **Note:** This template is procedural-phase scaffolding. When hand-drawn art replaces procedural backgrounds, the `drawRoom`/`layers` and LAYOUT pattern will be replaced by image loading.
+
+```javascript
+// ===== SHARED LAYOUT (single source of truth for all positions) =====
+const LAYOUT = {
+    example_object: { x: 400, y: 0.55, w: 80, h: 0.15 },
+    pickup_item:    { x: 200, y: 0.65, w: 30, h: 0.05 },
+    door:           { x: 600, y: 0.45, w: 60, h: 0.30 },
+    npc_character:  { x: 800, y: 0.52, w: 60, h: 0.30 },
+};
+
+TSH.Rooms.example_room = {
+    // ── Basic Properties ─────────────────────────────────
+    id: 'example_room',
+    name: 'Example Room',
+    worldWidth: 1280,           // Total width (1280 = no scroll, 2560+ = scrolling)
+    screenWidth: 1280,          // Always 1280
+
+    // ── Walkable Area ────────────────────────────────────
+    walkableArea: {
+        minY: 0.72,             // Top of walkable band (fraction of screen height)
+        maxY: 0.92,             // Bottom of walkable band
+        // For irregular shapes, use polygon instead (see Architecture Guide):
+        // polygon: [{ x: 100, y: 0.72 }, { x: 1200, y: 0.72 }, ...]
+    },
+
+    // ── Spawn Points ─────────────────────────────────────
+    spawns: {
+        default: { x: 640, y: 0.82 },
+        from_other_room: { x: 100, y: 0.82, direction: 'right' }
+    },
+
+    // ── Exits ────────────────────────────────────────────
+    exits: [
+        { edge: 'left', target: 'other_room', spawnPoint: 'from_example' },
+        { edge: 'right', x: 1200, width: 80, target: 'another_room', spawnPoint: 'default' }
+    ],
+
+    // ── Audio ────────────────────────────────────────────
+    audio: {
+        music: { key: 'room_theme', volume: 0.7, fade: 1000 },
+        layers: [
+            { key: 'ambient_hum', channel: 'ambient', volume: 0.4, fade: 500 }
+        ],
+        continueFrom: ['adjacent_room'],    // Don't restart music if coming from these rooms
+        pauseIn: ['second_floor']           // Pause (not stop) when entering these rooms
+    },
+
+    // ── Lighting ─────────────────────────────────────────
+    lighting: {
+        enabled: true,
+        ambient: 0x888888,              // Desktop ambient light color
+        ambientMobile: 0xaaaaaa,        // Brighter on mobile devices
+        sources: [
+            { id: 'lamp', x: 300, y: 0.55, radius: 200, color: 0xffaa44, intensity: 1.2 }
+        ]
+    },
+
+    // ── First Visit ──────────────────────────────────────
+    // [DISABLED — re-enable when testing is less frequent]
+    firstVisit: {
+        dialogue: "Whoa, look at this place!",
+        delay: 500
+    },
+
+    // ── Hotspots (array order = back to front for input priority) ──
+    hotspots: [
+        {
+            // Standard interactive object
+            id: 'example_object',
+            ...LAYOUT.example_object,
+            interactX: LAYOUT.example_object.x, interactY: 0.82,
+            name: 'Mysterious Device',
+            verbs: { action: 'Use', look: 'Examine' },
+            responses: {
+                look: "Brass, glass, glowing... I have no idea what this is.",
+                action: "Better not touch it without knowing what it does."
+            },
+        },
+        {
+            // Pickup item (disappears after taking)
+            id: 'pickup_item',
+            ...LAYOUT.pickup_item,
+            interactX: LAYOUT.pickup_item.x, interactY: 0.82,
+            name: 'Matches',
+            verbs: { action: 'Take', look: 'Look at' },
+            responses: { look: "A box of matches.", action: "Might come in handy." },
+            giveItem: 'matches',            // Item ID added to inventory
+            pickupFlag: 'story.found_matches',  // Flag set on pickup
+            removeAfterPickup: true         // Hotspot hidden after pickup
+        },
+        {
+            // Door/transition
+            id: 'door_exit',
+            ...LAYOUT.door,
+            interactX: LAYOUT.door.x, interactY: 0.82,
+            name: 'Door',
+            verbs: { action: 'Open', look: 'Examine' },
+            responses: { look: "A heavy wooden door." },
+            actionTrigger: { type: 'transition', target: 'next_room', spawnPoint: 'from_door' }
+        },
+        {
+            // NPC (action triggers a TSH.Actions function)
+            id: 'npc_character',
+            ...LAYOUT.npc_character,
+            interactX: LAYOUT.npc_character.x - 50, interactY: 0.82,
+            name: 'Earl',
+            type: 'npc',
+            verbs: { action: 'Talk to', look: 'Look at' },
+            responses: { look: "A very large, very hairy neighbor." },
+            actionTrigger: { type: 'action', action: 'talk_to_earl' }
+        }
+    ],
+
+    // ── Pickup Overlays (items visible in room until picked up) ──
+    pickupOverlays: [
+        {
+            hotspotId: 'pickup_item',       // Links to hotspot above
+            itemId: 'matches',              // Disappears when this item is in inventory
+            x: 200, y: 0.65, depth: 55,
+            draw: (g, x, y, height) => { /* drawing code */ }
+        }
+    ],
+
+    // ── Item Interactions (using inventory items on hotspots) ──
+    itemInteractions: {
+        example_object: {
+            key_item: "That fits perfectly!",
+            default: "That doesn't work on this."
+        },
+        _default: "I can't use {item} on {hotspot}."
+    },
+
+    // ── NPCs (sprite-based characters) ───────────────────
+    npcs: [
+        {
+            id: 'earl',
+            sprite: 'earl_placeholder',
+            position: { x: 800, y: 0.60 },
+            heightRatio: 0.5,
+            condition: (flags) => flags.earl.is_outside    // Only show when condition is true
+        }
+    ],
+
+    // ── Layers (procedural drawing with parallax support) ─
+    layers: [
+        {
+            type: 'procedural',
+            name: 'background',
+            depth: 0,
+            scrollFactor: 1.0,          // 1.0 = normal, <1.0 = parallax (moves slower)
+            draw: (g, scene, worldWidth, height) => { /* drawing code */ }
+        }
+    ],
+    // OR legacy single-function alternative:
+    // drawRoom: (g, scene, worldWidth, height) => { /* drawing code */ },
+};
+```
+
+---
+
 ## 10. Claude Code Capabilities
 
 ### CAN Do
@@ -646,20 +767,23 @@ Procedural backgrounds are **layout and atmosphere placeholders.** They establis
 
 ---
 
-## 11. Room List & Assignments
+## 11. Room Visual Specs
 
-| Room | Width | Primary Light | Mood | Status |
-|------|-------|---------------|------|--------|
-| Interior | 2560 | Fireplace, moonlight, desk lamp | Warm, cozy | ✅ Built (reference room) |
-| Main Lab | 3200 | Fluorescent, device glow, portal | Science green | 🔲 Planned |
-| Back Lab | 1280 | Dim overhead, locker light | Cramped, cluttered | 🔲 Planned |
-| 2nd Floor Hallway | 2560 | Wall sconces, moonlight | Dim, mysterious | 🔲 Planned |
-| Hector's Bedroom | 1280 | Bedside lamp, moonlight | Personal, warm | 🔲 Planned |
-| Attic / Alien Room | 1280 | TV glow, starlight | Blue-white, alien | 🔲 Planned |
-| Basement | 1280 | Bare bulb, generator glow | Industrial, cold | 🔲 Planned |
-| Frank's Room | 1280 | Single overhead, candle | Eerie, Gothic | 🔲 Planned |
-| Front Exterior | 2560 | Moonlight, window glow | Night, foreboding | 🔲 Planned |
-| Backyard | 2560 | Moonlight, fence glow | Open, mysterious | 🔲 Planned |
-| Earl's Yard | 1280 | Tiki torches, strings, grill | Warm, festive | 🔲 Planned |
-| Roof | 1280 | Moonlight, starfield | Exposed, vast sky | 🔲 Planned |
-| Storage Room | 1280 | Laser grid, emergency light | Tense, red-lit | 🔲 Planned |
+Visual reference for room dimensions and lighting mood. For the full room list (including rooms not shown here) and implementation status, see the Architecture Guide.
+
+| Room | Width | Primary Light | Mood |
+|------|-------|---------------|------|
+| Interior | 2560 | Fireplace, moonlight, desk lamp | Warm, cozy |
+| Main Lab | 3200 | Fluorescent, device glow, portal | Science green |
+| Back Lab | 1280 | Dim overhead, locker light | Cramped, cluttered |
+| 2nd Floor Hallway | 2560 | Wall sconces, moonlight | Dim, mysterious |
+| Hector's Bedroom | 1280 | Bedside lamp, moonlight | Personal, warm |
+| Attic | 1280 | Dusty, dim overhead | Cluttered, forgotten |
+| Alien's Room | 1280 | TV glow, starlight | Blue-white, alien |
+| Basement | 1280 | Bare bulb, generator glow | Industrial, cold |
+| Frank's Room | 1280 | Single overhead, candle | Eerie, Gothic |
+| Front Exterior | 2560 | Moonlight, window glow | Night, foreboding |
+| Backyard | 2560 | Moonlight, fence glow | Open, mysterious |
+| Earl's Yard | 1280 | Tiki torches, strings, grill | Warm, festive |
+| Roof | 1280 | Moonlight, starfield | Exposed, vast sky |
+| Secure Storage | 1280 | Laser grid, emergency light | Tense, red-lit |

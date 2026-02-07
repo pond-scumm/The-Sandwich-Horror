@@ -296,15 +296,7 @@
                 verbs: { action: 'Take', look: 'Examine' },
                 responses: {
                     look: "A sturdy aluminum ladder leaning against the Airstream. That would be really useful for reaching high places...",
-                    action: null
-                },
-                actionTrigger: {
-                    type: 'custom',
-                    script: (scene, hotspot) => {
-                        // TODO: State-driven - Check if Hector returned Earl's borrowed item
-                        // For now, Earl always stops Nate
-                        scene.showDialogue("Earl stops me. \"Hold on there, friend. I'd be happy to lend you that ladder, but Hector still has my [ITEM]. Once I get that back, it's all yours!\"");
-                    }
+                    action: "Earl stops me. \"Hold on there, friend. I'd be happy to lend you that, but Hector still has something of mine. Once I get it back, it's all yours!\""
                 }
                 // TODO: Once player returns Earl's item, this becomes available to take
             },

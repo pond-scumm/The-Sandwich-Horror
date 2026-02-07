@@ -1363,7 +1363,7 @@
                 this.stopFootsteps();
             }
 
-            // Stop character movement when UI opens (verb coin, inventory)
+            // Stop character movement when UI opens (inventory, dialogue, etc.)
             stopCharacterMovement() {
                 if (this.walkTween) {
                     this.walkTween.stop();

@@ -2,7 +2,7 @@
 ## A Point-and-Click Adventure Game in the Style of Classic LucasArts
 
 **Version:** 0.1 (Work in Progress)  
-**Last Updated:** January 2026
+**Last Updated:** February 2026 (Documentation consolidation — character names, room names, puzzle chain trimming)
 
 ---
 
@@ -17,7 +17,6 @@
 7. [Puzzle Design Philosophy](#puzzle-design-philosophy)
 8. [The Four Puzzle Chains](#the-four-puzzle-chains)
 9. [Story Breadcrumbs](#story-breadcrumbs)
-10. [Open Questions](#open-questions)
 
 ---
 
@@ -128,7 +127,7 @@ Nathaniel embodies forward motion. He doesn't know much, but he wants to engage.
 - 20 years old
 - Green hair
 - Aspiring scientist
-- Introduces himself formally as "Nathaniel"; some characters may call him "Nate"
+- Introduces himself formally as "Nathaniel Barnswallow"; some characters may call him "Nate"
 
 **Personality:**
 - **Playful & goofy:** Finds joy in small things, makes little jokes, genuinely delighted by the world around him. Not trying to be funny—he just is.
@@ -198,6 +197,13 @@ Think of every interaction as a conversation between the player and Nate. The pl
 
 **The test:** If Nate is describing what he's *doing* in that moment, it's narration. If he's talking about his thoughts, feelings, observations, or preferences, it's conversation.
 
+**Response Writing Checklist:**
+1. Jump straight to what Nate observes or experiences
+2. Let him express opinions, preferences, and thoughts using "I"
+3. Keep it playful, enthusiastic, and conversational
+4. Don't describe the physical action the player just commanded
+5. Don't write stage directions ("I approach", "I reach out", "I examine")
+
 **What Nathaniel Does NOT Do:**
 - Narrate his physical actions in the moment ("I examine the candle", "I knock", "I peek")
 - Be too deadpan or literal (don't just describe what things are)
@@ -206,6 +212,9 @@ Think of every interaction as a conversation between the player and Nate. The pl
 - Explain himself or his goals out loud (his actions speak for him)
 - Editorialize earnestly about other characters' emotional states
 - Gawk at supernatural creatures or situations
+
+**When Editing Existing Dialogue:**
+The bar for changing a working line is high. If a line already sounds like something a real person would say, leave it alone. Don't "tighten" dialogue by stripping out words — that kills voice. Only change a line if it violates the narration rule above, or if it's flat/generic and could be funnier or more specific.
 
 ---
 
@@ -245,24 +254,31 @@ These NPCs are "comforting weirdos" who reflect Hector's isolation. Each is the 
 
 **Key quality:** They have a general sense of loneliness but lack the self-awareness to put it into words. They're not moping—they're coping without realizing they're coping. The pathos is gentle, not heavy-handed.
 
-#### Bigfoot (possibly named "Earl")
-- Lives in the neighboring yard
+#### Earl (Bigfoot)
+- Lives in the neighboring yard (Earl's Yard)
 - Grills burgers (alone)
-- Guardian of the clock/Temporal Synchronizer component
+- Guardian of the Temporal Synchronizer component
 - Uses charcoal, not propane—takes grilling seriously
-- Personality and wants: TBD
 
-#### Alien
+#### Harry (Alien)
+- Lives upstairs in the Alien's Room
 - Obsessed with soap operas
-- Guardian of the TV/Interdimensional Relay Service component
-- Deeply invested in fictional relationships, doesn't seem to have any of their own
-- Personality and wants: TBD
+- Guardian of the Interdimensional Relay Service component
+- Deeply invested in fictional relationships, doesn't seem to have any of his own
 
-#### Robot or Frankenstein
-- Lives in the basement (?)
-- Guardian of the power supply/Quantum Energy Resonator component
-- Possibly connected to the clone puzzle
-- Personality and wants: TBD
+#### Frank (Frankenstein's Monster)
+- Lives in Frank's Room
+- Guardian of the Nuclear Energy Resonator component
+- Connected to the power chain puzzles
+
+#### Robot
+- Security robot in the Secure Storage room
+- Protects the lab's sensitive equipment and supplies
+
+#### Victor (Brain in a Jar)
+- Hector's former colleague, now a brain preserved in a jar
+- Guardian of the Stabilizer Cortex component
+- Connected to the brain/CPU chain
 
 #### Additional NPCs
 
@@ -282,16 +298,21 @@ The weirdness stems from an ancient curse: 300 years ago, a necromancer named Ch
 
 The entire demo takes place in and around Hector's property. It's an old, modest New England mansion that doubles as both home and laboratory.
 
-**Rooms/Areas:**
-- Woods path (arrival point, atmospheric)
-- House exterior (warning signs, front door)
-- House interior (meeting Hector, central hub)
-- Laboratory (the experiment, demo climax)
-- Back room (where Hector ends up post-explosion, locked initially)
-- Attic (mysterious, possibly locked until later)
-- Backyard (access to Bigfoot's yard)
-- Bigfoot's yard (NPC interaction, item trading)
-- Basement (Robot/Frankenstein, power supply, secrets)
+**Rooms/Areas:** (For the full room list and implementation status, see the Architecture Guide.)
+- Front Exterior (arrival, warning signs, front door)
+- Interior (meeting Hector, central hub)
+- Main Lab (the experiment, demo climax)
+- Back Lab (where Hector ends up post-explosion, locked initially)
+- 2nd Floor Hallway (access to upstairs rooms)
+- Hector's Bedroom
+- Attic (mysterious, locked until later)
+- Alien's Room (Harry's space, separate from Attic)
+- Backyard (access to Earl's Yard)
+- Earl's Yard (NPC interaction, item trading)
+- Basement (power supply, secrets)
+- Frank's Room
+- Roof (satellite dish)
+- Secure Storage (security system, protected supplies)
 
 **Environmental Storytelling:**
 The house shows signs of Hector's isolation and melancholy without him ever mentioning it:
@@ -435,8 +456,8 @@ A common theme from Monkey Island: taking something that could be complex but us
 The fancy scientific names for mundane objects follow this pattern:
 - "Interdimensional Relay Service" = a TV
 - "Temporal Synchronizer" = a clock
-- "Quantum Energy Resonator" = a battery/power supply
-- "Stabilizer Core" = a brain/CPU
+- "Nuclear Energy Resonator" = a battery/power supply
+- "Stabilizer Cortex" = a brain/CPU
 
 The humor comes from the gap between Hector's grandiose language and the jury-rigged reality.
 
@@ -455,94 +476,18 @@ When puzzles fail, it's usually because:
 
 ## THE FOUR PUZZLE CHAINS
 
+> **See the Puzzle Design doc for current puzzle specifics.** The table below is a creative overview. Step-by-step puzzle solutions, item dependencies, and implementation details live in the Puzzle Design doc, which is the single source of truth for puzzle content.
+
 Each chain has a Guardian NPC, a fancy scientific name, a mundane reality, and should reveal something about Hector's world.
 
-| Component | Fancy Name | Mundane Reality | Guardian | Location |
-|-----------|------------|-----------------|----------|----------|
-| TV/Screen | Interdimensional Relay Service | A monitor/television | Alien | Living room? |
-| Clock | Temporal Synchronizer | A working clock | Bigfoot | Backyard/neighbor's yard |
-| Power | Quantum Energy Resonator | Battery/power source | Robot/Frankenstein | Basement |
-| Brain/CPU | Stabilizer Core | An actual brain or substitute | Hector | Back room/safe |
+| Component | Fancy Name | Mundane Reality | Guardian |
+|-----------|------------|-----------------|----------|
+| TV/Screen | Interdimensional Relay Service | A monitor/television | Harry (Alien) |
+| Clock | Temporal Synchronizer | A working clock | Earl (Bigfoot) |
+| Power | Nuclear Energy Resonator | Battery/power source | Frank / Robot |
+| Brain/CPU | Stabilizer Cortex | An actual brain or substitute | Hector / Victor |
 
-### Chain 1: Interdimensional Relay Service (Alien)
-
-**The Problem:** The explosion cracked the display. Need a replacement screen.
-
-**Guardian:** The Alien, who is watching soap operas on the only working screen.
-
-**Possible Approach:** 
-- Find a replacement entertainment source for the Alien
-- Or convince them the soap opera is better experienced another way
-- Or record the episode so they don't miss it
-
-**Tone:** Most comedic of the four chains.
-
-**Details:** TBD
-
----
-
-### Chain 2: Temporal Synchronizer (Bigfoot)
-
-**The Problem:** The digital clock is glitching. Need accurate timekeeping.
-
-**Guardian:** Bigfoot, who has something time-related (grandfather clock? vintage watch collection? sundial?).
-
-**Red Herring:** Clock parts scattered around the lab from the explosion. Player might think they need to reassemble them.
-
-**Real Solution:** Something from Bigfoot's yard.
-
-**Possible Elements:**
-- Clock is mounted high on the wall, needs a ladder/step stool
-- The ladder is spring-loaded mechanical elevator shoes
-- Shoes don't have enough spring, need something to boost them (magnets? gravity localizer?)
-- Player can't walk in the shoes, can only use them on a specific spot
-- Using them launches Nathaniel too high, he hits the ceiling, clock falls on his head
-
-**Details:** TBD
-
----
-
-### Chain 3: Quantum Energy Resonator (Robot/Frankenstein)
-
-**The Problem:** Power supply is damaged. Need a replacement power source.
-
-**Guardian:** Robot or Frankenstein creature in the basement.
-
-**Possible Elements:**
-- Obvious power supplies are visible but inaccessible (behind security system)
-- Security robot appears: "Intruder Alert. Unauthorized person. Present credentials or face consequences."
-- May need to use the clone to distract/trigger the robot
-- The clone gets vaporized in the process (played for comedy)
-- Or: The Frankenstein helps distract the robot (not willingly—he's a coward?)
-
-**The Clone Puzzle:**
-- This concept needs a home; this chain might be it
-- Clone could be used to trigger the security robot
-- Sacrifice element fits thematically but needs to be comedic, not tragic
-
-**Details:** TBD
-
----
-
-### Chain 4: Stabilizer Core (Hector)
-
-**The Problem:** The CPU/brain is damaged. Need a replacement neural processor.
-
-**Guardian:** Hector himself. The replacement is in his safe.
-
-**Possible Elements:**
-- This is the most personal chain—less puzzle, more character
-- Getting the brain requires Nathaniel to see something Hector didn't want anyone to see
-- A photo, a letter, evidence of isolation or past
-- The safe has a retina scanner (already solved earlier) or different lock
-- Maybe Hector is reluctant to open it because of what else is in there
-
-**Possible Twists:**
-- What if the "CPU" is obviously meant to be a brain, and the brain is the substitute?
-- What if the brain is already in something (a robot body?) and Nathaniel has to convince it to give up the brain?
-- Or it could just be in a safe—doesn't need to be overcomplicated
-
-**Details:** TBD
+The humor comes from the gap between Hector's grandiose scientific language and the jury-rigged reality of each component.
 
 ---
 
@@ -553,35 +498,8 @@ Each puzzle chain should include one environmental detail that hints at the larg
 **Possible Placements:**
 - **Alien chain:** A news clipping about "strange lights over Sandwich" from 20 years ago
 - **Bigfoot chain:** A faded photo of Bigfoot with someone else—maybe Hector's mentor? Suggesting the weirdness has been here a long time
-- **Robot/Frankenstein chain:** Lab notes in the mentor's handwriting, abandoned mid-sentence
+- **Power chain (Frank/Robot):** Lab notes in the mentor's handwriting, abandoned mid-sentence
 - **Hector chain:** The torn photo mentioned in the larger outline—missing a figure who will matter later
-
----
-
-## OPEN QUESTIONS
-
-These need to be resolved before the demo design is complete:
-
-### Characters
-- What does Bigfoot want? What would he trade his clock for?
-- What does the Alien want beyond watching soap operas?
-- Is the basement creature a Robot (mechanical, security-focused) or Frankenstein (biological, emotional)? Or both as separate characters?
-- What are the creatures' names?
-
-### Puzzles
-- What are the exact steps in each puzzle chain?
-- What is the clone? Hector's clone? Nathaniel's? Something else? Where does it appear and what's its purpose?
-- What items exist in the game world? What can be picked up, examined, combined?
-- What's the experiment actually supposed to do? (Hector is trying to open a portal? Travel to another dimension? Travel through time?)
-
-### Structure
-- Should one puzzle chain be notably shorter (palate cleanser) and one longer (reveals more story)?
-- What's the post-credits content?
-- How much of the woods/exterior is explorable vs. just the intro path?
-
-### Tone
-- How scary can things get? Where's the exact line?
-- Can there be minor "death" states (game over screens) or is the game entirely safe to explore?
 
 ---
 
