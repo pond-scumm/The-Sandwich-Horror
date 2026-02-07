@@ -302,55 +302,6 @@
             },
 
             // === FRONT ROW (in front of back row) ===
-            {
-                id: 'left_armchair',
-                polygon: [
-                    { x: 644, y: 0.588 },
-                    { x: 669, y: 0.588 },
-                    { x: 674, y: 0.732 },
-                    { x: 749, y: 0.739 },
-                    { x: 750, y: 0.792 },
-                    { x: 641, y: 0.793 }
-                ],
-                highlightX: 679, highlightY: 0.757,
-                interactX: 695, interactY: 0.88,
-                name: 'Left Armchair',
-                verbs: { action: 'Sit in', look: 'Examine' },
-                responses: {
-                    look: "Ooh, fancy! Burgundy leather, faces the fire. Prime napping real estate.",
-                    action: "Oh wow. OH wow. This is comfortable. I could live here."
-                }
-            },
-            {
-                id: 'right_armchair',
-                polygon: [
-                    { x: 1164, y: 0.589 },
-                    { x: 1186, y: 0.565 },
-                    { x: 1190, y: 0.794 },
-                    { x: 1080, y: 0.792 },
-                    { x: 1085, y: 0.735 },
-                    { x: 1159, y: 0.733 }
-                ],
-                highlightX: 1149, highlightY: 0.761,
-                interactX: 1135, interactY: 0.88,
-                name: 'Right Armchair',
-                verbs: { action: 'Sit in', look: 'Examine' },
-                responses: {
-                    look: "The matching chair! Two seats, facing the fire. Perfect for brainstorming. Or arguing.",
-                    action: "Also very comfortable. Hard to pick a favorite."
-                }
-            },
-            {
-                id: 'coffee_table',
-                x: 910, y: 0.766, w: 177, h: 0.068,
-                interactX: 907, interactY: 0.88,
-                name: 'Coffee Table',
-                verbs: { action: 'Search', look: 'Examine' },
-                responses: {
-                    look: "'Quantum Tunneling for Beginners,' 'Dimensional Theory,' and... 'TV Guide.' A well-rounded reader.",
-                    action: "Way over my head. But give me a few months!"
-                }
-            }
         ],
 
         // =====================================================================
@@ -768,99 +719,6 @@
         g.fillRect(x - clockDepth - p, clockY - p*3, clockDepth, p*3);
     }
 
-    function drawArmchair(g, x, floorY, facingRight) {
-        const CHAIR_DARK = 0x4a1a1a;
-        const CHAIR_MID = 0x6a2525;
-        const CHAIR_LIGHT = 0x8a3535;
-        const CHAIR_HIGHLIGHT = 0x9a4040;
-
-        const chairHeight = 200;
-        const seatDepth = 80;
-        const seatHeight = 50;
-        const backWidth = 32;
-        const legSize = 12;
-        const p = 4;
-
-        const chairY = floorY;
-        const backTop = chairY - chairHeight;
-        const seatTop = chairY - seatHeight - 40;
-
-        if (facingRight) {
-            g.fillStyle(COLORS.WOOD_DARK);
-            g.fillRect(x, chairY - 36, legSize, 36);
-            g.fillStyle(COLORS.WOOD_MID);
-            g.fillRect(x + seatDepth + backWidth - legSize, chairY - 40, legSize, 40);
-
-            g.fillStyle(CHAIR_DARK);
-            g.fillRect(x, backTop, backWidth, chairHeight - 40);
-            g.fillStyle(CHAIR_MID);
-            g.fillRect(x + p, backTop + p*2, backWidth - p*2, chairHeight - 56);
-            g.fillStyle(CHAIR_LIGHT);
-            g.fillRect(x + p*2, backTop + p*3, p*2, chairHeight - 68);
-            for (let py = backTop + p*5; py < seatTop - p*2; py += p*4) {
-                g.fillStyle(CHAIR_HIGHLIGHT);
-                g.fillRect(x + p*2, py, p*3, p);
-            }
-
-            g.fillStyle(CHAIR_DARK);
-            g.fillRect(x, seatTop + 28, seatDepth + backWidth, 16);
-            g.fillStyle(CHAIR_MID);
-            g.fillRect(x + backWidth - p, seatTop, seatDepth + p, 32);
-            g.fillStyle(CHAIR_LIGHT);
-            g.fillRect(x + backWidth, seatTop + p, seatDepth - p*2, p*2);
-            for (let px = x + backWidth + p*2; px < x + backWidth + seatDepth - p*2; px += p*4) {
-                g.fillStyle(CHAIR_HIGHLIGHT);
-                g.fillRect(px, seatTop + p*3, p*2, p);
-            }
-
-            g.fillStyle(CHAIR_DARK);
-            g.fillRect(x - p*2, seatTop - p*3, backWidth + p*4, p*4);
-            g.fillStyle(CHAIR_MID);
-            g.fillRect(x - p, seatTop - p*2, backWidth + p*2, p*2);
-            g.fillStyle(CHAIR_LIGHT);
-            g.fillRect(x, seatTop - p*2 + 2, backWidth, p);
-            g.fillStyle(CHAIR_DARK);
-            g.fillRect(x + backWidth + seatDepth - p*3, seatTop, p*3, 32);
-        } else {
-            const chairRight = x + seatDepth + backWidth;
-
-            g.fillStyle(COLORS.WOOD_DARK);
-            g.fillRect(chairRight - legSize, chairY - 36, legSize, 36);
-            g.fillStyle(COLORS.WOOD_MID);
-            g.fillRect(x, chairY - 40, legSize, 40);
-
-            g.fillStyle(CHAIR_DARK);
-            g.fillRect(chairRight - backWidth, backTop, backWidth, chairHeight - 40);
-            g.fillStyle(CHAIR_MID);
-            g.fillRect(chairRight - backWidth + p, backTop + p*2, backWidth - p*2, chairHeight - 56);
-            g.fillStyle(CHAIR_LIGHT);
-            g.fillRect(chairRight - p*4, backTop + p*3, p*2, chairHeight - 68);
-            for (let py = backTop + p*5; py < seatTop - p*2; py += p*4) {
-                g.fillStyle(CHAIR_HIGHLIGHT);
-                g.fillRect(chairRight - backWidth + p*2, py, p*3, p);
-            }
-
-            g.fillStyle(CHAIR_DARK);
-            g.fillRect(x, seatTop + 28, seatDepth + backWidth, 16);
-            g.fillStyle(CHAIR_MID);
-            g.fillRect(x, seatTop, seatDepth + p, 32);
-            g.fillStyle(CHAIR_LIGHT);
-            g.fillRect(x + p*2, seatTop + p, seatDepth - p*2, p*2);
-            for (let px = x + p*2; px < x + seatDepth - p*2; px += p*4) {
-                g.fillStyle(CHAIR_HIGHLIGHT);
-                g.fillRect(px, seatTop + p*3, p*2, p);
-            }
-
-            g.fillStyle(CHAIR_DARK);
-            g.fillRect(chairRight - backWidth - p*2, seatTop - p*3, backWidth + p*4, p*4);
-            g.fillStyle(CHAIR_MID);
-            g.fillRect(chairRight - backWidth - p, seatTop - p*2, backWidth + p*2, p*2);
-            g.fillStyle(CHAIR_LIGHT);
-            g.fillRect(chairRight - backWidth, seatTop - p*2 + 2, backWidth, p);
-            g.fillStyle(CHAIR_DARK);
-            g.fillRect(x, seatTop, p*3, 32);
-        }
-    }
 
     function drawFire(g, x, y, w, h) {
         g.fillStyle(0x2a1508);
@@ -1033,58 +891,68 @@
         g.fillRect(grateX - p, floorY - p*2, grateWidth + p*2, p);
     }
 
-    function drawCoffeeTable(g, x, floorY) {
-        const tableY = floorY - 5;
-        const tableTop = tableY - 50;
-        const tableWidth = 180;
 
-        g.fillStyle(COLORS.WOOD_DARK);
-        g.fillRect(x + 12, tableTop + 8, 10, 40);
-        g.fillRect(x + tableWidth - 22, tableTop + 8, 10, 40);
-        g.fillStyle(COLORS.WOOD_MID);
-        g.fillRect(x + 8, tableTop + 12, 12, 43);
-        g.fillRect(x + tableWidth - 20, tableTop + 12, 12, 43);
+    function drawRug(g, x, y, w, h, showFringe = true) {
+        g.fillStyle(COLORS.RUG_DARK);
+        g.fillRect(x, y, w, h);
 
-        g.fillStyle(COLORS.WOOD_DARK);
-        g.fillRect(x, tableTop - 5, tableWidth, 18);
-        g.fillStyle(COLORS.WOOD_MID);
-        g.fillRect(x + 3, tableTop - 3, tableWidth - 6, 12);
-        g.fillStyle(COLORS.WOOD_LIGHT);
-        g.fillRect(x + 8, tableTop - 1, tableWidth - 16, 4);
-        g.fillStyle(COLORS.WOOD_DARK);
-        g.fillRect(x, tableTop + 10, tableWidth, 4);
+        g.fillStyle(COLORS.GOLD);
+        g.fillRect(x + 4, y + 4, w - 8, 6);
+        g.fillRect(x + 4, y + h - 10, w - 8, 6);
+        g.fillRect(x + 4, y + 4, 6, h - 8);
+        g.fillRect(x + w - 10, y + 4, 6, h - 8);
 
-        g.fillStyle(0x8a4030);
-        g.fillRect(x + 20, tableTop - 20, 45, 12);
-        g.fillStyle(0x2a4a3a);
-        g.fillRect(x + 24, tableTop - 30, 40, 10);
-        g.fillStyle(0x3a3a5a);
-        g.fillRect(x + 28, tableTop - 38, 35, 8);
+        g.fillStyle(COLORS.RUG_MID);
+        g.fillRect(x + 14, y + 14, w - 28, 4);
+        g.fillRect(x + 14, y + h - 18, w - 28, 4);
+        g.fillRect(x + 14, y + 14, 4, h - 28);
+        g.fillRect(x + w - 18, y + 14, 4, h - 28);
 
-        g.fillStyle(0xd0c8b0);
-        g.fillRect(x + 70, tableTop - 14, 50, 10);
-        g.fillStyle(0xe0d8c0);
-        g.fillRect(x + 72, tableTop - 12, 22, 7);
-        g.fillRect(x + 96, tableTop - 12, 22, 7);
-        g.fillStyle(0x2a2a3a);
-        for (let i = 0; i < 4; i++) {
-            g.fillRect(x + 74, tableTop - 10 + i * 2, 18, 1);
-            g.fillRect(x + 98, tableTop - 10 + i * 2, 18, 1);
+        g.fillStyle(COLORS.RUG_DARK);
+        g.fillRect(x + 22, y + 22, w - 44, h - 44);
+
+        const centerX = x + w / 2;
+        const centerY = y + h / 2;
+
+        g.fillStyle(COLORS.RUG_PATTERN);
+        g.fillRect(centerX - 30, centerY - 15, 60, 30);
+        g.fillStyle(COLORS.RUG_MID);
+        g.fillRect(centerX - 24, centerY - 10, 48, 20);
+        g.fillStyle(COLORS.RUG_DARK);
+        g.fillRect(centerX - 18, centerY - 6, 36, 12);
+
+        const cornerOffset = 50;
+        g.fillStyle(COLORS.RUG_PATTERN);
+        g.fillRect(x + cornerOffset - 10, y + 30, 20, 12);
+        g.fillRect(x + w - cornerOffset - 10, y + 30, 20, 12);
+        g.fillRect(x + cornerOffset - 10, y + h - 42, 20, 12);
+        g.fillRect(x + w - cornerOffset - 10, y + h - 42, 20, 12);
+
+        for (let py = y + 24; py < y + h - 24; py += 8) {
+            for (let px = x + 24; px < x + w - 24; px += 12) {
+                if ((px + py) % 32 < 4) {
+                    g.fillStyle(COLORS.RUG_MID);
+                    g.fillRect(px, py, 3, 2);
+                }
+            }
         }
 
-        g.fillStyle(0x6a6560);
-        g.fillRect(x + 135, tableTop - 24, 22, 20);
-        g.fillStyle(0x3a2010);
-        g.fillRect(x + 138, tableTop - 22, 16, 10);
-        g.fillStyle(0x6a6560);
-        g.fillRect(x + 155, tableTop - 20, 7, 4);
-        g.fillRect(x + 159, tableTop - 20, 4, 14);
-        g.fillRect(x + 155, tableTop - 10, 7, 4);
+        for (let py = y + 30; py < y + h - 30; py += 6) {
+            for (let px = centerX - 40; px < centerX + 40; px += 10) {
+                if ((px + py) % 18 < 4) {
+                    g.fillStyle(COLORS.RUG_MID);
+                    g.fillRect(px, py, 4, 2);
+                }
+            }
+        }
 
-        g.fillStyle(0x5a5a5a);
-        g.fillRect(x + 130, tableTop - 10, 18, 6);
-        g.fillStyle(0x4a4a4a);
-        g.fillRect(x + 132, tableTop - 9, 14, 4);
+        if (showFringe) {
+            g.fillStyle(COLORS.RUG_PATTERN);
+            for (let px = x + 8; px < x + w - 8; px += 6) {
+                g.fillRect(px, y - 8, 3, 10);
+                g.fillRect(px, y + h - 2, 3, 10);
+            }
+        }
     }
 
     function drawBooksOnShelf(g, x, y, w, h) {
@@ -1168,66 +1036,6 @@
         g.fillRect(x - shelfDepth, floorY - p*2, shelfWidth + shelfDepth, p);
     }
 
-    function drawRug(g, x, y, w, h) {
-        g.fillStyle(COLORS.RUG_DARK);
-        g.fillRect(x, y, w, h);
-
-        g.fillStyle(COLORS.GOLD);
-        g.fillRect(x + 4, y + 4, w - 8, 6);
-        g.fillRect(x + 4, y + h - 10, w - 8, 6);
-        g.fillRect(x + 4, y + 4, 6, h - 8);
-        g.fillRect(x + w - 10, y + 4, 6, h - 8);
-
-        g.fillStyle(COLORS.RUG_MID);
-        g.fillRect(x + 14, y + 14, w - 28, 4);
-        g.fillRect(x + 14, y + h - 18, w - 28, 4);
-        g.fillRect(x + 14, y + 14, 4, h - 28);
-        g.fillRect(x + w - 18, y + 14, 4, h - 28);
-
-        g.fillStyle(COLORS.RUG_DARK);
-        g.fillRect(x + 22, y + 22, w - 44, h - 44);
-
-        const centerX = x + w / 2;
-        const centerY = y + h / 2;
-
-        g.fillStyle(COLORS.RUG_PATTERN);
-        g.fillRect(centerX - 30, centerY - 15, 60, 30);
-        g.fillStyle(COLORS.RUG_MID);
-        g.fillRect(centerX - 24, centerY - 10, 48, 20);
-        g.fillStyle(COLORS.RUG_DARK);
-        g.fillRect(centerX - 18, centerY - 6, 36, 12);
-
-        const cornerOffset = 50;
-        g.fillStyle(COLORS.RUG_PATTERN);
-        g.fillRect(x + cornerOffset - 10, y + 30, 20, 12);
-        g.fillRect(x + w - cornerOffset - 10, y + 30, 20, 12);
-        g.fillRect(x + cornerOffset - 10, y + h - 42, 20, 12);
-        g.fillRect(x + w - cornerOffset - 10, y + h - 42, 20, 12);
-
-        for (let py = y + 24; py < y + h - 24; py += 8) {
-            for (let px = x + 24; px < x + w - 24; px += 12) {
-                if ((px + py) % 32 < 4) {
-                    g.fillStyle(COLORS.RUG_MID);
-                    g.fillRect(px, py, 3, 2);
-                }
-            }
-        }
-
-        for (let py = y + 30; py < y + h - 30; py += 6) {
-            for (let px = centerX - 40; px < centerX + 40; px += 10) {
-                if ((px + py) % 18 < 4) {
-                    g.fillStyle(COLORS.RUG_MID);
-                    g.fillRect(px, py, 4, 2);
-                }
-            }
-        }
-
-        g.fillStyle(COLORS.RUG_PATTERN);
-        for (let px = x + 8; px < x + w - 8; px += 6) {
-            g.fillRect(px, y - 8, 3, 10);
-            g.fillRect(px, y + h - 2, 3, 10);
-        }
-    }
 
     function drawStairwayUp(g, x, y, floorY) {
         const p = 4;
@@ -1512,19 +1320,18 @@
 
         // === LEFT SIDE - ENTRANCE AREA ===
         drawDoor(g, 100, 180, floorY, false);
+        drawRug(g, 100, floorY + 40, 161, 81, false);
         drawWindow(g, 320, 120, 160, floorY - 200, 'moon');
         drawCoatRack(g, 15, floorY);
         drawSmallTable(g, 500, floorY + 15);
 
         // === CENTER - LIVING AREA ===
-        drawRug(g, 700, floorY + 35, 420, 120);
+        drawRug(g, 700, floorY + 35, 420, 120, false);
         drawGrandfatherClock(g, 630, floorY + 25);
         drawFireplace(g, 800, floorY);
         drawBookshelf(g, 1100, floorY);
         drawStairwayUp(g, 1340, 180, floorY);
-        drawArmchair(g, 640, floorY + 100, true);
-        drawCoffeeTable(g, 820, floorY + 100);
-        drawArmchair(g, 1080, floorY + 100, false);
+        drawRug(g, 1330, floorY + 67, 1300, 88, false);
 
         // === RIGHT SIDE - TRANSITION TO LAB ===
         drawDesk(g, 1620, floorY);
