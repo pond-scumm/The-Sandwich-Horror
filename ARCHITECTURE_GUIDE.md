@@ -1,7 +1,7 @@
 # The Sandwich Horror — Architecture Guide
 ## For Claude Code Implementation
 
-Last Updated: February 7, 2026 (Documentation consolidation — hotspot schema, implementation status, terminology cleanup)
+Last Updated: February 7, 2026 (Added §23 Dialogue Editing System, updated implementation status)
 
 ---
 
@@ -31,7 +31,8 @@ These sections are foundational — every task depends on them:
 | Task | Also Read |
 |------|-----------|
 | Building or modifying a room | §3.2 NPC Drawing, §3.3 Transition Cleanup, §8 Audio, §12 Tech Specs. Also read ROOM_DESIGN_BIBLE.md |
-| Writing dialogue or hotspot responses | §5 Item Combinations (for combination dialogue), §16 Conversation Mode. Also read CREATIVE_BIBLE.md for Nate's voice |
+| Writing dialogue or hotspot responses | §5 Item Combinations (for combination dialogue), §16 Conversation Mode, §23 Dialogue Editing System. Also read CREATIVE_BIBLE.md for Nate's voice |
+| Editing the dialogue spreadsheet | §23 Dialogue Editing System |
 | Working on audio | §8 Audio System (full section) |
 | Implementing puzzle logic | §4 Async/Await, §5 Item Combinations, §9 Entity States |
 | Working on inventory or items | §5 Item Combinations, §6 Item Icons, §15 Interaction Systems |
@@ -70,10 +71,11 @@ If context was compacted mid-session, re-read the Always Read sections and `git 
 - Character placeholder sprites with camera preset scaling
 - Procedural item icons system (`src/data/items/icons.js`)
 - Debug overlay with coordinate display, hotspot visualization, walkable polygon
+- Dialogue export script (`tools/export_dialogue.js`) — exports all hotspot dialogue, items, flags, and combinations to `TSH_Hotspot_Dialogue.xlsx`
 
 ### Not Yet Built
 - **Cutscene/sequence system** — No async/await wrappers for walkTo/showDialog to enable scripted sequences
-- **Dialogue spreadsheet import** — Planned system for managing dialogue content via spreadsheet
+- **Dialogue spreadsheet import** — Pipeline to read `TSH_Hotspot_Dialogue.xlsx` and write dialogue back into room data files
 
 ### Legacy Scene Classes
 These scenes use the old scene-class pattern instead of data-driven RoomScene:
@@ -925,6 +927,9 @@ src/
 │       └── ...
 └── scenes/                         # Phaser scene classes
     └── RoomScene.js                # Generic room renderer
+
+tools/
+└── export_dialogue.js              # Dialogue export script (Deno)
 ```
 
 ---
@@ -982,7 +987,7 @@ src/
 - Don't use Phaser registry for game state (use TSH.State)
 - Don't write monolithic scene classes with inline drawing code
 - Don't use callback pyramids (use async/await)
-- Don't put dialogue strings inside scene classes — dialogue belongs in room data files (`responses` objects in hotspot definitions). A dialogue spreadsheet system is planned for future content management.
+- Don't put dialogue strings inside scene classes — dialogue is authored in `TSH_Hotspot_Dialogue.xlsx` and exported/imported via the dialogue pipeline (§23). Room data files contain the runtime copy.
 - Don't hardcode puzzle logic inside hotspot handlers (use action functions)
 - Don't create separate CSS/JS files — this is a single-page game
 
@@ -1298,3 +1303,81 @@ const versionText = this.add.text(0, btnY - 45, 'v0.1.13', {  // ← Update this
 5. User will request commits/pushes when ready
 
 **Why:** This makes it easier to isolate issues. If multiple changes are bundled together and something breaks, it's harder to identify which change caused the problem. One change at a time = easier debugging.
+
+---
+
+## 23. Dialogue Editing System
+
+All hotspot dialogue is authored in `TSH_Hotspot_Dialogue.xlsx` and imported into the game. The spreadsheet is the **source of truth** for what Nate says.
+
+### Spreadsheet Structure
+
+| Tab | Contents |
+|-----|----------|
+| Instructions | Format reference (cell tags, state column rules, fallback chain) |
+| Flags Reference | All game flags exported from `GameState.js` (Category, Flag Name, Description) |
+| Global Defaults | 3 global action defaults (Examine, Use, TalkTo) + per-item Examine and Fail Default |
+| Item Combinations | One row per unique item pair. Pre-populated with recipe dialogue from `combinations.js` |
+| Room tabs (×13+) | One sheet per room, one row per hotspot |
+
+**Room tab columns:** `Hotspot | State | Examine | Use | TalkTo | [one column per inventory item] | Hotspot ID`
+
+- Item columns contain what Nate says when **using that item ON the hotspot**
+- Hotspot ID (last column) maps back to the hotspot's `id` in room data
+
+### Fallback Chain
+
+When the player uses an item on a hotspot, the system checks in order:
+
+1. **Room-specific cell** — the item column for that hotspot in the room sheet
+2. **Item Fail Default** — the item's Fail Default in Global Defaults
+3. **Global Action Default** — the global USE default
+
+First non-blank value wins.
+
+### Cell Conventions
+
+| Cell Content | Meaning |
+|--------------|---------|
+| (blank) | Unaddressed — needs dialogue written |
+| `[AI]` | AI-generated placeholder awaiting review |
+| `[DEFAULT]` | Intentionally uses fallback (no specific line needed) |
+| plain text | Human-written final dialogue |
+
+### State Column
+
+Supports conditional dialogue rows per hotspot:
+
+- `default` — no state required (fallback row)
+- `FLAG_NAME` — row matches when that flag is true (e.g., `story.found_hector`)
+- `FLAG1, FLAG2` — all listed flags must be true
+
+The game checks rows **top-to-bottom** and uses the **first match**. Put most-specific states first, `default` last.
+
+### Export Script
+
+`tools/export_dialogue.js` — run with Deno:
+
+```
+deno run --allow-read --allow-write --allow-env --allow-net tools/export_dialogue.js
+```
+
+- Re-run anytime code changes to keep the spreadsheet in sync
+- Dynamically picks up new rooms, hotspots, items, and flags
+- **Preserves** hand-written dialogue in the Item Combinations tab on re-run
+- Overwrites all other tabs from code data
+
+### Workflow
+
+1. **Claude Code** re-runs the export script whenever hotspots, items, or flags change
+2. **Chris** edits dialogue directly in the spreadsheet
+3. **Import pipeline (TBD)** reads the spreadsheet and writes dialogue back into room data files
+
+### Scope Boundary
+
+The spreadsheet contains **ONLY dialogue** — what Nate says. It does not contain:
+- Game logic or puzzle mechanics
+- State changes, flag setting, or item transfers
+- Action triggers, transitions, or sound effects
+
+All puzzle logic stays in code (`actionTrigger`, `giveItem`, `setFlags`, etc.).
