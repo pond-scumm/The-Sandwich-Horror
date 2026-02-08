@@ -15,6 +15,7 @@ import { resolve, basename, dirname, fromFileUrl } from 'https://deno.land/std/p
 const SCRIPT_DIR = dirname(fromFileUrl(import.meta.url));
 const PROJECT_ROOT = resolve(SCRIPT_DIR, '..');
 const ROOMS_DIR = resolve(PROJECT_ROOT, 'src', 'data', 'rooms');
+const DEFAULTS_FILE = resolve(PROJECT_ROOT, 'src', 'data', 'defaults.js');
 const ITEMS_FILE = resolve(PROJECT_ROOT, 'src', 'data', 'items', 'items.js');
 const COMBOS_FILE = resolve(PROJECT_ROOT, 'src', 'data', 'items', 'combinations.js');
 const STATE_FILE = resolve(PROJECT_ROOT, 'src', 'GameState.js');
@@ -92,6 +93,10 @@ function loadGameData() {
             console.warn(`  Warning: Error evaluating ${basename(path)}: ${e.message}`);
         }
     };
+
+    // Load defaults
+    console.log('Loading defaults...');
+    evalFile(DEFAULTS_FILE);
 
     // Load items first (rooms may reference TSH.Items)
     console.log('Loading items...');
@@ -261,11 +266,9 @@ function createInstructionsSheet(wb) {
     const content = [
         ['TSH Dialogue Spreadsheet', ''],
         ['', ''],
-        ['CELL TAGS', ''],
-        ['(blank)', 'Unaddressed — needs dialogue written'],
-        ['[AI]', 'AI-generated placeholder awaiting review'],
-        ['[DEFAULT]', 'Intentionally uses fallback (no specific line needed)'],
-        ['plain text', 'Human-written final dialogue'],
+        ['CELL CONVENTIONS', ''],
+        ['(blank)', 'Maps to "" in code — fallback chain handles at runtime'],
+        ['plain text', 'That exact string goes into code — 1:1 mapping'],
         ['', ''],
         ['STATE COLUMN', ''],
         ['default', 'No state required — this is the fallback row'],
@@ -296,7 +299,7 @@ function createInstructionsSheet(wb) {
         if (i === 0) {
             row.getCell(1).font = { bold: true, size: 16, color: { argb: 'FF2B5797' } };
             row.height = 30;
-        } else if (['CELL TAGS', 'STATE COLUMN', 'ROW ORDERING', 'FALLBACK CHAIN', 'GENERAL TIPS'].includes(col1)) {
+        } else if (['CELL CONVENTIONS', 'STATE COLUMN', 'ROW ORDERING', 'FALLBACK CHAIN', 'GENERAL TIPS'].includes(col1)) {
             row.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF2B5797' } };
         } else if (col1 && !col2) {
             // Label cells like "(blank)", "default", etc.
@@ -352,9 +355,9 @@ function createGlobalDefaultsSheet(wb, items) {
     applyHeaderStyle(headerRow1, 2);
 
     const defaults = [
-        ['GLOBAL EXAMINE', "Nothing interesting about that."],
-        ['GLOBAL USE', "I can't do anything with that."],
-        ['GLOBAL TALK_TO', "I don't think it wants to talk."],
+        ['GLOBAL EXAMINE', TSH.Defaults.examine],
+        ['GLOBAL USE', TSH.Defaults.use],
+        ['GLOBAL TALK_TO', TSH.Defaults.talkTo],
     ];
     for (const [action, line] of defaults) {
         const row = ws.addRow([action, line]);
@@ -384,7 +387,7 @@ function createGlobalDefaultsSheet(wb, items) {
     // Sort items by name for readability
     const sortedItems = Object.values(items).sort((a, b) => a.name.localeCompare(b.name));
     for (const item of sortedItems) {
-        const row = ws.addRow([item.name, item.description, '', item.id]);
+        const row = ws.addRow([item.name, item.description, item.failDefault || '', item.id]);
         for (let c = 1; c <= 3; c++) row.getCell(c).border = BORDER_THIN;
         // ID column styling
         row.getCell(4).fill = ID_FILL;
@@ -408,19 +411,20 @@ function createItemCombinationsSheet(wb, items, combinations, existingLines) {
         { header: 'Item 1', width: 25 },
         { header: 'Item 2', width: 25 },
         { header: 'Line', width: 60 },
+        { header: 'Fail Line', width: 60 },
         { header: 'ID 1', width: 20 },
         { header: 'ID 2', width: 20 },
     ];
 
     const headerRow = ws.getRow(1);
-    applyHeaderStyle(headerRow, 3);
+    applyHeaderStyle(headerRow, 4);
     // ID columns
-    headerRow.getCell(4).fill = ID_FILL;
-    headerRow.getCell(4).font = { bold: true, color: { argb: 'FF808080' } };
-    headerRow.getCell(4).border = BORDER_THIN;
     headerRow.getCell(5).fill = ID_FILL;
     headerRow.getCell(5).font = { bold: true, color: { argb: 'FF808080' } };
     headerRow.getCell(5).border = BORDER_THIN;
+    headerRow.getCell(6).fill = ID_FILL;
+    headerRow.getCell(6).font = { bold: true, color: { argb: 'FF808080' } };
+    headerRow.getCell(6).border = BORDER_THIN;
 
     // Build all unique item pairs (alphabetical by name)
     const itemList = Object.values(items).sort((a, b) => a.name.localeCompare(b.name));
@@ -446,14 +450,16 @@ function createItemCombinationsSheet(wb, items, combinations, existingLines) {
                 line = recipe.dialogue;
             }
 
-            const row = ws.addRow([item1.name, item2.name, line, item1.id, item2.id]);
-            for (let c = 1; c <= 3; c++) row.getCell(c).border = BORDER_THIN;
-            row.getCell(4).fill = ID_FILL;
-            row.getCell(4).font = ID_FONT;
-            row.getCell(4).border = BORDER_THIN;
+            const failLine = (recipe && recipe.failDialogue) ? recipe.failDialogue : '';
+
+            const row = ws.addRow([item1.name, item2.name, line, failLine, item1.id, item2.id]);
+            for (let c = 1; c <= 4; c++) row.getCell(c).border = BORDER_THIN;
             row.getCell(5).fill = ID_FILL;
             row.getCell(5).font = ID_FONT;
             row.getCell(5).border = BORDER_THIN;
+            row.getCell(6).fill = ID_FILL;
+            row.getCell(6).font = ID_FONT;
+            row.getCell(6).border = BORDER_THIN;
         }
     }
 }

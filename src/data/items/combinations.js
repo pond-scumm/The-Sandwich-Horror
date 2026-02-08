@@ -106,6 +106,18 @@
         failDialogue: "I have the coat and goggles but I need something for the mustache..."
     };
     
+    
+    // Dialogue-only (no recipe)
+    combinations[makeKey('help_wanted_ad', 'lit_candle')] = {
+        dialogue: 'I don\'t want to burn it! I\'m trying to get a job.'
+    };
+
+    
+    // Dialogue-only (no recipe)
+    combinations[makeKey('lit_candle', 'matches')] = {
+        dialogue: 'It\'s already lit.'
+    };
+
     // ── Expose to namespace ─────────────────────────────────────────────
     
     TSH.Combinations = {
@@ -152,7 +164,19 @@
                 };
             }
 
-            // Success - modify state
+            // Check if this is a dialogue-only entry (no state modification)
+            const modifiesState = (recipe.consumes && recipe.consumes.length > 0) || recipe.produces;
+
+            if (!modifiesState) {
+                // Dialogue-only entry - return failure with custom dialogue
+                return {
+                    success: false,
+                    dialogue: recipe.dialogue,
+                    sfx: recipe.sfx || 'item_fail'
+                };
+            }
+
+            // Recipe modifies state - execute it
             for (const itemId of recipe.consumes) {
                 TSH.State.removeItem(itemId);
             }

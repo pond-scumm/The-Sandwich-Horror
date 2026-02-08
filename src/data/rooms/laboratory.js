@@ -327,8 +327,8 @@
                 isNPC: true,
                 verbs: { action: 'Approach', look: 'Examine', talk: 'Talk to' },
                 responses: {
-                    look: "A composed man in a pristine lab coat. Slick dark hair, goggles pushed up on his forehead, a meticulous mustache. He's focused intently on the terminal, completely in his element.",
-                    action: "I should probably just talk to him."
+                    look: "That must be Hector. It's go time. ",
+                    action: ""
                 }
                 // Talk will trigger conversation via NPC system
             }
