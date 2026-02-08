@@ -117,7 +117,7 @@
                 name: 'Front Door',
                 verbs: { action: 'Exit', look: 'Examine' },
                 responses: {
-                    look: "Solid oak! They don't make 'em like this anymore."
+                    look: ""
                 },
                 actionTrigger: {
                     type: 'transition',
@@ -132,8 +132,8 @@
                 name: 'Window',
                 verbs: { action: 'Open', look: 'Look through' },
                 responses: {
-                    look: "Wow, look at that moon! The garden's a mess though. Very... wild.",
-                    action: "Painted shut. Like, really painted shut."
+                    look: "",
+                    action: ""
                 }
             },
             {
@@ -144,7 +144,7 @@
                 verbs: { action: 'Search', look: 'Examine' },
                 responses: {
                     look: "Ooh, vintage! The moths think so too, apparently.",
-                    action: "Receipt from 1987: 'eggs, assorted beakers.' That's a grocery list I can respect."
+                    action: "I found a receipt: 'eggs, milk, assorted beakers.' That's a grocery list I can respect."
                 }
             },
             {
@@ -155,7 +155,7 @@
                 verbs: { action: 'Search', look: 'Examine' },
                 responses: {
                     look: "That's not a table, that's a mail fort. Years of 'Science Monthly'! Jealous.",
-                    action: "All addressed to 'Dr. H. Manzana.' Someone's popular with the post office."
+                    action: "All addressed to 'H. Manzana.' Someone's popular with the post office."
                 }
             },
             {
@@ -165,8 +165,8 @@
                 name: 'Grandfather Clock',
                 verbs: { action: 'Check time', look: 'Examine' },
                 responses: {
-                    look: "What a beauty! The second hand's doing something funky though. Tick-tick... tick.",
-                    action: "Almost midnight. Spooky! I love it."
+                    look: "Almost midnight. Maybe we'll get a visit from Father Midnight!",
+                    action: "No secret lab hidden behind it. Missed opportunity."
                 }
             },
             {
@@ -187,8 +187,8 @@
                 name: 'Mantle Photos',
                 verbs: { action: 'Pick up', look: 'Examine' },
                 responses: {
-                    look: "Old photos! Awards, colleagues... the guy smiled more back then. Wonder what happened.",
-                    action: "Better not. Those aren't mine."
+                    look: "It's a photo of a young scientist with a woman and a dog. ",
+                    action: "Nah, those are someone else's precious memories."
                 }
             },
             {
@@ -223,7 +223,7 @@
                 verbs: { action: 'Search', look: 'Browse' },
                 responses: {
                     look: "Floor to ceiling! Science, philosophy, everything. This is my kind of chaos.",
-                    action: "'Interdimensional Postal Services'?! I need to work here."
+                    action: "Interdimensional Theory For Dummies'. I need to work here."
                 }
             },
             {
@@ -248,8 +248,8 @@
                 name: 'Right Window',
                 verbs: { action: 'Open', look: 'Look through' },
                 responses: {
-                    look: "I can see the town from here! Little twinkling lights. Cute.",
-                    action: "Also painted shut. This guy really hates fresh air, huh."
+                    look: "I can see Sandwich from here. Just a few twinkling lights.",
+                    action: "Also broken. This guy really hates fresh air, huh."
                 }
             },
             {
@@ -333,15 +333,7 @@
         // ITEM INTERACTIONS
         // =====================================================================
 
-        itemInteractions: {
-            fireplace: {
-                default: "I'm not throwing my {item} into the fire. That seems wasteful."
-            },
-            strange_device: {
-                default: "I wave my {item} near the device. It hums appreciatively but nothing happens."
-            },
-            _default: "I don't think the {item} works with the {hotspot}."
-        },
+        itemInteractions: {},
 
         firstVisit: {
             delay: 800,

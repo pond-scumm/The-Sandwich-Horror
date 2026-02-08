@@ -712,11 +712,11 @@ class RoomScene extends BaseScene {
 
         // Default verb responses
         if (action === 'Use' || action === hotspot.verbLabels?.actionVerb) {
-            this.showDialog(hotspot.useResponse || "I can't use that.");
+            this.showDialog(hotspot.useResponse || TSH.Defaults.use);
         } else if (action === 'Look At' || action === hotspot.verbLabels?.lookVerb) {
-            this.showDialog(hotspot.lookResponse || "Nothing special about it.");
+            this.showDialog(hotspot.lookResponse || TSH.Defaults.examine);
         } else if (action === 'Talk To' || action === hotspot.verbLabels?.talkVerb) {
-            this.showDialog(hotspot.talkResponse || "It doesn't respond.");
+            this.showDialog(hotspot.talkResponse || TSH.Defaults.talkTo);
         }
     }
 
@@ -725,27 +725,29 @@ class RoomScene extends BaseScene {
         const interactions = room.itemInteractions || {};
         const hsId = hotspot._data?.id || hotspot.id;
 
-        if (interactions[hsId]) {
-            const hsInteractions = interactions[hsId];
-            const response = hsInteractions[item.id] || hsInteractions.default;
-            if (response) {
-                const text = response
-                    .replace('{item}', item.name)
-                    .replace('{hotspot}', hotspot.name);
-                this.showDialog(text);
-                return;
-            }
-        }
-
-        if (interactions._default) {
-            const text = interactions._default
-                .replace('{item}', item.name)
-                .replace('{hotspot}', hotspot.name);
-            this.showDialog(text);
+        // 1. Check for specific item + hotspot interaction
+        if (interactions[hsId] && interactions[hsId][item.id]) {
+            const response = interactions[hsId][item.id];
+            const msg = response.replace('{item}', item.name).replace('{hotspot}', hotspot.name);
+            this.showDialog(msg);
             return;
         }
 
-        this.showDialog(`I don't think the ${item.name} works with the ${hotspot.name}.`);
+        // 2. Check item's failDefault
+        const itemDef = TSH.Items[item.id];
+        if (itemDef && itemDef.failDefault) {
+            const msg = itemDef.failDefault
+                .replace('{hotspot}', hotspot.name)
+                .replace('{item}', item.name);
+            this.showDialog(msg);
+            return;
+        }
+
+        // 3. Final fallback to global default
+        const msg = TSH.Defaults.use
+            .replace('{item}', item.name)
+            .replace('{hotspot}', hotspot.name);
+        this.showDialog(msg);
     }
 
     // ========== EXIT ZONES ==========
