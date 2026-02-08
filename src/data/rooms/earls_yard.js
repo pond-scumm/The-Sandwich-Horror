@@ -95,9 +95,7 @@
                 // Airstream window warm light
                 { id: 'airstream_window', x: 774, y: 0.356, radius: 120, color: 0xffddaa, intensity: 0.7 },
                 // Grill coals - warm orange glow
-                { id: 'grill_coals', x: 783, y: 0.68, radius: 200, color: 0xff6633, intensity: 1.4 },
-                // Earl illumination - makes Earl visible in the lighting
-                { id: 'earl_light', x: 920, y: 0.60, radius: 180, color: 0xffcc66, intensity: 0.8 }
+                { id: 'grill_coals', x: 783, y: 0.68, radius: 200, color: 0xff6633, intensity: 1.4 }
             ]
         },
 
@@ -179,8 +177,8 @@
                 name: "Earl's Airstream",
                 verbs: { action: 'Knock', look: 'Examine' },
                 responses: {
-                    look: "A vintage Airstream trailer, lovingly maintained. Warm light glows from inside. This is Earl's home, and it's beautiful.",
-                    action: "No answer. Earl's out here by the grill anyway. Feels rude to just walk in."
+                    look: "This thing is a classic!",
+                    action: "I'd love to hit the road in this thing."
                 }
             },
 
@@ -193,7 +191,7 @@
                 verbs: { action: 'Climb', look: 'Examine' },
                 responses: {
                     look: "A big old oak tree. Probably provides nice shade during the day.",
-                    action: "Tree climbing was never my strong suit. Also, Earl might think that's weird."
+                    action: "Tree climbing was never my strong suit."
                 }
             },
             {
@@ -214,8 +212,8 @@
                 name: 'String Lights',
                 verbs: { action: 'Admire', look: 'Look at' },
                 responses: {
-                    look: "Warm yellow string lights strung between the trees and across the Airstream. So cozy!",
-                    action: "This is perfect ambiance. Earl's got style."
+                    look: "These lights really create a vibe!",
+                    action: "I'm not going to steal a man's vibe. "
                 }
             },
             {
@@ -225,8 +223,8 @@
                 name: 'Airstream Door',
                 verbs: { action: 'Knock', look: 'Examine' },
                 responses: {
-                    look: "The Airstream's front door. Aluminum with a warm glow coming through the window. Nice little steps leading up.",
-                    action: "No answer. Earl's out here by the grill."
+                    look: "It's the door to the Airstream.",
+                    action: "I'm not going to barge in. "
                 }
             },
             {
@@ -236,8 +234,8 @@
                 name: 'Airstream Window',
                 verbs: { action: 'Peek', look: 'Look at' },
                 responses: {
-                    look: "A large window on the side of the Airstream. Warm light spills out. Looks cozy in there.",
-                    action: "Nice curtains. A small kitchen. Some photos on the wall. Feels wrong to snoop though."
+                    look: "Looks cozy in there. ",
+                    action: "If I want to go inside, i'll just use the door."
                 }
             },
 
@@ -250,7 +248,7 @@
                 verbs: { action: 'Pat', look: 'Examine' },
                 responses: {
                     look: "A bright pink plastic lawn flamingo. Tacky, beloved, and absolutely perfect.",
-                    action: "The flamingo remains stoic. Still perfect."
+                    action: "Hey there, flamingo!"
                 }
             },
 
@@ -262,8 +260,8 @@
                 name: 'Cooler',
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
-                    look: "A green cooler, probably full of drinks. Condensation on the outside—nice and cold.",
-                    action: "Sodas! Root beer, cola, lemon-lime... Earl's prepared for company."
+                    look: "It's a green cooler full of drinks.",
+                    action: "Hey, a root beer!"
                 }
             },
             {
@@ -273,8 +271,8 @@
                 name: 'Old Radio',
                 verbs: { action: 'Listen', look: 'Examine' },
                 responses: {
-                    look: "An old red radio sitting on a small wooden table. Antenna fully extended. Playing Earl's favorite tunes.",
-                    action: "It's already on, playing some mellow music. That warm, tinny quality of vintage electronics. Perfect."
+                    look: "It's a old tube radio with great reception.",
+                    action: "I'll change the station."
                 }
             },
             {
@@ -284,8 +282,8 @@
                 name: 'Charcoal Grill',
                 verbs: { action: 'Check', look: 'Examine' },
                 responses: {
-                    look: "A classic charcoal grill with glowing coals inside. Smells AMAZING. Burgers are definitely happening.",
-                    action: "Wow, that's HOT. Those coals are perfect. Earl knows what he's doing."
+                    look: "That smells AMAZING. Burgers are definitely happening.",
+                    action: "YEEEOUCH. Why'd I do that?"
                 }
             },
             {
@@ -295,8 +293,8 @@
                 name: "Earl's Ladder",
                 verbs: { action: 'Take', look: 'Examine' },
                 responses: {
-                    look: "A sturdy aluminum ladder leaning against the Airstream. That would be really useful for reaching high places...",
-                    action: "Earl stops me. \"Hold on there, friend. I'd be happy to lend you that, but Hector still has something of mine. Once I get it back, it's all yours!\""
+                    look: "A sturdy aluminum ladder. That would be really useful for reaching high places...",
+                    action: "I should really ask permission before stea- er, borrowing the ladder."
                 }
                 // TODO: Once player returns Earl's item, this becomes available to take
             },
@@ -310,7 +308,7 @@
                 type: 'npc',
                 verbs: { action: 'Talk to', look: 'Look at' },
                 responses: {
-                    look: "A large, friendly-looking fellow in a fisherman's hat. He's got an easy smile and smells faintly of charcoal and pine.",
+                    look: "A large, friendly-looking fellow in a chef's hat. He's got an easy smile and smells faintly of charcoal and pine.",
                     action: null
                 }
                 // TODO: Wire up Earl's conversation tree
@@ -329,13 +327,36 @@
 
         itemInteractions: {
             grill_charcoal: {
-                default: "I'm not putting my {item} on the grill. Earl would never forgive me."
-            },
+                default: "I'm not putting my {item} on the grill. Earl would never forgive me.",
+                lit_candle: "It's already lit and cooking nicely.",
+                matches: "It's already lit and smelling good.",
+},
             flamingo_pink: {
-                default: "The flamingo doesn't want my {item}. It's a flamingo."
+                default: "The flamingo doesn't want my {item}. It's a flamingo.",
+                help_wanted_ad: "Hey flamingo, did you publish this ad?",
+},
+            _default: "I don't think the {item} works with the {hotspot}.",
+            woods_background: {
+                lit_candle: "Only we can prevent forest fires!",
             },
-            _default: "I don't think the {item} works with the {hotspot}."
-        },
+
+            airstream_home: {
+                lit_candle: "That's a bit extreme.",
+                            matches: "I'm no arsonist.",
+},
+
+            tree_left: {
+                lit_candle: "Only we can prevent forest fires!",
+            },
+
+            tree_right: {
+                lit_candle: "Only we can prevent forest fires!",
+            },
+
+            earl_npc: {
+                help_wanted_ad: "I don't think he's the one who's looking for help. He seems to have it all figured out.",
+            },
+},
 
         firstVisit: {
             delay: 600,
@@ -868,64 +889,6 @@
         g.fillRect(radioX - radioWidth/2, radioY, radioWidth, p*2);
     }
 
-    function drawEarl(g, x, floorY) {
-        // Earl the bigfoot - subtle, just slightly taller/wider than Nate (1.15x)
-        const earlHeight = p * 181;  // ~362px tall (1.15x Nate's ~315px)
-        const torsoWidth = p * 24;   // Same width as head for better proportions
-        const feetY = floorY;
-
-        // Legs (same width as torso with gap in middle)
-        g.fillStyle(0x4a3020);  // Brown fur
-        g.fillRect(x - p*12, feetY - p*70, p*10, p*70);  // Left leg
-        g.fillRect(x + p*2, feetY - p*70, p*10, p*70);   // Right leg (gap in middle)
-
-        // Feet
-        g.fillStyle(0x3a2010);
-        g.fillRect(x - p*13, feetY - p*8, p*12, p*8);    // Left foot
-        g.fillRect(x + p*2, feetY - p*8, p*12, p*8);     // Right foot
-
-        // Body/torso (longer, same width as head)
-        g.fillStyle(0x5a4030);
-        g.fillRect(x - p*12, feetY - p*130, torsoWidth, p*62);  // Longer torso
-
-        // Arms (connected to torso edges, bump out slightly)
-        g.fillStyle(0x4a3020);
-        g.fillRect(x - p*18, feetY - p*120, p*6, p*40);  // Left arm (connects to left edge of torso)
-        g.fillRect(x + p*12, feetY - p*120, p*6, p*40);  // Right arm (connects to right edge of torso)
-
-        // Hands
-        g.fillStyle(0x3a2010);
-        g.fillRect(x - p*19, feetY - p*80, p*7, p*8);    // Left hand
-        g.fillRect(x + p*12, feetY - p*80, p*7, p*8);    // Right hand
-
-        // Head (same width as torso)
-        g.fillStyle(0x5a4030);
-        g.fillRect(x - p*12, feetY - p*158, p*24, p*30);  // Head
-
-        // Fur texture (subtle lighter patch on chest)
-        g.fillStyle(0x6a5040);
-        g.fillRect(x - p*12, feetY - p*120, p*24, p*8);
-
-        // Gray fisherman's hat with wider brim, smaller/lower crown
-        g.fillStyle(0x5a5a5a);  // Gray crown (smaller, lower)
-        g.fillRect(x - p*11, feetY - p*167, p*22, p*10);  // Hat crown (smaller)
-        g.fillStyle(0x4a4a4a);  // Darker gray brim (wider)
-        g.fillRect(x - p*20, feetY - p*158, p*40, p*3);   // Brim (wider)
-
-        // Hat band detail
-        g.fillStyle(0x3a3a3a);
-        g.fillRect(x - p*11, feetY - p*158, p*22, p*2);
-
-        // Simple dot eyes (right eye moved left so he's looking left)
-        g.fillStyle(0x2a1a0a);
-        g.fillRect(x - p*8, feetY - p*148, p*3, p*3);    // Left eye dot
-        g.fillRect(x + p*2, feetY - p*148, p*3, p*3);    // Right eye dot (moved from +5 to +2)
-
-        // Simple line mouth (smaller)
-        g.fillStyle(0x2a1a0a);
-        g.fillRect(x - p*4, feetY - p*138, p*8, p*2);    // Mouth line (smaller, 8px instead of 12px)
-    }
-
     function drawLadder(g, x, floorY, leanHeight) {
         const ladderTop = floorY - leanHeight;
         const rungSpacing = p * 18;
@@ -1016,7 +979,6 @@
         drawFlamingo(g, LAYOUT.flamingo.x, midFloorY);
         drawTableWithRadio(g, LAYOUT.radio.x, midFloorY);
         drawGrill(g, LAYOUT.grill.x, midFloorY + p * 5);  // Grill slightly in front of table
-        drawEarl(g, LAYOUT.earl.x, midFloorY);
         drawCooler(g, LAYOUT.cooler.x, foregroundY, 1.5);  // Cooler in foreground
 
         // === LADDER (in front of right tree, base below tree line) ===

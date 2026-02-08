@@ -180,6 +180,9 @@
                 if (!this.textures.exists('hector_placeholder')) {
                     this.load.image('hector_placeholder', 'assets/sprites/hector_placeholder.png');
                 }
+                if (!this.textures.exists('earl_placeholder')) {
+                    this.load.image('earl_placeholder', 'assets/sprites/earl_placeholder.png');
+                }
             }
 
             create() {
