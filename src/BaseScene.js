@@ -186,6 +186,9 @@
                 if (!this.textures.exists('frank_placeholder')) {
                     this.load.image('frank_placeholder', 'assets/sprites/frank_placeholder.png');
                 }
+                if (!this.textures.exists('harry_placeholder')) {
+                    this.load.image('harry_placeholder', 'assets/sprites/harry_placeholder.png');
+                }
             }
 
             create() {

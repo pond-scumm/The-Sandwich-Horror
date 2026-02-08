@@ -838,7 +838,9 @@ class RoomScene extends BaseScene {
                 sprite.setOrigin(0.5, 1);  // Bottom-center anchor (feet on ground)
                 sprite.setScale(baseScale);
                 sprite.setPipeline('Light2D');
-                sprite.setDepth(100);  // Above background, same as player
+
+                // Use custom depth if specified, otherwise default to 100
+                sprite.setDepth(npc.depth !== undefined ? npc.depth : 100);
 
                 // Adjust scale if NPC has specific height ratio
                 if (npc.heightRatio) {

@@ -76,10 +76,16 @@
 
         layers: [
             {
-                name: 'room',
+                name: 'background',
                 scrollFactor: 1.0,
                 depth: 50,
-                draw: drawAlienRoom
+                draw: drawBackground
+            },
+            {
+                name: 'furniture',
+                scrollFactor: 1.0,
+                depth: 60,
+                draw: drawFurniture
             }
         ],
 
@@ -91,7 +97,18 @@
 
         exits: [],
 
-        npcs: [],
+        npcs: [
+            {
+                id: 'alien_harry',
+                name: 'Harry',
+                sprite: 'harry_placeholder',
+                position: { x: 520, y: 0.740 },  // Feet hidden by extended couch seat
+                heightRatio: 1.0,
+                depth: 55,  // Above room layer (50), below furniture (60)
+                interactX: 520,
+                interactY: 0.85
+            }
+        ],
 
         // =====================================================================
         // HOTSPOTS
@@ -157,8 +174,8 @@
             // === ALIEN NPC (Harry) - standing behind couch ===
             {
                 id: 'alien_harry',
-                x: 537, y: 0.44, w: 110, h: 0.249,
-                interactX: 535, interactY: 0.85,
+                x: 520, y: 0.58, w: 110, h: 0.28,
+                interactX: 520, interactY: 0.85,
                 name: 'Alien',
                 type: 'npc',
                 verbs: { action: 'Talk to', look: 'Look at' },
@@ -575,6 +592,9 @@
         g.fillRect(x + backWidth + p * 12, seatTop + p * 10, p * 30, p * 8);
     }
 
+    // PROCEDURAL ALIEN DRAWING - REPLACED WITH SPRITE (harry_placeholder.png)
+    // Kept for reference
+    /*
     function drawAlien(g, x, floorY) {
         // Harry the Alien standing behind the couch, facing forward/toward TV
         // About as tall as Nate (315px for MEDIUM camera)
@@ -673,6 +693,7 @@
         g.fillStyle(0x2a2a2a);
         g.fillRect(x - p * 3, headTop + headHeight - p * 18, p * 6, p);
     }
+    */
 
     function drawCoffeeTable(g, x, floorY) {
         // Coffee table (25% narrower than before)
@@ -934,10 +955,13 @@
     }
 
     // =========================================================================
-    // MAIN ROOM DRAWING FUNCTION
+    // ROOM DRAWING FUNCTIONS - SPLIT INTO LAYERS
     // =========================================================================
+    // Background layer (depth 50): walls, floor, architectural elements
+    // Furniture layer (depth 60): all furniture and props
+    // Harry sprite renders at depth 55 (between the two layers)
 
-    function drawAlienRoom(g, scene, worldWidth, height) {
+    function drawBackground(g, scene, worldWidth, height) {
         const floorY = height * 0.72; // MEDIUM camera
 
         // === WALLS AND FLOOR ===
@@ -953,6 +977,10 @@
         // === POSTERS (2.5x bigger, positioned correctly) ===
         drawPoster(g, 241, 85, 1);   // Rafael poster - centered over dresser
         drawPoster(g, 750, 85, 2);   // Sci-fi movie poster
+    }
+
+    function drawFurniture(g, scene, worldWidth, height) {
+        const floorY = height * 0.72; // MEDIUM camera
 
         // === DRESSER WITH LAVA LAMP (15% below wall line) ===
         const dresserX = 260;
@@ -960,11 +988,11 @@
         drawDresser(g, dresserX, floorY + dresserDepth);
         drawLavaLamp(g, dresserX + p * 34, floorY + dresserDepth - p * 62);
 
-        // === ALIEN (standing behind couch, drawn first so couch overlaps) ===
+        // === ALIEN (now using sprite - see npcs array) ===
         const couchDepth = p * 16;  // 20% below wall
         const couchX = 430;  // Moved right to not touch dresser
         // Couch center: couchX + (backWidth + seatWidth)/2 = 430 + (56 + 150)/2 = 430 + 103 = 533
-        drawAlien(g, 533, floorY + couchDepth);
+        // Harry sprite renders at depth 55 (between background and furniture)
 
         // === COUCH (profile view, 20% below wall, moved right) ===
         drawCouch(g, couchX, floorY + couchDepth);
