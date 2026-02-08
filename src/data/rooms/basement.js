@@ -13,6 +13,23 @@
     'use strict';
 
     // =========================================================================
+    // SHARED LAYOUT (single source of truth for all positions)
+    // =========================================================================
+
+    const LAYOUT = {
+        generator:       { x: 280,  y: 0.55, w: 280, h: 0.33 },
+        bulkhead_stairs: { x: 1190, y: 0.095, w: 394, h: 0.154 },
+        frank_npc:       { x: 1280, y: 0.52, w: 80,  h: 0.40 },
+        brain_jar:       { x: 1800, y: 0.40, w: 100, h: 0.17 },
+        jars_various:    { x: 1550, y: 0.48, w: 160, h: 0.20 },
+        cobwebs:         { x: 70,   y: 0.17, w: 100, h: 0.17 },
+        lightbulb:       { x: 589,  y: 0.217, w: 80, h: 0.081 },
+        task_lamp:       { x: 1192, y: 0.413, w: 45, h: 0.155 },
+        workbench:       { x: 1122, y: 0.499, w: 217, h: 0.050 },
+        crates:          { x: 40,   y: 0.50, w: 80,  h: 0.34 }
+    };
+
+    // =========================================================================
     // ROOM DATA
     // =========================================================================
 
@@ -39,8 +56,10 @@
             ambient: 0x4a4a3a,
             ambientMobile: 0x6a6a5a,
             sources: [
-                // Bare bulb (harsh, warm) - center of room
-                { id: 'bulb_main', x: 960, y: 0.30, radius: 280, color: 0xffcc88, intensity: 1.2 },
+                // Bare bulb (harsh, warm) - left-center area
+                { id: 'bulb_main', x: 589, y: 0.217, radius: 280, color: 0xffcc88, intensity: 1.2 },
+                // Task lamp (warm, bright) - tall lamp on workbench, illuminates Frank's face
+                { id: 'task_lamp', x: 1200, y: 0.35, radius: 400, color: 0xffcc88, intensity: 1.5 },
                 // Generator glow (cold green/blue) - left side
                 { id: 'generator_glow', x: 280, y: 0.62, radius: 220, color: 0x88ffaa, intensity: 0.9, type: 'pulse' },
                 // Brain jar glow (green) - right side on shelves, aligned with jar
@@ -97,8 +116,8 @@
             // === NUCLEAR GENERATOR (left side) ===
             {
                 id: 'generator_nuclear',
-                x: 200, y: 0.48, w: 280, h: 0.38,
-                interactX: 280, interactY: 0.82,
+                ...LAYOUT.generator,
+                interactX: LAYOUT.generator.x, interactY: 0.82,
                 name: 'Nuclear Generator',
                 verbs: { action: 'Examine', look: 'Look at' },
                 responses: {
@@ -111,9 +130,9 @@
             // === BULKHEAD STAIRS (center-right) ===
             {
                 id: 'bulkhead_stairs',
-                x: 1040, y: 0.35, w: 360, h: 0.30,
-                interactX: 1350, interactY: 0.82,
-                name: 'Bulkhead Stairs',
+                ...LAYOUT.bulkhead_stairs,
+                interactX: LAYOUT.bulkhead_stairs.x + 300, interactY: 0.82,
+                name: 'Stairs to Backyard',
                 verbs: { action: 'Climb', look: 'Look at' },
                 responses: {
                     look: "Wooden stairs leading up to the outside. Light filters down from above. I can see each step descending from the open bulkhead doors.",
@@ -129,8 +148,8 @@
             // === FRANK (NPC) ===
             {
                 id: 'frank_npc',
-                x: 1240, y: 0.52, w: 80, h: 0.40,
-                interactX: 1280, interactY: 0.82,
+                ...LAYOUT.frank_npc,
+                interactX: LAYOUT.frank_npc.x, interactY: 0.82,
                 name: 'Frank',
                 type: 'npc',
                 verbs: { action: 'Talk to', look: 'Look at' },
@@ -144,8 +163,8 @@
             // === STORAGE SHELVES (right side) ===
             {
                 id: 'brain_jar',
-                x: 1700, y: 0.42, w: 100, h: 0.18,
-                interactX: 1750, interactY: 0.82,
+                ...LAYOUT.brain_jar,
+                interactX: LAYOUT.brain_jar.x, interactY: 0.82,
                 name: 'Brain in Jar',
                 verbs: { action: 'Take', look: 'Examine' },
                 responses: {
@@ -156,8 +175,8 @@
             },
             {
                 id: 'jars_various',
-                x: 1540, y: 0.48, w: 160, h: 0.20,
-                interactX: 1580, interactY: 0.82,
+                ...LAYOUT.jars_various,
+                interactX: LAYOUT.jars_various.x, interactY: 0.82,
                 name: 'Specimen Jars',
                 verbs: { action: 'Examine', look: 'Look at' },
                 responses: {
@@ -169,8 +188,8 @@
             // === ENVIRONMENT DETAILS ===
             {
                 id: 'cobwebs',
-                x: 120, y: 0.15, w: 100, h: 0.20,
-                interactX: 120, interactY: 0.82,
+                ...LAYOUT.cobwebs,
+                interactX: LAYOUT.cobwebs.x, interactY: 0.82,
                 name: 'Cobwebs',
                 verbs: { action: 'Clear away', look: 'Look at' },
                 responses: {
@@ -180,8 +199,8 @@
             },
             {
                 id: 'workbench_old',
-                x: 1000, y: 0.64, w: 240, h: 0.18,
-                interactX: 1100, interactY: 0.82,
+                ...LAYOUT.workbench,
+                interactX: LAYOUT.workbench.x + 100, interactY: 0.82,
                 name: 'Old Workbench',
                 verbs: { action: 'Search', look: 'Examine' },
                 responses: {
@@ -190,9 +209,20 @@
                 }
             },
             {
+                id: 'task_lamp',
+                ...LAYOUT.task_lamp,
+                interactX: LAYOUT.task_lamp.x, interactY: 0.82,
+                name: 'Task Lamp',
+                verbs: { action: 'Turn off', look: 'Look at' },
+                responses: {
+                    look: "An old task lamp with a dented metal shade. The bulb flickers occasionally.",
+                    action: "I'd rather leave it on. The basement is dark enough as it is."
+                }
+            },
+            {
                 id: 'lightbulb_bare',
-                x: 940, y: 0.18, w: 40, h: 0.14,
-                interactX: 960, interactY: 0.82,
+                ...LAYOUT.lightbulb,
+                interactX: LAYOUT.lightbulb.x, interactY: 0.82,
                 name: 'Bare Bulb',
                 verbs: { action: 'Touch', look: 'Look at' },
                 responses: {
@@ -202,8 +232,8 @@
             },
             {
                 id: 'crates_stacked',
-                x: 0, y: 0.56, w: 80, h: 0.34,
-                interactX: 40, interactY: 0.82,
+                ...LAYOUT.crates,
+                interactX: LAYOUT.crates.x, interactY: 0.82,
                 name: 'Stacked Crates',
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
@@ -653,10 +683,9 @@
             g.fillRect(startX + p * 10, shelfY + p, shelfWidth - p * 20, p);
         }
 
-        // Brain jar on second shelf (most prominent) - centered more to right
+        // Brain jar on second shelf (most prominent) - using LAYOUT position
         const brainShelfY = shelfTop + shelfSpacing + p * 15;
-        const brainX = startX + shelfWidth / 2 + p * 60;
-        drawBrainJar(g, brainX, brainShelfY - p * 35);
+        drawBrainJar(g, LAYOUT.brain_jar.x, brainShelfY - p * 35);
 
         // Other jars on various shelves
         drawJar(g, startX + p * 40, brainShelfY - p * 22, p * 12, p * 18, 0x8888ff);
@@ -812,6 +841,60 @@
         g.globalAlpha = 1.0;
     }
 
+    function drawTableLamp(g, x, y) {
+        // Base (wider, traditional lamp base)
+        g.fillStyle(COLORS.METAL_DARK);
+        g.fillRect(x - p * 12, y - p * 2, p * 24, p * 6);
+        g.fillStyle(COLORS.METAL_MID);
+        g.fillRect(x - p * 10, y, p * 20, p * 4);
+
+        // Body/column (short ceramic or metal column)
+        g.fillStyle(0x4a3a2a); // Ceramic brown
+        g.fillRect(x - p * 5, y - p * 46, p * 10, p * 44);
+        // Column highlight
+        g.fillStyle(0x5a4a3a);
+        g.fillRect(x - p * 4, y - p * 44, p * 3, p * 40);
+        // Column bands (decorative rings)
+        g.fillStyle(0x3a2a1a);
+        g.fillRect(x - p * 5, y - p * 12, p * 10, p * 2);
+        g.fillRect(x - p * 5, y - p * 30, p * 10, p * 2);
+
+        // Socket at top of column
+        g.fillStyle(COLORS.METAL_DARK);
+        g.fillRect(x - p * 4, y - p * 50, p * 8, p * 4);
+
+        // Lampshade (traditional cone/drum shape)
+        // Outer shade fabric
+        g.fillStyle(0x8a7a5a); // Beige/cream fabric
+        g.fillRect(x - p * 16, y - p * 60, p * 32, p * 14);
+
+        // Shade top band
+        g.fillStyle(0x6a5a4a);
+        g.fillRect(x - p * 16, y - p * 60, p * 32, p * 2);
+
+        // Shade bottom band
+        g.fillStyle(0x6a5a4a);
+        g.fillRect(x - p * 16, y - p * 48, p * 32, p * 2);
+
+        // Inner shade (darker, shows it's hollow)
+        g.fillStyle(0x3a3020);
+        g.fillRect(x - p * 14, y - p * 58, p * 28, p * 10);
+
+        // Bulb glow (warm light from inside)
+        g.fillStyle(0xffffcc);
+        g.globalAlpha = 0.8;
+        g.fillRect(x - p * 12, y - p * 56, p * 24, p * 8);
+        g.globalAlpha = 1.0;
+
+        // Shade texture (vertical lines suggesting pleats/fabric)
+        g.fillStyle(0x7a6a4a);
+        g.globalAlpha = 0.3;
+        for (let i = 0; i < 8; i++) {
+            g.fillRect(x - p * 14 + i * p * 4, y - p * 58, p, p * 10);
+        }
+        g.globalAlpha = 1.0;
+    }
+
     function drawFloorDrain(g, x, y) {
         const drainSize = p * 15;
 
@@ -868,10 +951,10 @@
         g.fillRect(x + p * 18, benchTop - p * 2, p * 3, p * 2);
     }
 
-    function drawStackedCrates(g, floorY) {
+    function drawStackedCrates(g, x, floorY) {
         const crateSize = p * 40;
         const numCrates = 4; // Stack of 4 crates
-        const x = 0; // All the way to left edge
+        const crateLeft = x - crateSize / 2; // x is center, calculate left edge
 
         // Draw crates from bottom to top, aligned evenly, sitting ON the floor
         for (let i = 0; i < numCrates; i++) {
@@ -879,22 +962,22 @@
 
             // Crate frame
             g.fillStyle(COLORS.WOOD_DARK);
-            g.fillRect(x, crateY, crateSize, crateSize);
+            g.fillRect(crateLeft, crateY, crateSize, crateSize);
 
             // Crate face
             g.fillStyle(COLORS.WOOD_MID);
-            g.fillRect(x + p * 2, crateY + p * 2, crateSize - p * 4, crateSize - p * 4);
+            g.fillRect(crateLeft + p * 2, crateY + p * 2, crateSize - p * 4, crateSize - p * 4);
 
             // Wood slats (horizontal)
             for (let j = 0; j < 3; j++) {
                 g.fillStyle(COLORS.WOOD_DARK);
-                g.fillRect(x + p * 4, crateY + p * 6 + j * p * 12, crateSize - p * 8, p * 3);
+                g.fillRect(crateLeft + p * 4, crateY + p * 6 + j * p * 12, crateSize - p * 8, p * 3);
             }
 
             // Wood grain
             g.fillStyle(COLORS.WOOD_LIGHT);
-            g.fillRect(x + p * 6, crateY + p * 4, crateSize - p * 12, p);
-            g.fillRect(x + p * 8, crateY + p * 18, crateSize - p * 16, p);
+            g.fillRect(crateLeft + p * 6, crateY + p * 4, crateSize - p * 12, p);
+            g.fillRect(crateLeft + p * 8, crateY + p * 18, crateSize - p * 16, p);
         }
     }
 
@@ -930,26 +1013,36 @@
         drawSupportBeam(g, p * 590, floorY, height);
 
         // === NUCLEAR GENERATOR (left side) ===
-        drawGenerator(g, p * 140, floorY);
+        drawGenerator(g, LAYOUT.generator.x, floorY);
 
-        // === STACKED CRATES (far left corner, pushed to edge) ===
-        drawStackedCrates(g, floorY);
+        // === STACKED CRATES (far left corner) ===
+        drawStackedCrates(g, LAYOUT.crates.x, floorY);
 
-        // === BULKHEAD STAIRS (to right of generator, extending left with side view) ===
-        drawBulkheadStairs(g, p * 700, floorY, ceilingY);
+        // === BULKHEAD STAIRS ===
+        const stairsRightEdge = LAYOUT.bulkhead_stairs.x + LAYOUT.bulkhead_stairs.w / 2;
+        drawBulkheadStairs(g, stairsRightEdge, floorY, ceilingY);
 
         // === STORAGE SHELVES (right side, extending to far right) ===
         drawStorageShelves(g, p * 720, floorY, worldWidth);
 
-        // === OLD WORKBENCH (shifted left, in front of stair wood wall) ===
+        // === OLD WORKBENCH ===
         // Drawn AFTER stairs so it appears in front of the wood wall
-        drawOldWorkbench(g, p * 500, floorY);
+        drawOldWorkbench(g, LAYOUT.workbench.x, floorY);
+
+        // === TASK LAMP (on workbench) ===
+        // Base sits at 0.50 (on bench), but hotspot is centered on shade at 0.413
+        const taskLampBaseY = height * 0.50;
+        drawTableLamp(g, LAYOUT.task_lamp.x, taskLampBaseY);
 
         // === BARE LIGHT BULB (drawn after stairs so it appears in front) ===
-        drawBareLightbulb(g, p * 480, p * 65);
+        const lightbulbY = LAYOUT.lightbulb.y * height;
+        drawBareLightbulb(g, LAYOUT.lightbulb.x, lightbulbY);
 
         // === COBWEBS (corners) ===
-        drawCobwebs(g, p * 10, p * 30, p * 50, p * 60);
+        const cobwebLeftX = LAYOUT.cobwebs.x - LAYOUT.cobwebs.w / 2;
+        const cobwebTopY = LAYOUT.cobwebs.y * height;
+        drawCobwebs(g, cobwebLeftX, cobwebTopY, LAYOUT.cobwebs.w, LAYOUT.cobwebs.h * height);
+        // Right corner cobwebs (decorative, no hotspot)
         drawCobwebs(g, worldWidth - p * 60, p * 40, p * 50, p * 50);
     }
 
