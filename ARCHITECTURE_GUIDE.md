@@ -1,7 +1,7 @@
 # The Sandwich Horror — Architecture Guide
 ## For Claude Code Implementation
 
-Last Updated: February 7, 2026 (Added §23 Dialogue Editing System, updated implementation status)
+Last Updated: February 8, 2026 (Updated §3 and §23 with complete dialogue fallback chain documentation)
 
 ---
 
@@ -72,10 +72,10 @@ If context was compacted mid-session, re-read the Always Read sections and `git 
 - Procedural item icons system (`src/data/items/icons.js`)
 - Debug overlay with coordinate display, hotspot visualization, walkable polygon
 - Dialogue export script (`tools/export_dialogue.js`) — exports all hotspot dialogue, items, flags, and combinations to `TSH_Hotspot_Dialogue.xlsx`
+- Dialogue import script (`tools/import_dialogue.js`) — reads `TSH_Hotspot_Dialogue.xlsx` and writes changed dialogue back into room data files
 
 ### Not Yet Built
 - **Cutscene/sequence system** — No async/await wrappers for walkTo/showDialog to enable scripted sequences
-- **Dialogue spreadsheet import** — Pipeline to read `TSH_Hotspot_Dialogue.xlsx` and write dialogue back into room data files
 
 ### Legacy Scene Classes
 These scenes use the old scene-class pattern instead of data-driven RoomScene:
@@ -332,13 +332,12 @@ TSH.Rooms.laboratory = {
         }
     ],
 
-    // Responses when using inventory items on hotspots
+    // Specific item-on-hotspot responses (all other combinations fall back to item failDefault or Global Use default)
     itemInteractions: {
         portal_device: {
-            component_item: "That fits perfectly!",
-            default: "That doesn't work on the portal device."
-        },
-        _default: "I can't use {item} on {hotspot}."    // {item} and {hotspot} are replaced
+            component_item: "That fits perfectly!"
+            // Per-hotspot defaults and _default are IGNORED by runtime — use item failDefaults instead
+        }
     },
 
     // First-visit entrance dialogue
@@ -376,6 +375,8 @@ TSH.Rooms.laboratory = {
 A single scene class (`RoomScene.js`) reads this data and renders any room.
 
 **Hotspot Data Format:** Room data uses `verbs` and `responses` objects. RoomScene internally transforms these to `verbLabels` and `lookResponse`/`useResponse`/`talkResponse` — but room data files should always use the `verbs`/`responses` format shown above.
+
+**Item Interaction Fallback:** When using an item on a hotspot, the runtime checks: (1) specific `itemInteractions[hotspot][item]` entry, (2) item's `failDefault` from spreadsheet, (3) Global Use default. Per-hotspot `.default` and `_default` entries are ignored. See §23 for full fallback chain documentation.
 
 **Per-Hotspot State Switching [PLANNED — NOT YET IMPLEMENTED]:** A future enhancement will allow hotspots to define a `states` object with conditions and per-state responses, so a single hotspot can automatically switch its name, responses, and available actions based on game flags. This will likely be implemented through the dialogue spreadsheet pipeline. Until then, use the `getHotspotData()` pattern (§3.1) to build different hotspot arrays based on `TSH.State`.
 
@@ -929,7 +930,8 @@ src/
     └── RoomScene.js                # Generic room renderer
 
 tools/
-└── export_dialogue.js              # Dialogue export script (Deno)
+├── export_dialogue.js              # Dialogue export script (Deno)
+└── import_dialogue.js              # Dialogue import script (Deno)
 ```
 
 ---
@@ -990,6 +992,7 @@ tools/
 - Don't put dialogue strings inside scene classes — dialogue is authored in `TSH_Hotspot_Dialogue.xlsx` and exported/imported via the dialogue pipeline (§23). Room data files contain the runtime copy.
 - Don't hardcode puzzle logic inside hotspot handlers (use action functions)
 - Don't create separate CSS/JS files — this is a single-page game
+- Don't write placeholder or AI-generated dialogue text for hotspots or items — use empty strings and let Chris author dialogue in the spreadsheet (§23)
 
 ---
 
@@ -1325,24 +1328,62 @@ All hotspot dialogue is authored in `TSH_Hotspot_Dialogue.xlsx` and imported int
 - Item columns contain what Nate says when **using that item ON the hotspot**
 - Hotspot ID (last column) maps back to the hotspot's `id` in room data
 
-### Fallback Chain
+### Fallback Chains
 
-When the player uses an item on a hotspot, the system checks in order:
+The game uses consistent 3-level fallback chains for all interaction types. The spreadsheet controls ALL dialogue through these chains.
 
-1. **Room-specific cell** — the item column for that hotspot in the room sheet
-2. **Item Fail Default** — the item's Fail Default in Global Defaults
-3. **Global Action Default** — the global USE default
+#### Item on Hotspot Interactions
 
-First non-blank value wins.
+When the player uses an inventory item on a hotspot:
+
+1. **Specific interaction** — Check `itemInteractions[hotspot][item]` in room data (populated from spreadsheet)
+2. **Item Fail Default** — Check item's Fail Default in Global Defaults tab
+3. **Global Use default** — Fall back to Global Use default
+
+Example: Using Candle on Window
+- No specific interaction defined → skip to level 2
+- Candle has blank failDefault → skip to level 3
+- Shows "Hmmmm no." (Global Use default)
+
+#### Direct Hotspot Actions (USE, EXAMINE, TALK TO)
+
+When the player left-clicks (USE) or right-clicks (EXAMINE) a hotspot:
+
+1. **Hotspot response** — Check hotspot's Use/Examine/TalkTo response from spreadsheet
+2. **Global default** — Fall back to Global Use/Examine/TalkTo default
+
+Example: Left-clicking Window with no Use response defined
+- Hotspot Use response is blank → skip to level 2
+- Shows "Hmmmm no." (Global Use default)
+
+#### Item on Item Combinations
+
+When the player combines two inventory items:
+
+1. **Recipe dialogue** — Check `TSH.Combinations` for explicit combination recipe
+2. **Held item Fail Default** — Check the **held/dragged item's** Fail Default
+3. **Global Use default** — Fall back to Global Use default
+
+Example: Using Matches on Help Wanted Ad (no recipe)
+- No combination recipe → skip to level 2
+- Matches has failDefault: "Surprisingly, I don't think lighting that on fire will help"
+- Shows Matches' failDefault
+
+Example: Using Candle on Help Wanted Ad (no recipe)
+- No combination recipe → skip to level 2
+- Candle has blank failDefault → skip to level 3
+- Shows "Hmmmm no." (Global Use default)
+
+**Key principle:** The **active/held item** provides the failure context. The item being used determines what Nate says when it doesn't work.
 
 ### Cell Conventions
 
 | Cell Content | Meaning |
 |--------------|---------|
-| (blank) | Unaddressed — needs dialogue written |
-| `[AI]` | AI-generated placeholder awaiting review |
-| `[DEFAULT]` | Intentionally uses fallback (no specific line needed) |
-| plain text | Human-written final dialogue |
+| (blank) | `""` in code — fallback chain handles at runtime |
+| plain text | That exact string in code |
+
+Every cell is a 1:1 mapping to a code value. No interpretation layer, no special tags.
 
 ### State Column
 
@@ -1362,7 +1403,7 @@ The game checks rows **top-to-bottom** and uses the **first match**. Put most-sp
 deno run --allow-read --allow-write --allow-env --allow-net tools/export_dialogue.js
 ```
 
-- Re-run anytime code changes to keep the spreadsheet in sync
+- Full overwrite of the spreadsheet every run (except Item Combinations tab)
 - Dynamically picks up new rooms, hotspots, items, and flags
 - **Preserves** hand-written dialogue in the Item Combinations tab on re-run
 - Overwrites all other tabs from code data
@@ -1371,7 +1412,38 @@ deno run --allow-read --allow-write --allow-env --allow-net tools/export_dialogu
 
 1. **Claude Code** re-runs the export script whenever hotspots, items, or flags change
 2. **Chris** edits dialogue directly in the spreadsheet
-3. **Import pipeline (TBD)** reads the spreadsheet and writes dialogue back into room data files
+3. **Import script** reads the spreadsheet and writes dialogue back into room data files
+
+**New hotspot rule:** When creating new hotspots, use empty strings (`""`) for all dialogue responses (look, action, talk). The export script creates the spreadsheet row; Chris writes the dialogue.
+
+**New item rule:** When creating new inventory items, use empty strings for description. The fallback chain provides default lines until specific dialogue is written.
+
+**No AI dialogue:** Claude Code must never generate placeholder dialogue text. Empty strings only.
+
+### Runtime Fallback Implementation
+
+The dialogue fallback system is implemented in three key locations:
+
+**Item on Hotspot:** `src/scenes/RoomScene.js` → `useItemOnHotspot()` method
+- Checks specific `itemInteractions` entry
+- Checks item's `failDefault`
+- Falls to `TSH.Defaults.use`
+
+**Direct Hotspot Actions:** `src/scenes/RoomScene.js` → `executeAction()` method override
+- Checks `hotspot.useResponse` / `lookResponse` / `talkResponse`
+- Falls to `TSH.Defaults.use` / `examine` / `talkTo`
+
+**Item Combinations:** `src/data/items/combinations.js` → `executeCombine()` method
+- Checks for recipe in `combinations` object
+- Checks held item's `failDefault`
+- Falls to `TSH.Defaults.use`
+
+**Ignored at runtime:**
+- Per-hotspot defaults (`itemInteractions[hotspot].default`)
+- Room-level defaults (`itemInteractions._default`)
+- Hardcoded fallback strings (replaced with spreadsheet defaults)
+
+These may exist in older room data files but are no longer checked by the game.
 
 ### Scope Boundary
 
@@ -1381,3 +1453,16 @@ The spreadsheet contains **ONLY dialogue** — what Nate says. It does not conta
 - Action triggers, transitions, or sound effects
 
 All puzzle logic stays in code (`actionTrigger`, `giveItem`, `setFlags`, etc.).
+
+### Import Script
+
+`tools/import_dialogue.js` — run with Deno:
+
+```
+deno run --allow-read --allow-write --allow-env --allow-net tools/import_dialogue.js
+```
+
+- Reads `TSH_Hotspot_Dialogue.xlsx` and writes ALL cells back to room data files (blank → `""`, text → that string)
+- Compares spreadsheet values against current code values — only writes files where dialogue actually changed
+- Logs which files were updated and how many lines changed
+- Does NOT modify game logic, positions, drawing code, or anything structural — only string literal values
