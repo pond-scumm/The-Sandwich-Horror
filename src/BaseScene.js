@@ -183,6 +183,9 @@
                 if (!this.textures.exists('earl_placeholder')) {
                     this.load.image('earl_placeholder', 'assets/sprites/earl_placeholder.png');
                 }
+                if (!this.textures.exists('frank_placeholder')) {
+                    this.load.image('frank_placeholder', 'assets/sprites/frank_placeholder.png');
+                }
             }
 
             create() {

@@ -46,9 +46,7 @@
                 // Brain jar glow (green) - right side on shelves, aligned with jar
                 { id: 'brain_glow', x: 1800, y: 0.46, radius: 150, color: 0x88ff88, intensity: 1.0, type: 'pulse' },
                 // Daylight from bulkhead (when open)
-                { id: 'bulkhead_light', x: 1200, y: 0.10, radius: 250, color: 0xaabbdd, intensity: 0.6 },
-                // Frank illumination - makes Frank visible in the lighting
-                { id: 'frank_light', x: 1280, y: 0.60, radius: 180, color: 0xffcc88, intensity: 0.8 }
+                { id: 'bulkhead_light', x: 1200, y: 0.10, radius: 250, color: 0xaabbdd, intensity: 0.6 }
             ]
         },
 
@@ -80,8 +78,15 @@
         exits: [],
 
         npcs: [
-            // Frank is drawn procedurally in the room drawing function
-            // NPC interaction handled via hotspot
+            {
+                id: 'frank',
+                name: 'Frank',
+                sprite: 'frank_placeholder',
+                position: { x: 1280, y: 0.82 },
+                heightRatio: 1.15,
+                interactX: 1280,
+                interactY: 0.82
+            }
         ],
 
         // =====================================================================
@@ -893,68 +898,6 @@
         }
     }
 
-    function drawFrank(g, x, floorY) {
-        // Frank the friendly monster - 1.15x Nate's height, similar to Earl's proportions
-        const frankHeight = p * 181;  // ~362px tall (1.15x Nate's ~315px)
-        const torsoWidth = p * 24;
-        const feetY = floorY;
-
-        // Legs (black suit pants with gap in middle)
-        g.fillStyle(0x1a1a1a);  // Black suit
-        g.fillRect(x - p*12, feetY - p*70, p*10, p*70);  // Left leg
-        g.fillRect(x + p*2, feetY - p*70, p*10, p*70);   // Right leg
-
-        // Feet (black shoes)
-        g.fillStyle(0x0a0a0a);
-        g.fillRect(x - p*13, feetY - p*8, p*12, p*8);    // Left foot
-        g.fillRect(x + p*2, feetY - p*8, p*12, p*8);     // Right foot
-
-        // Body/torso (black suit jacket)
-        g.fillStyle(0x1a1a1a);
-        g.fillRect(x - p*12, feetY - p*130, torsoWidth, p*62);
-
-        // Suit lapels (darker)
-        g.fillStyle(0x0a0a0a);
-        g.fillRect(x - p*12, feetY - p*130, p*6, p*30);  // Left lapel
-        g.fillRect(x + p*6, feetY - p*130, p*6, p*30);   // Right lapel
-
-        // Arms (black suit sleeves)
-        g.fillStyle(0x1a1a1a);
-        g.fillRect(x - p*18, feetY - p*120, p*6, p*40);  // Left arm
-        g.fillRect(x + p*12, feetY - p*120, p*6, p*40);  // Right arm
-
-        // Hands (green skin)
-        g.fillStyle(0x88aa66);  // Green skin tone
-        g.fillRect(x - p*19, feetY - p*80, p*7, p*8);    // Left hand
-        g.fillRect(x + p*12, feetY - p*80, p*7, p*8);    // Right hand
-
-        // Neck (green skin - Frank has a neck unlike Earl)
-        g.fillStyle(0x88aa66);
-        g.fillRect(x - p*6, feetY - p*140, p*12, p*12);  // Neck
-
-        // Neck bolts (gray metal)
-        g.fillStyle(0x6a6a6a);
-        g.fillRect(x - p*10, feetY - p*135, p*4, p*3);   // Left bolt
-        g.fillRect(x + p*6, feetY - p*135, p*4, p*3);    // Right bolt
-
-        // Head (green face)
-        g.fillStyle(0x88aa66);
-        g.fillRect(x - p*12, feetY - p*158, p*24, p*30);  // Head
-
-        // Hair (black, flat top)
-        g.fillStyle(0x0a0a0a);
-        g.fillRect(x - p*12, feetY - p*168, p*24, p*12);  // Hair on top
-
-        // Simple dot eyes
-        g.fillStyle(0x1a1a1a);
-        g.fillRect(x - p*8, feetY - p*148, p*3, p*3);    // Left eye
-        g.fillRect(x + p*5, feetY - p*148, p*3, p*3);    // Right eye
-
-        // Simple line mouth
-        g.fillStyle(0x1a1a1a);
-        g.fillRect(x - p*4, feetY - p*138, p*8, p*2);    // Mouth line
-    }
-
     // =========================================================================
     // MAIN ROOM DRAWING FUNCTION
     // =========================================================================
@@ -1001,9 +944,6 @@
         // === OLD WORKBENCH (shifted left, in front of stair wood wall) ===
         // Drawn AFTER stairs so it appears in front of the wood wall
         drawOldWorkbench(g, p * 500, floorY);
-
-        // === FRANK (Frankenstein's monster - between workbench and shelves) ===
-        drawFrank(g, p * 640, floorY);
 
         // === BARE LIGHT BULB (drawn after stairs so it appears in front) ===
         drawBareLightbulb(g, p * 480, p * 65);
