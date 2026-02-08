@@ -1029,7 +1029,7 @@
             // Examine a hotspot (show look description)
             examineHotspot(hotspot) {
                 if (this.debugEnabled) return;
-                const lookText = hotspot.lookResponse || hotspot.look || `It's ${hotspot.name}.`;
+                const lookText = hotspot.lookResponse || hotspot.look || TSH.Defaults.examine;
                 this.showDialog(lookText);
             }
 
@@ -1538,7 +1538,7 @@
             // Override in subclass for room-specific item interactions
             useItemOnHotspot(item, hotspot) {
                 if (this.debugEnabled) return;
-                this.showDialog(`That doesn't work.`);
+                this.showDialog(TSH.Defaults.use.replace('{item}', item.name).replace('{hotspot}', hotspot.name));
             }
 
             // Remove a hotspot from the scene (e.g., after picking up an item)
@@ -2757,7 +2757,8 @@
                 console.log('[Inventory] Trying to combine:', itemA.id, '+', itemB.id);
 
                 // Execute combination via TSH.Combinations (handles state changes)
-                const result = TSH.Combinations.executeCombine(itemA.id, itemB.id);
+                // itemA is the held/selected item (for failDefault fallback)
+                const result = TSH.Combinations.executeCombine(itemA.id, itemB.id, itemA.id);
 
                 // Play the sound effect
                 if (result.sfx) {

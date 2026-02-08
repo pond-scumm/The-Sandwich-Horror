@@ -597,7 +597,8 @@ class UIScene extends Phaser.Scene {
 
     tryCombineItems(itemA, itemB) {
         // Execute combination via TSH.Combinations (handles state changes)
-        const result = TSH.Combinations.executeCombine(itemA.id, itemB.id);
+        // itemA is the held/selected item (for failDefault fallback)
+        const result = TSH.Combinations.executeCombine(itemA.id, itemB.id, itemA.id);
 
         // Play the sound effect
         if (result.sfx) {

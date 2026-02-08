@@ -32,7 +32,7 @@
     combinations[makeKey('candle', 'matches')] = {
         consumes: ['candle'],  // Keep matches, they have more than one use
         produces: 'lit_candle',
-        dialogue: "I light the candle. Ooh, very cozy!",
+        dialogue: "Better to light a candle than be slightly scared of the dark.",
         setFlags: {}
     };
 
@@ -75,7 +75,7 @@
     combinations[makeKey('trophy_item_1', 'trophy_item_2')] = {
         consumes: ['trophy_item_1', 'trophy_item_2'],
         produces: 'trophy_assembled',
-        dialogue: "I tape them together. It's... trophy-shaped. Ish. Needs paint.",
+        dialogue: "I taped them together. It's... trophy-shaped. Ish. Needs paint.",
         setFlags: { 'brain.trophy_built': true }
     };
     
@@ -113,19 +113,32 @@
 
         // Execute a combination and modify state.
         // Always returns a result object: { success, dialogue, sfx, consumes?, produces? }
-        executeCombine(itemAId, itemBId) {
+        // heldItemId: the item being used/dragged (for failDefault fallback)
+        executeCombine(itemAId, itemBId, heldItemId) {
             const key = makeKey(itemAId, itemBId);
             const recipe = combinations[key];
 
             // No recipe exists for this combination
             if (!recipe) {
-                const itemA = TSH.Items[itemAId];
-                const itemB = TSH.Items[itemBId];
-                const nameA = itemA ? itemA.name : itemAId;
-                const nameB = itemB ? itemB.name : itemBId;
+                // 3-level fallback chain:
+                // 1. Recipe dialogue (not found, so skip)
+                // 2. Held item's failDefault
+                // 3. Global Use default
+
+                const heldItem = TSH.Items[heldItemId];
+                let dialogue;
+
+                if (heldItem && heldItem.failDefault) {
+                    // Use held item's failDefault
+                    dialogue = heldItem.failDefault;
+                } else {
+                    // Fall back to Global Use default
+                    dialogue = TSH.Defaults.use;
+                }
+
                 return {
                     success: false,
-                    dialogue: `I can't combine the ${nameA} with the ${nameB}.`,
+                    dialogue: dialogue,
                     sfx: 'item_fail'
                 };
             }
