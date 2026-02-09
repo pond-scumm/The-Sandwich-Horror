@@ -732,15 +732,31 @@ class UIScene extends Phaser.Scene {
         return Math.max(minX, Math.min(maxX, x));
     }
 
+    // Get appropriate position for hotspot label based on inventory state
+    getLabelPosition(pointerX, pointerY) {
+        if (TSH.State.isInventoryOpen()) {
+            // When inventory is open, position label fixed above inventory box
+            // Centered horizontally, just above the panel top (panel top is at Y=120)
+            const x = this.cameras.main.width / 2;
+            const y = 110;  // Just above inventory panel
+            return { x, y };
+        } else {
+            // When inventory is closed, follow cursor as before
+            const x = this.clampLabelX(pointerX);
+            const y = pointerY - 30;
+            return { x, y };
+        }
+    }
+
     setHotspotLabel(text) {
         // When inventory is open, use UIScene's label (follows cursor)
         if (TSH.State.isInventoryOpen()) {
             if (this.hotspotLabel) {
                 this.hotspotLabel.setText(text);
                 this.hotspotLabel.setVisible(text !== '');
-                // Position near cursor, clamped to screen bounds
-                const clampedX = this.clampLabelX(this.lastPointerX);
-                this.hotspotLabel.setPosition(clampedX, this.lastPointerY - 30);
+                // Position based on inventory state (fixed when open, follows cursor when closed)
+                const pos = this.getLabelPosition(this.lastPointerX, this.lastPointerY);
+                this.hotspotLabel.setPosition(pos.x, pos.y);
             }
             // Hide game scene's label when inventory is open
             const gameScene = this.getActiveGameScene();
@@ -895,10 +911,10 @@ class UIScene extends Phaser.Scene {
             this.itemCursor.setPosition(pointer.x, pointer.y);
         }
 
-        // Update hotspot label position (follows cursor when inventory is open)
+        // Update hotspot label position (fixed when inventory open, follows cursor when closed)
         if (this.hotspotLabel && this.hotspotLabel.visible) {
-            const clampedX = this.clampLabelX(pointer.x);
-            this.hotspotLabel.setPosition(clampedX, pointer.y - 30);
+            const pos = this.getLabelPosition(pointer.x, pointer.y);
+            this.hotspotLabel.setPosition(pos.x, pos.y);
         }
 
         // Handle button hover (desktop only)
