@@ -793,7 +793,7 @@ class RoomScene extends BaseScene {
 
                 this.walkTo(targetX, targetY, () => {
                     this.transitionToScene(exit.target, exit.spawnPoint);
-                });
+                }, true);
             });
 
             zone.on('pointerover', () => {
