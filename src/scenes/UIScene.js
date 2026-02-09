@@ -1329,7 +1329,9 @@ class UIScene extends Phaser.Scene {
 
         // Check settings button
         if (this.isClickOnSettingsButton(pointer)) {
-            TSH.State.setUIState('settingsOpen', true);
+            // Toggle settings menu - if already open, close it
+            const isOpen = TSH.State.getUIState('settingsOpen');
+            TSH.State.setUIState('settingsOpen', !isOpen);
             this.updateSettingsButtonState();
             return true;
         }
