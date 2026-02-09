@@ -177,6 +177,20 @@
                 if (!this.textures.exists('nate_placeholder')) {
                     this.load.image('nate_placeholder', 'assets/sprites/nate_placeholder.png');
                 }
+
+                // Load spritesheet for walk animation (6 frames horizontal, 180x610 each)
+                if (!this.textures.exists('nate_walk')) {
+                    this.load.spritesheet('nate_walk',
+                        'assets/sprites/nate/HeroWalkingRight1-Sheet.png', {
+                        frameWidth: 180,
+                        frameHeight: 610
+                    });
+                }
+
+                // Load separate idle texture
+                if (!this.textures.exists('nate_idle')) {
+                    this.load.image('nate_idle', 'assets/sprites/nate/nate_idle.png');
+                }
                 if (!this.textures.exists('hector_placeholder')) {
                     this.load.image('hector_placeholder', 'assets/sprites/hector_placeholder.png');
                 }
@@ -193,6 +207,19 @@
 
             create() {
                 const { width, height } = this.scale;
+
+                // Register walk animation once (checks if already exists to avoid re-creating)
+                if (!this.anims.exists('nate_walk') && this.textures.exists('nate_walk')) {
+                    this.anims.create({
+                        key: 'nate_walk',
+                        frames: this.anims.generateFrameNumbers('nate_walk', {
+                            start: 0,
+                            end: 5
+                        }),
+                        frameRate: 10,  // Starting point - will tune by eye
+                        repeat: -1      // Loop indefinitely
+                    });
+                }
 
                 // CRITICAL: Destroy all old hotspot zones BEFORE resetting the array
                 // This fixes the bug where hotspots from previous rooms persist in Phaser's input system
@@ -338,7 +365,6 @@
                 TSH.State._state.ui.settingsOpen = false;
 
                 // Reset hover states to prevent stale state on next open
-                this.settingsCloseBtnHovered = false;
                 this.settingsReturnBtnHovered = false;
 
                 // Hide overlay and panel
@@ -522,9 +548,8 @@
                 // Block all settings interactions in debug mode
                 if (this.debugEnabled) return;
 
-                // Check if clicking X button or Return button
-                if (this.settingsCloseBtnHovered || this.settingsReturnBtnHovered ||
-                    this.isClickOnSettingsCloseButton(pointer) || this.isClickOnSettingsReturnButton(pointer)) {
+                // Check if clicking Return button (coordinate-based only, no hover state)
+                if (this.isClickOnSettingsReturnButton(pointer)) {
                     // Use state-driven approach when UIScene handles buttons
                     if (this.uiSceneActive) {
                         TSH.State.setUIState('settingsOpen', false);
@@ -534,17 +559,14 @@
                     return;
                 }
 
-                // Check fullscreen checkbox
-                if (this.fullscreenCheckboxHovered || this.isClickOnFullscreenCheckbox(pointer)) {
+                // Check fullscreen checkbox (coordinate-based only, no hover state)
+                if (this.isClickOnFullscreenCheckbox(pointer)) {
                     this.toggleFullscreen();
                     return;
                 }
 
-                // Check volume slider interaction (mute buttons and slider tracks)
-                // Try hover-based first, then coordinate-based
-                if (!this.checkVolumeSliderClickByHover()) {
-                    this.isClickOnVolumeMuteButton(pointer) || this.isClickOnVolumeSlider(pointer);
-                }
+                // Check volume slider interaction (coordinate-based only)
+                this.isClickOnVolumeMuteButton(pointer) || this.isClickOnVolumeSlider(pointer);
             }
 
             // ========== DESKTOP INPUT HANDLERS ==========
@@ -1146,9 +1168,9 @@
                 this.player = this.add.container(spawnX, playerY);
 
                 // Check if sprite texture is loaded
-                if (this.textures.exists('nate_placeholder')) {
-                    // Create sprite with origin at bottom-center (feet)
-                    this.playerSprite = this.add.sprite(0, 0, 'nate_placeholder');
+                if (this.textures.exists('nate_idle')) {
+                    // Create sprite with origin at bottom-center (feet) - default to idle
+                    this.playerSprite = this.add.sprite(0, 0, 'nate_idle');
                     this.playerSprite.setOrigin(0.5, 1);  // Bottom-center
                     this.playerSprite.setScale(scale);
                     this.playerSprite.setPipeline('Light2D');
@@ -1302,8 +1324,11 @@
                         return;
                     }
 
-                    if (targetX < this.player.x) this.player.setScale(-1, 1);
-                    else if (targetX > this.player.x) this.player.setScale(1, 1);
+                    // Set facing direction using sprite flip (not container scale)
+                    if (this.playerSprite && this.playerSprite.setFlipX) {
+                        const facingLeft = targetX < this.player.x;
+                        this.playerSprite.setFlipX(facingLeft);  // true = flip horizontally
+                    }
 
                     this.isWalking = true;
                     this.startWalkAnimation(isRunning);
@@ -1345,30 +1370,33 @@
             }
 
             startWalkAnimation(isRunning = false) {
-                const animDuration = isRunning ? 100 : 200;
-                const legSwing = isRunning ? 8 : 5;
+                if (!this.playerSprite || !this.playerSprite.anims) return;
+
+                // Check if walk animation exists
+                if (this.anims.exists('nate_walk')) {
+                    // Calculate frameRate based on speed
+                    // Walk: 450px/s at 10fps (base)
+                    // Run: 750px/s at 16.67fps (1.67x faster)
+                    const baseFrameRate = 10;  // Starting point for tuning
+                    const frameRate = isRunning ? baseFrameRate * (750 / 450) : baseFrameRate;
+
+                    // Play walk animation at appropriate speed
+                    this.playerSprite.play('nate_walk', false);  // false = don't restart if already playing
+                    this.playerSprite.anims.msPerFrame = 1000 / frameRate;  // Adjust speed dynamically
+                }
 
                 // Start footstep sounds
                 this.startFootsteps(isRunning);
-
-                this.bobTween = this.tweens.add({
-                    targets: { progress: 0 },
-                    progress: 1,
-                    duration: animDuration,
-                    repeat: -1,
-                    yoyo: true,
-                    onUpdate: (tween) => {
-                        const progress = tween.getValue();
-                        if (this.leftLeg) this.leftLeg.x = Math.sin(progress * Math.PI) * legSwing;
-                        if (this.rightLeg) this.rightLeg.x = -Math.sin(progress * Math.PI) * legSwing;
-                    }
-                });
             }
 
             stopWalkAnimation() {
-                if (this.bobTween) this.bobTween.stop();
-                if (this.leftLeg) this.leftLeg.x = 0;
-                if (this.rightLeg) this.rightLeg.x = 0;
+                if (this.playerSprite && this.playerSprite.anims) {
+                    this.playerSprite.stop();  // Stop animation
+                    if (this.textures.exists('nate_idle')) {
+                        this.playerSprite.setTexture('nate_idle');  // Return to idle texture
+                    }
+                }
+
                 this.stopFootsteps();
             }
 
@@ -1811,11 +1839,24 @@
                 this.settingsBlurOverlay.setVisible(false);
 
                 // Create settings panel
-                const panelWidth = 320;
-                const panelHeight = 520;
+                // Responsive panel sizing
+                const panelWidth = this.isMobile ? 400 : 320;
+                const panelHeight = this.isMobile ? 640 : 520;
                 // Store for click detection
                 this.settingsPanelWidth = panelWidth;
                 this.settingsPanelHeight = panelHeight;
+
+                // Responsive sizing for mobile - larger touch targets
+                const useLargeTouchTargets = this.isMobile;
+                const closeSize = useLargeTouchTargets ? 56 : 32;      // 48→56 on mobile
+                const checkboxSize = useLargeTouchTargets ? 48 : 24;   // 40→48 on mobile (meets standard!)
+                const muteButtonSize = useLargeTouchTargets ? 52 : 28; // 44→52 on mobile
+                const sliderTrackHeight = useLargeTouchTargets ? 16 : 8;
+                const sliderHandleRadius = useLargeTouchTargets ? 18 : 12; // 16→18 on mobile (36px diameter)
+
+                // Store checkbox size for later use
+                this.checkboxSize = checkboxSize;
+
                 this.settingsPanel = this.add.container(width / 2, height / 2);
                 this.settingsPanel.setDepth(5600);
                 this.settingsPanel.setScrollFactor(0);
@@ -1830,48 +1871,35 @@
                 this.settingsPanel.add(panelBg);
 
                 // Title
-                const title = this.add.text(0, -panelHeight/2 + 35, 'SETTINGS', {
+                const title = this.add.text(0, -panelHeight/2 + 30, 'SETTINGS', {
                     fontFamily: '"Press Start 2P", cursive',
-                    fontSize: '18px',
+                    fontSize: this.isMobile ? '12px' : '14px',  // Smaller on mobile for space
                     color: '#ffffff'
                 }).setOrigin(0.5);
                 this.settingsPanel.add(title);
 
-                // Close X button (top right)
-                const closeSize = 32;
-                const closeX = panelWidth/2 - 25;
-                const closeY = -panelHeight/2 + 25;
+                // Full Screen checkbox - larger on mobile (most important control)
+                this.fullscreenCheckboxSize = this.isMobile ? 64 : checkboxSize;
+                const checkboxY = -panelHeight/2 + 80;
 
-                const closeBtnBg = this.add.graphics();
-                closeBtnBg.fillStyle(0x4a4a6a, 1);
-                closeBtnBg.fillCircle(closeX, closeY, closeSize/2);
-                this.settingsPanel.add(closeBtnBg);
-
-                const closeBtnText = this.add.text(closeX, closeY, 'X', {
+                // Create label first to measure its width
+                const fullscreenLabel = this.add.text(0, 0, 'Full Screen', {
                     fontFamily: '"Press Start 2P", cursive',
-                    fontSize: '14px',
-                    color: '#ffffff'
-                }).setOrigin(0.5);
-                this.settingsPanel.add(closeBtnText);
-
-                this.settingsCloseBtnBg = closeBtnBg;
-                this.settingsCloseBtnHovered = false;
-                this.settingsCloseBtnArea = { x: closeX, y: closeY, size: closeSize };
-
-                // Full Screen checkbox
-                const checkboxSize = 24;
-                const checkboxX = -panelWidth/2 + 40;
-                const checkboxY = -panelHeight/2 + 100;
-
-                const fullscreenCheckboxBg = this.add.graphics();
-                this.drawCheckbox(fullscreenCheckboxBg, checkboxX, checkboxY, checkboxSize, false, false);
-                this.settingsPanel.add(fullscreenCheckboxBg);
-
-                const fullscreenLabel = this.add.text(checkboxX + checkboxSize/2 + 15, checkboxY, 'Full Screen', {
-                    fontFamily: '"Press Start 2P", cursive',
-                    fontSize: '12px',
+                    fontSize: this.isMobile ? '16px' : '12px',  // Larger on mobile
                     color: '#ffffff'
                 }).setOrigin(0, 0.5);
+
+                // Center the checkbox + label group horizontally
+                const gap = 15;
+                const totalWidth = this.fullscreenCheckboxSize + gap + fullscreenLabel.width;
+                const checkboxX = -(totalWidth / 2) + (this.fullscreenCheckboxSize / 2);
+                const labelX = checkboxX + this.fullscreenCheckboxSize/2 + gap;
+
+                const fullscreenCheckboxBg = this.add.graphics();
+                this.drawCheckbox(fullscreenCheckboxBg, checkboxX, checkboxY, this.fullscreenCheckboxSize, false, false);
+                this.settingsPanel.add(fullscreenCheckboxBg);
+
+                fullscreenLabel.setPosition(labelX, checkboxY);
                 this.settingsPanel.add(fullscreenLabel);
 
                 this.fullscreenCheckboxBg = fullscreenCheckboxBg;
@@ -1880,29 +1908,29 @@
                 this.fullscreenCheckboxArea = {
                     x: checkboxX,
                     y: checkboxY,
-                    width: checkboxSize + 15 + fullscreenLabel.width,
-                    height: checkboxSize
+                    width: totalWidth,
+                    height: this.fullscreenCheckboxSize
                 };
 
                 // ========== VOLUME SECTION ==========
-                const volumeSectionY = -panelHeight/2 + 150;
+                const volumeSectionY = this.isMobile ? -panelHeight/2 + 190 : -panelHeight/2 + 130;  // More breathing room on mobile
 
                 // Volume header
                 const volumeHeader = this.add.text(0, volumeSectionY, 'VOLUME', {
                     fontFamily: '"Press Start 2P", cursive',
-                    fontSize: '14px',
+                    fontSize: '12px',
                     color: '#aaaacc'
                 }).setOrigin(0.5);
                 this.settingsPanel.add(volumeHeader);
 
                 // Slider configuration - labels above, controls below
                 const sliderConfig = {
-                    startX: -panelWidth/2 + 25,
-                    trackWidth: 180,
-                    trackHeight: 8,
-                    handleRadius: 12,
-                    rowHeight: 70,  // More space for label above
-                    muteSize: 28
+                    startX: -panelWidth/2 + (this.isMobile ? 30 : 25),  // More margin on mobile
+                    trackWidth: this.isMobile ? 200 : 180,              // Wider track on mobile
+                    trackHeight: sliderTrackHeight,      // 16px mobile, 8px desktop
+                    handleRadius: sliderHandleRadius,    // 18px mobile, 12px desktop
+                    rowHeight: this.isMobile ? 105 : 70,                // More spacing on mobile (85→105)
+                    muteSize: muteButtonSize             // 52px mobile, 28px desktop
                 };
 
                 // Initialize volume slider state
@@ -1930,8 +1958,8 @@
                 });
 
                 // Return to Game button
-                const btnWidth = 220;
-                const btnHeight = 50;
+                const btnWidth = this.isMobile ? 280 : 220;  // Wider on mobile
+                const btnHeight = this.isMobile ? 60 : 50;   // Taller on mobile
                 const btnY = panelHeight/2 - 50;
 
                 const returnBtn = this.add.container(0, btnY);
@@ -1945,7 +1973,7 @@
 
                 const returnBtnText = this.add.text(0, 0, 'Return to Game', {
                     fontFamily: '"Press Start 2P", cursive',
-                    fontSize: '12px',
+                    fontSize: this.isMobile ? '14px' : '12px',  // Larger on mobile
                     color: '#ffffff'
                 }).setOrigin(0.5);
                 returnBtn.add(returnBtnText);
@@ -2061,7 +2089,8 @@
                 };
 
                 // Label above the controls (left-aligned)
-                const labelText = this.add.text(config.startX, y - 22, label, {
+                const labelOffset = this.isMobile ? -38 : -22;  // More space on mobile for larger controls
+                const labelText = this.add.text(config.startX, y + labelOffset, label, {
                     fontFamily: '"Press Start 2P", cursive',
                     fontSize: '10px',
                     color: '#ffffff'
@@ -2130,31 +2159,34 @@
                 graphics.lineStyle(2, borderColor, 1);
                 graphics.strokeRoundedRect(x - size/2, y - size/2, size, size, 4);
 
-                // Speaker icon
+                // Icon (speaker) - scale relative to original 28px design
+                const iconScale = size / 28;
                 const iconColor = muted ? 0x888888 : 0xffffff;
                 graphics.fillStyle(iconColor, 1);
 
-                // Speaker body (rectangle)
-                graphics.fillRect(x - size/5, y - size/6, size/5, size/3);
+                // Speaker body (rectangle) - scaled
+                const bodyWidth = (28/5) * iconScale;
+                const bodyHeight = (28/3) * iconScale;
+                graphics.fillRect(x - (28/5) * iconScale, y - (28/6) * iconScale, bodyWidth, bodyHeight);
 
-                // Speaker cone (triangle)
+                // Speaker cone (triangle) - scaled
                 graphics.beginPath();
-                graphics.moveTo(x, y - size/6);
-                graphics.lineTo(x + size/4, y - size/3);
-                graphics.lineTo(x + size/4, y + size/3);
-                graphics.lineTo(x, y + size/6);
+                graphics.moveTo(x, y - (28/6) * iconScale);
+                graphics.lineTo(x + (28/4) * iconScale, y - (28/3) * iconScale);
+                graphics.lineTo(x + (28/4) * iconScale, y + (28/3) * iconScale);
+                graphics.lineTo(x, y + (28/6) * iconScale);
                 graphics.closePath();
                 graphics.fill();
 
-                // Sound waves or X for muted
+                // Sound waves or X for muted - scaled
                 if (muted) {
                     // Draw X
                     graphics.lineStyle(2, 0xff6666, 1);
                     graphics.beginPath();
-                    graphics.moveTo(x - size/3, y - size/4);
-                    graphics.lineTo(x + size/3, y + size/4);
-                    graphics.moveTo(x + size/3, y - size/4);
-                    graphics.lineTo(x - size/3, y + size/4);
+                    graphics.moveTo(x - (28/3) * iconScale, y - (28/4) * iconScale);
+                    graphics.lineTo(x + (28/3) * iconScale, y + (28/4) * iconScale);
+                    graphics.moveTo(x + (28/3) * iconScale, y - (28/4) * iconScale);
+                    graphics.lineTo(x - (28/3) * iconScale, y + (28/4) * iconScale);
                     graphics.strokePath();
                 }
             }
@@ -2275,20 +2307,8 @@
             }
 
             isClickOnSettingsCloseButton(pointer) {
-                if (!this.settingsCloseBtnArea || !this.settingsPanel) return false;
-                const { width, height } = this.scale;
-                // Panel is centered on screen
-                const panelX = width / 2;
-                const panelY = height / 2;
-                // Close button position relative to panel
-                const closeBtn = this.settingsCloseBtnArea;
-                const btnX = panelX + closeBtn.x;
-                const btnY = panelY + closeBtn.y;
-                // Check circular hit area
-                const dx = pointer.x - btnX;
-                const dy = pointer.y - btnY;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                return dist <= closeBtn.size / 2;
+                // Close button removed - always return false
+                return false;
             }
 
             isClickOnFullscreenCheckbox(pointer) {
@@ -2319,7 +2339,7 @@
                 // Redraw checkbox with new state
                 if (this.fullscreenCheckboxBg && this.fullscreenCheckboxArea) {
                     const cb = this.fullscreenCheckboxArea;
-                    this.drawCheckbox(this.fullscreenCheckboxBg, cb.x, cb.y, 24, this.fullscreenChecked, this.fullscreenCheckboxHovered);
+                    this.drawCheckbox(this.fullscreenCheckboxBg, cb.x, cb.y, this.fullscreenCheckboxSize, this.fullscreenChecked, this.fullscreenCheckboxHovered);
                 }
             }
 
@@ -2327,7 +2347,7 @@
                 this.fullscreenChecked = this.scale.isFullscreen;
                 if (this.fullscreenCheckboxBg && this.fullscreenCheckboxArea) {
                     const cb = this.fullscreenCheckboxArea;
-                    this.drawCheckbox(this.fullscreenCheckboxBg, cb.x, cb.y, 24, this.fullscreenChecked, this.fullscreenCheckboxHovered);
+                    this.drawCheckbox(this.fullscreenCheckboxBg, cb.x, cb.y, this.fullscreenCheckboxSize, this.fullscreenChecked, this.fullscreenCheckboxHovered);
                 }
             }
 
@@ -2571,40 +2591,6 @@
                     return;
                 }
 
-                // Check if hovering over close X button
-                let overClose = false;
-                if (this.settingsCloseBtnArea && this.settingsPanel && this.settingsPanel.visible) {
-                    const panel = this.settingsPanel;
-                    const closeBtn = this.settingsCloseBtnArea;
-                    // Convert pointer to panel-local coordinates
-                    const localX = pointer.x - panel.x;
-                    const localY = pointer.y - panel.y;
-                    const dx = localX - closeBtn.x;
-                    const dy = localY - closeBtn.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    overClose = dist <= closeBtn.size / 2;
-                }
-
-                // Update close button visual state if hover changed
-                if (overClose !== this.settingsCloseBtnHovered) {
-                    this.settingsCloseBtnHovered = overClose;
-                    if (this.settingsCloseBtnBg) {
-                        const closeBtn = this.settingsCloseBtnArea;
-                        this.settingsCloseBtnBg.clear();
-                        if (overClose) {
-                            this.settingsCloseBtnBg.fillStyle(0x6a6a8a, 1);
-                        } else {
-                            this.settingsCloseBtnBg.fillStyle(0x4a4a6a, 1);
-                        }
-                        this.settingsCloseBtnBg.fillCircle(closeBtn.x, closeBtn.y, closeBtn.size / 2);
-                    }
-                }
-
-                if (overClose) {
-                    this.drawCrosshair(0xff0000);
-                    return;
-                }
-
                 // Check if hovering over fullscreen checkbox
                 let overFullscreen = false;
                 if (this.fullscreenCheckboxArea && this.settingsPanel && this.settingsPanel.visible) {
@@ -2623,7 +2609,7 @@
                     this.fullscreenCheckboxHovered = overFullscreen;
                     if (this.fullscreenCheckboxBg) {
                         const cb = this.fullscreenCheckboxArea;
-                        this.drawCheckbox(this.fullscreenCheckboxBg, cb.x, cb.y, 24, this.fullscreenChecked, overFullscreen);
+                        this.drawCheckbox(this.fullscreenCheckboxBg, cb.x, cb.y, this.fullscreenCheckboxSize, this.fullscreenChecked, overFullscreen);
                     }
                 }
 
@@ -3529,8 +3515,11 @@
                             this.player.x += moveX;
                             this.player.y += moveY;
 
-                            if (dx < -1) this.player.setScale(-1, 1);
-                            else if (dx > 1) this.player.setScale(1, 1);
+                            // Set facing direction using sprite flip (not container scale)
+                            if (this.playerSprite && this.playerSprite.setFlipX) {
+                                if (dx < -1) this.playerSprite.setFlipX(true);  // Face left
+                                else if (dx > 1) this.playerSprite.setFlipX(false);  // Face right
+                            }
 
                             this.player.setDepth(100 + this.player.y);
 
