@@ -1988,7 +1988,7 @@
                 this.settingsReturnBtnHovered = false;
 
                 // Version number above Return button
-                const versionText = this.add.text(0, btnY - 45, 'v0.1.18', {
+                const versionText = this.add.text(0, btnY - 45, 'v0.1.19', {
                     fontFamily: '"Press Start 2P", cursive',
                     fontSize: '14px',
                     color: '#ffffff'
