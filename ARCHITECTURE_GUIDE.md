@@ -1,7 +1,7 @@
 # The Sandwich Horror — Architecture Guide
 ## For Claude Code Implementation
 
-Last Updated: February 8, 2026 (Updated §3 and §23 with complete dialogue fallback chain documentation)
+Last Updated: February 9, 2026 (Added spawn direction, exit behavior, and player orientation documentation)
 
 ---
 
@@ -258,15 +258,22 @@ TSH.Rooms.laboratory = {
     walkableArea: { minY: 0.72, maxY: 0.92 },
 
     spawns: {
-        from_interior: { x: 50, y: 0.82 },
-        from_back_lab: { x: 500, y: 0.82 },
-        default: { x: 200, y: 0.82 }
+        from_interior: { x: 50, y: 0.82, direction: 'left' },   // Optional: face left on spawn
+        from_back_lab: { x: 500, y: 0.82, direction: 'right' }, // Optional: face right on spawn
+        default: { x: 200, y: 0.82 }                            // No direction = face right (default)
     },
 
     exits: [
         { edge: 'left', target: 'interior', spawnPoint: 'from_lab' },
         { edge: 'right', target: 'back_lab', spawnPoint: 'from_lab' }
     ],
+
+    // Exit Movement Behavior: When the player clicks on screen edge exits (which display
+    // arrow cursors), Nate runs to the exit instead of walking, making transitions feel
+    // faster and more responsive. Door hotspots and other interactive transitions continue
+    // to walk normally.
+    // Implementation: RoomScene.js exit zone pointerdown handler passes true as 4th
+    // parameter to walkTo().
 
     npcs: [
         {
@@ -448,52 +455,79 @@ All responses should follow Nate's conversational voice. See CREATIVE_BIBLE.md f
 
 ---
 
-## 3.2 Procedural NPC Drawing
+## 3.2 NPC Sprites
 
-NPCs like Earl (bigfoot) and Frank (Frankenstein's monster) are drawn procedurally in the room's drawing function rather than using sprite assets. This keeps the art style consistent with the procedural backgrounds.
+All NPCs use custom sprite artwork loaded from PNG files.
 
 **Pattern:**
 ```javascript
-function drawFrank(g, x, floorY) {
-    const p = 4;  // Pixel scale — see ROOM_DESIGN_BIBLE for pixel conventions
-    const frankHeight = p * 90;  // ~1.15x Nate's height
-
-    // Draw from bottom up: legs, body, arms, neck, head, hair
-    // Use simple rectangles for chunky pixel-art style
-    g.fillStyle(0x1a1a1a);  // Black suit
-    g.fillRect(x - p*6, floorY - p*35, p*5, p*35);  // Left leg
-    // ... more drawing code
-}
-```
-
-**Key Points:**
-- Pixel scale (`p` value) is an art convention — see ROOM_DESIGN_BIBLE.md for current standard
-- Height ratio matches NPC data (e.g., `heightRatio: 1.15` for 1.15x Nate's height)
-- Draw in main room drawing function, called from the room's layer draw function
-- Add a light source in room's `lighting.sources[]` to illuminate the NPC
-- Simple dot eyes and line mouth for facial features
-
-**NPCs with Procedural Drawing:**
-| NPC | Room | Features |
-|-----|------|----------|
-| Earl | earls_yard.js | Brown fur, gray hat, friendly bigfoot |
-| Frank | basement.js | Green skin, black suit, neck bolts |
-
-**Hotspot for Procedural NPCs:**
-Since the NPC is drawn procedurally (not a sprite), add a hotspot for interaction:
-```javascript
-hotspots: [
+npcs: [
     {
-        id: 'frank_npc',
-        x: 1240, y: 0.52, w: 80, h: 0.40,
-        interactX: 1280, interactY: 0.82,
-        name: 'Frank',
-        type: 'npc',
-        verbs: { action: 'Talk to', look: 'Look at' },
-        responses: { look: "...", action: null }
+        id: 'earl',
+        name: 'Earl',
+        sprite: 'earl_placeholder',      // Loaded from assets/sprites/
+        position: { x: 920, y: 0.82 },
+        heightRatio: 1.15,                // Relative to Nate's height
+        interactX: 920,
+        interactY: 0.82
     }
 ]
 ```
+
+**Key Points:**
+- Sprites are loaded in `BaseScene.js` during preload
+- `heightRatio` scales the sprite relative to Nate's height (camera zoom adjusted)
+- Sprite depth is controlled by `depth` property or auto-calculated from Y position
+- Add lighting sources in room's `lighting.sources[]` to illuminate NPCs
+
+**NPCs with Sprite Artwork:**
+| NPC | Sprite | Room |
+|-----|--------|------|
+| Hector | hector_placeholder.png | laboratory.js |
+| Earl | earl_placeholder.png | earls_yard.js |
+| Frank | frank_placeholder.png | basement.js |
+| Harry | harry_placeholder.png | alien_room.js |
+
+**Hotspot for NPC Interaction:**
+NPCs defined in the `npcs` array are automatically interactive. For additional hotspot customization, add to the `hotspots` array with matching coordinates.
+
+---
+
+## 3.2A Player Direction and Sprite Flipping
+
+**Critical:** Player direction must be controlled using `playerSprite.setFlipX()` consistently across both spawn and movement systems.
+
+**Why this matters:**
+- RoomScene handles spawn direction when entering rooms
+- BaseScene's `walkTo()` handles direction during movement
+- Both systems must use the same flip method to avoid conflicts
+
+**Implementation:**
+```javascript
+// CORRECT - RoomScene spawn handling
+if (spawnDirection && this.playerSprite && this.playerSprite.setFlipX) {
+    if (spawnDirection === 'left') {
+        this.playerSprite.setFlipX(true);   // Flip sprite horizontally
+    } else if (spawnDirection === 'right') {
+        this.playerSprite.setFlipX(false);  // Normal orientation
+    }
+}
+
+// CORRECT - BaseScene walkTo handling
+if (targetX < this.player.x) {
+    this.playerSprite.setFlipX(true);   // Walking left
+} else {
+    this.playerSprite.setFlipX(false);  // Walking right
+}
+```
+
+**The current pattern uses `setFlipX()` consistently in both spawn and movement to prevent sprite flip conflicts (commit a7fdf55).**
+
+**Spawn Direction Property:**
+- The optional `direction` property in spawns controls which way Nate faces when entering the room
+- Valid values: `'left'`, `'right'`, or omit (both `'right'` and omitting are equivalent - default right-facing)
+- Used primarily when entering from the opposite direction (e.g., entering from the right side of the room should face left)
+- Implemented via `playerSprite.setFlipX()` for consistency with movement system
 
 ---
 
@@ -1035,8 +1069,16 @@ tools/
 ### Movement
 - **Single click on background**: Walk at normal speed (450 px/s)
 - **Click on hotspot**: Run to interact position (750 px/s)
+- **Click on screen edge exit**: Run to exit for faster transitions (750 px/s)
 - **Click and hold**: Continuous running toward cursor
 - Walkable area constrains movement (polygon or minY/maxY bounds)
+
+**Hotspot Interaction Position Best Practices:**
+- `interactX` and `interactY` define where Nate walks before interacting with the hotspot
+- These should be set to accessible walkable positions in front of the hotspot
+- For precision: Use debug mode coordinate display to find exact positions that feel natural
+- For exits/transitions: Position should be at the transition point (e.g., at the edge for screen exits, at the door for door hotspots)
+- Test in-game to ensure Nate doesn't walk to awkward positions or clip through objects
 
 ### Dialogue Display
 - **Font**: LucasArts SCUMM Solid (35px desktop, 60px mobile)
