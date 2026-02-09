@@ -252,6 +252,10 @@ class UIScene extends Phaser.Scene {
         this.itemCursorHighlight.setVisible(false);
         this.itemCursor.add(this.itemCursorHighlight);
 
+        // Scale cursor 3x larger on mobile for better visibility behind finger
+        const cursorScale = this.isMobile ? 3.0 : 1.0;
+        this.itemCursor.setScale(cursorScale);
+
         // Position at last known pointer location before showing
         this.itemCursor.setPosition(this.lastPointerX, this.lastPointerY);
 
