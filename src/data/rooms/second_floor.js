@@ -74,9 +74,9 @@
 
         spawns: {
             default: { x: 850, y: 0.82 },
-            from_interior: { x: 850, y: 0.82 },
+            from_interior: { x: 615, y: 0.781, direction: 'left' },
             from_franks_room: { x: 150, y: 0.82 },
-            from_alien_room: { x: 450, y: 0.82 },
+            from_alien_room: { x: 450, y: 0.82, direction: 'left' },
             from_hectors_room: { x: 1770, y: 0.82, direction: 'left' }
         },
 
@@ -128,7 +128,7 @@
             {
                 id: 'stairs_down',
                 x: 950, y: 0.63, w: 400, h: 0.25,
-                interactX: 950, interactY: 0.82,
+                interactX: 671, interactY: 0.751,
                 name: 'Stairwell',
                 verbs: { action: 'Go down', look: 'Look at' },
                 responses: {

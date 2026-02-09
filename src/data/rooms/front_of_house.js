@@ -80,7 +80,7 @@
         spawns: {
             default: { x: 200, y: 0.82 },
             from_woods: { x: 200, y: 0.82 },
-            from_interior: { x: 2175, y: 0.82 }
+            from_interior: { x: 2175, y: 0.82, direction: 'left' }
         },
 
         exits: [

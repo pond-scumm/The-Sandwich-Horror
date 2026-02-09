@@ -83,7 +83,7 @@
 
         spawns: {
             default: { x: 1093, y: 0.808, direction: 'left' },
-            from_back_lab: { x: 1093, y: 0.808, direction: 'left' },
+            from_back_lab: { x: 1049, y: 0.864, direction: 'left' },
             from_second_floor: { x: 134, y: 0.815, direction: 'right' }
         },
 

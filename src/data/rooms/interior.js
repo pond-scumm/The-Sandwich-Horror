@@ -82,11 +82,11 @@
 
         spawns: {
             default: { x: 250, y: 0.82 },
-            from_lab: { x: 2200, y: 0.82 },
-            from_laboratory: { x: 2200, y: 0.82 },
+            from_lab: { x: 2200, y: 0.82, direction: 'left' },
+            from_laboratory: { x: 2200, y: 0.82, direction: 'left' },
             from_outside: { x: 250, y: 0.82 },
             from_front_of_house: { x: 250, y: 0.82 },
-            from_backyard: { x: 2338, y: 0.869 },
+            from_backyard: { x: 2338, y: 0.869, direction: 'left' },
             from_attic: { x: 1280, y: 0.82 },
             from_alien_room: { x: 1280, y: 0.82 },
             from_second_floor: { x: 1450, y: 0.82 }

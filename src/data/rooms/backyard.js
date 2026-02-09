@@ -128,8 +128,8 @@
         spawns: {
             default: { x: 200, y: 0.82 },
             from_interior: { x: 200, y: 0.82 },
-            from_basement: { x: 650, y: 0.82 },
-            from_earls_yard: { x: 1400, y: 0.82 },
+            from_basement: { x: 595, y: 0.750 },
+            from_earls_yard: { x: 1997, y: 0.796, direction: 'left' },
             from_shed: { x: 2300, y: 0.82 }
         },
 

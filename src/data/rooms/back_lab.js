@@ -79,7 +79,7 @@
         spawns: {
             default: { x: 120, y: 0.82 },
             from_laboratory: { x: 120, y: 0.82 },
-            from_hectors_room: { x: 520, y: 0.82 }
+            from_hectors_room: { x: 1127, y: 0.793, direction: 'left' }
         },
 
         exits: [

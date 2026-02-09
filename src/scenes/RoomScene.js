@@ -562,6 +562,7 @@ class RoomScene extends BaseScene {
                 interactX: hs.interactX,
                 interactY: height * hs.interactY,
                 name: hs.name,
+                type: hs.type,
                 verbLabels: hs.verbs ? {
                     actionVerb: hs.verbs.action || 'Use',
                     lookVerb: hs.verbs.look || 'Look at',
@@ -876,12 +877,12 @@ class RoomScene extends BaseScene {
 
         this.createPlayer(spawnX, height * spawnY);
 
-        // Handle spawn direction (use setScale for consistency with walkTo)
-        if (spawnDirection && this.player) {
+        // Handle spawn direction (use setFlipX for consistency with walkTo)
+        if (spawnDirection && this.playerSprite && this.playerSprite.setFlipX) {
             if (spawnDirection === 'left') {
-                this.player.setScale(-1, 1);
+                this.playerSprite.setFlipX(true);
             } else if (spawnDirection === 'right') {
-                this.player.setScale(1, 1);
+                this.playerSprite.setFlipX(false);
             }
         }
     }

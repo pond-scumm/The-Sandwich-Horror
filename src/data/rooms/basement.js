@@ -90,8 +90,8 @@
         ],
 
         spawns: {
-            default: { x: 200, y: 0.82 },
-            from_backyard: { x: 200, y: 0.82 }
+            default: { x: 595, y: 0.750, direction: 'left' },
+            from_backyard: { x: 595, y: 0.750, direction: 'left' }
         },
 
         exits: [],
@@ -131,7 +131,7 @@
             {
                 id: 'bulkhead_stairs',
                 ...LAYOUT.bulkhead_stairs,
-                interactX: LAYOUT.bulkhead_stairs.x + 300, interactY: 0.82,
+                interactX: 568, interactY: 0.739,
                 name: 'Stairs to Backyard',
                 verbs: { action: 'Climb', look: 'Look at' },
                 responses: {
