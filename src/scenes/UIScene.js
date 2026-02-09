@@ -253,7 +253,7 @@ class UIScene extends Phaser.Scene {
         this.itemCursor.add(this.itemCursorHighlight);
 
         // Position at last known pointer location before showing
-        this.itemCursor.setPosition(this.lastPointerX + 20, this.lastPointerY + 20);
+        this.itemCursor.setPosition(this.lastPointerX, this.lastPointerY);
 
         // Show item cursor on both desktop and mobile (follows finger on mobile)
         this.itemCursor.setVisible(true);
@@ -886,9 +886,9 @@ class UIScene extends Phaser.Scene {
             this.arrowCursor.setPosition(pointer.x, pointer.y);
         }
 
-        // Update item cursor position (offset from pointer)
+        // Update item cursor position (centered on pointer)
         if (this.itemCursor && this.itemCursor.visible) {
-            this.itemCursor.setPosition(pointer.x + 20, pointer.y + 20);
+            this.itemCursor.setPosition(pointer.x, pointer.y);
         }
 
         // Update hotspot label position (follows cursor when inventory is open)
