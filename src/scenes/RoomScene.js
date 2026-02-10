@@ -308,6 +308,24 @@ class RoomScene extends BaseScene {
         // Setup debug overlay (toggle with ` key)
         this.setupDebugOverlay();
 
+        // Setup flag listener for dynamic hotspot updates
+        if (room.relevantFlags && Array.isArray(room.relevantFlags)) {
+            this.flagChangedHandler = (flag) => {
+                if (room.relevantFlags.includes(flag)) {
+                    console.log('[RoomScene] Relevant flag changed:', flag, '- refreshing hotspots');
+                    this.refreshHotspots();
+                }
+            };
+            TSH.State.on('flagChanged', this.flagChangedHandler);
+
+            // Clean up listener when scene shuts down
+            this.events.once('shutdown', () => {
+                if (this.flagChangedHandler) {
+                    TSH.State.off('flagChanged', this.flagChangedHandler);
+                }
+            });
+        }
+
         // Fade in
         this.cameras.main.fadeIn(500, 0, 0, 0);
     }
@@ -647,6 +665,28 @@ class RoomScene extends BaseScene {
                 this.pickupOverlays[overlay.hotspotId] = g;
             }
         });
+    }
+
+    // Refresh hotspots when state changes mid-room (e.g., puzzle progress)
+    refreshHotspots() {
+        console.log('[RoomScene] Refreshing hotspots for:', this.roomId);
+
+        // Clean up existing hotspots
+        this.cleanupHotspots();
+
+        // Recreate hotspots with current state
+        this.createHotspotsFromData(this.scale.height);
+
+        // Recreate pickup overlays
+        this.createPickupOverlays(this.scale.height);
+
+        // Refresh debug overlay if active
+        if (this.debugWorldContainer && this.debugWorldContainer.visible) {
+            this.debugWorldContainer.removeAll(true);
+            this.drawDebugWalkable(this.scale.height);
+            this.drawDebugHotspots(this.scale.height);
+            this.drawDebugExits(this.scale.height);
+        }
     }
 
     _getNPCIdFromHotspot(hotspotId) {

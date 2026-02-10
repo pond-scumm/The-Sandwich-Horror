@@ -97,6 +97,9 @@
 
         exits: [],
 
+        // Flags that trigger hotspot refresh when changed (for Step 3 test)
+        relevantFlags: ['story.test_action_complete'],
+
         npcs: [
             {
                 id: 'alien_harry',
@@ -114,7 +117,27 @@
         // HOTSPOTS
         // =====================================================================
 
-        hotspots: [
+        // Dynamic hotspot function for conditional hotspots (Step 2 test)
+        getHotspotData(height) {
+            const hotspots = [];
+
+            // TEST: Conditional hotspot - only appears if flag is not set
+            if (!TSH.State.getFlag('story.test_action_complete')) {
+                hotspots.push({
+                    id: 'test_conditional',
+                    x: 640, y: 0.50, w: 40, h: 0.10,
+                    interactX: 640, interactY: 0.85,
+                    name: 'Test Hotspot',
+                    verbs: { action: 'Touch', look: 'Look at' },
+                    responses: {
+                        look: "A test hotspot that disappears when you use the candle on the lava lamp.",
+                        action: "It's just a test!"
+                    }
+                });
+            }
+
+            // All static hotspots (unchanged)
+            const staticHotspots = [
             // === ENTRANCE/DOORWAY ===
             {
                 id: 'doorway_exit',
@@ -275,7 +298,13 @@
                     action: "I pick up a few wrappers. Whoever was here sure likes their snacks."
                 }
             }
-        ],
+            ];
+
+            // Add all static hotspots to the dynamic array
+            hotspots.push(...staticHotspots);
+
+            return hotspots;
+        },
 
         // =====================================================================
         // PICKUP OVERLAYS
