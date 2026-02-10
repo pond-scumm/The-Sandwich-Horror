@@ -1,4 +1,5 @@
 === start ===
+# id: met_earl
 
 - Hi! My name is Nathaniel Barnswallow.
 # once
@@ -47,6 +48,8 @@ earl: Of course! I'm happy to chat about any old thing.
 > main
 
 === main ===
+# default
+# requires: asked:met_earl
 
 - How long have you lived here?
 nate: So how long have you lived here?

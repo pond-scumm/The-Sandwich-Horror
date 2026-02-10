@@ -224,6 +224,12 @@
             // Format: { 'npcId:nodeKey:optionIndex': true }
 
             onceChoices: {},
+
+            // ── Asked Labels ──────────────────────────────────────────────
+            // Tracks dialogue nodes/options marked with # id: that have been visited.
+            // Format: { 'label': true }
+
+            askedLabels: {},
             
             // ── Rooms Visited ───────────────────────────────────────────
             visitedRooms: [],
@@ -470,6 +476,15 @@
         markOnceChosen(npcId, nodeKey, optionIndex) {
             const key = `${npcId}:${nodeKey}:${optionIndex}`;
             this._state.onceChoices[key] = true;
+        },
+
+        // Asked-label tracking for dialogue # id: annotations
+        hasAskedLabel(label) {
+            return this._state.askedLabels[label] === true;
+        },
+
+        markAskedLabel(label) {
+            this._state.askedLabels[label] = true;
         },
 
         // ── Playtime ────────────────────────────────────────────────────

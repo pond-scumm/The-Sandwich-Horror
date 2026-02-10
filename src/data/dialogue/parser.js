@@ -29,8 +29,12 @@ TSH.DialogueParser = {
         for (const section of sections) {
             if (!section.content) continue;
 
-            const node = this._parseNode(section.content);
-            nodes[section.key] = node;
+            try {
+                const node = this._parseNode(section.content);
+                nodes[section.key] = node;
+            } catch (e) {
+                console.warn(`[DialogueParser] Error parsing node "${section.key}":`, e.message);
+            }
         }
 
         return nodes;
@@ -44,22 +48,48 @@ TSH.DialogueParser = {
 
         let i = 0;
 
-        // Check for npc_state annotation at start of node
-        if (lines[i] && lines[i].startsWith('# npc_state:')) {
-            const stateMatch = lines[i].match(/^# npc_state:\s*(\w+)$/);
-            if (stateMatch) {
-                node.npcState = stateMatch[1];
-                i++;
+        // Parse node-level annotations at start of node
+        while (i < lines.length && lines[i].startsWith('#')) {
+            const line = lines[i];
+
+            if (line.startsWith('# npc_state:')) {
+                const stateMatch = line.match(/^# npc_state:\s*(\w+)$/);
+                if (stateMatch) {
+                    node.npcState = stateMatch[1];
+                }
+            } else if (line === '# default') {
+                node.isDefault = true;
+            } else if (line.startsWith('# id:')) {
+                const label = line.substring('# id:'.length).trim();
+                if (label) {
+                    node.id = label;
+                }
+            } else if (line.startsWith('# requires:')) {
+                const requiresText = line.substring('# requires:'.length).trim();
+                if (requiresText) {
+                    node.condition = this._parseCondition(requiresText);
+                }
             }
+
+            i++;
         }
 
         // Parse options
         while (i < lines.length) {
             if (lines[i].startsWith('-')) {
-                const option = this._parseOption(lines, i);
-                node.options.push(option.option);
-                i = option.nextIndex;
+                try {
+                    const option = this._parseOption(lines, i);
+                    node.options.push(option.option);
+                    i = option.nextIndex;
+                } catch (e) {
+                    console.warn(`[DialogueParser] Error parsing option at line ${i}: "${lines[i]}"`, e.message);
+                    i++;
+                }
             } else {
+                // Skip unparseable lines at node level
+                if (!lines[i].startsWith('#')) {
+                    console.warn(`[DialogueParser] Skipping unparseable line: "${lines[i]}"`);
+                }
                 i++;
             }
         }
@@ -82,7 +112,8 @@ TSH.DialogueParser = {
             setFlags: [],
             addItems: [],
             removeItems: [],
-            once: false
+            once: false,
+            id: null
         };
 
         let i = startIndex + 1;
@@ -124,7 +155,7 @@ TSH.DialogueParser = {
                 if (speaker === 'nate') {
                     option.heroLine = text || '';
                 } else {
-                    // NPC line
+                    // NPC line - skip empty text
                     if (text) {
                         option.npcResponse.push(text);
                     }
@@ -133,12 +164,18 @@ TSH.DialogueParser = {
                 continue;
             }
 
+            // Unparseable line — skip and warn
+            console.warn(`[DialogueParser] Skipping unparseable line: "${line}"`);
             i++;
         }
 
         // Process annotations into condition and actions
         if (annotations.requires) {
             option.condition = this._parseCondition(annotations.requires);
+        }
+
+        if (annotations.id) {
+            option.id = annotations.id;
         }
 
         if (annotations.setFlags.length > 0 || annotations.addItems.length > 0 ||
@@ -173,6 +210,11 @@ TSH.DialogueParser = {
             annotations.removeItems.push(item);
         } else if (line === '# once') {
             annotations.once = true;
+        } else if (line.startsWith('# id:')) {
+            const label = line.substring('# id:'.length).trim();
+            if (label) {
+                annotations.id = label;
+            }
         }
     },
 
@@ -182,6 +224,24 @@ TSH.DialogueParser = {
 
         return (scene) => {
             for (const cond of conditions) {
+                // asked:label check
+                if (cond.startsWith('asked:')) {
+                    const label = cond.substring('asked:'.length);
+                    if (!TSH.State.hasAskedLabel(label)) {
+                        return false;
+                    }
+                    continue;
+                }
+
+                // Negated asked:label check
+                if (cond.startsWith('!asked:')) {
+                    const label = cond.substring('!asked:'.length);
+                    if (TSH.State.hasAskedLabel(label)) {
+                        return false;
+                    }
+                    continue;
+                }
+
                 // Negated flag check
                 if (cond.startsWith('!') && !cond.includes(':')) {
                     const flag = cond.substring(1);
