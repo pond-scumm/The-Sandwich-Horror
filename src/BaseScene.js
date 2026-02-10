@@ -77,6 +77,7 @@
                 this.conversationLineTimer = null;
                 this.conversationLineCallback = null;
                 this.conversationLineSpeaker = null;
+                this.isExitingConversation = false;
 
                 // Hotspots
                 this.hotspots = [];
@@ -832,7 +833,7 @@
                         } else {
                             this.walkTo(hotspot.interactX, hotspot.interactY, () => {
                                 this.useItemOnHotspot(draggedItem, hotspot);
-                            }, true);
+                            }, true, hotspot.interactFacing);
                         }
                     }
                     return;
@@ -860,7 +861,7 @@
                             } else {
                                 this.walkTo(hotspot.interactX, hotspot.interactY, () => {
                                     this.useItemOnHotspot(this.selectedItem, hotspot);
-                                }, true);
+                                }, true, hotspot.interactFacing);
                             }
                         } else {
                             // Normal use action
@@ -871,7 +872,7 @@
                             } else {
                                 this.walkTo(hotspot.interactX, hotspot.interactY, () => {
                                     this.executeAction(action, hotspot);
-                                }, true);
+                                }, true, hotspot.interactFacing);
                             }
                         }
                         // Hide label after use
@@ -920,7 +921,7 @@
                                 } else {
                                     this.walkTo(hotspot.interactX, hotspot.interactY, () => {
                                         this.useItemOnHotspot(this.selectedItem, hotspot);
-                                    }, true);
+                                    }, true, hotspot.interactFacing);
                                 }
                             } else {
                                 const isNPC = hotspot.type === 'npc' || hotspot.isNPC;
@@ -930,7 +931,7 @@
                                 } else {
                                     this.walkTo(hotspot.interactX, hotspot.interactY, () => {
                                         this.executeAction(action, hotspot);
-                                    }, true);
+                                    }, true, hotspot.interactFacing);
                                 }
                             }
                         }
@@ -1122,7 +1123,7 @@
                 if (this.debugEnabled) return;
                 if (!pointer.leftButtonDown()) return;
                 if (this.isRunningHold) return;
-                if (this.conversationActive) return;
+                if (this.conversationActive || this.isExitingConversation) return;
                 if (this.dialogActive) return;
 
                 // If item is selected, use it on the hotspot
@@ -1134,7 +1135,7 @@
                     } else {
                         this.walkTo(hotspot.interactX, hotspot.interactY, () => {
                             this.useItemOnHotspot(selectedItem, hotspot);
-                        }, true);  // true = running
+                        }, true, hotspot.interactFacing);  // true = running
                     }
                     return;
                 }
@@ -1150,7 +1151,7 @@
                 } else {
                     this.walkTo(hotspot.interactX, hotspot.interactY, () => {
                         this.executeAction(action, hotspot);
-                    }, true);  // true = running
+                    }, true, hotspot.interactFacing);  // true = running
                 }
             }
 
@@ -1302,7 +1303,7 @@
 
             // Walk to a position. Returns a Promise for async/await support.
             // Also supports legacy callback pattern via onComplete parameter.
-            walkTo(targetX, targetY, onComplete = null, isRunning = false) {
+            walkTo(targetX, targetY, onComplete = null, isRunning = false, forcedFacing = null) {
                 return new Promise((resolve) => {
                     const done = () => {
                         if (onComplete) onComplete();
@@ -1327,11 +1328,16 @@
 
                     const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, targetX, targetY);
                     if (distance < 5) {
+                        // Apply forced facing even if already at destination
+                        if (forcedFacing && this.playerSprite && this.playerSprite.setFlipX) {
+                            this.playerSprite.setFlipX(forcedFacing === 'left');
+                        }
                         done();
                         return;
                     }
 
                     // Set facing direction using sprite flip (not container scale)
+                    // Always use natural movement direction for walking
                     if (this.playerSprite && this.playerSprite.setFlipX) {
                         const facingLeft = targetX < this.player.x;
                         this.playerSprite.setFlipX(facingLeft);  // true = flip horizontally
@@ -1370,6 +1376,12 @@
                         onComplete: () => {
                             this.isWalking = false;
                             this.stopWalkAnimation();
+
+                            // Apply forced facing after arrival (if specified)
+                            if (forcedFacing && this.playerSprite && this.playerSprite.setFlipX) {
+                                this.playerSprite.setFlipX(forcedFacing === 'left');
+                            }
+
                             done();
                         }
                     });
@@ -3086,6 +3098,9 @@
             }
 
             exitConversation() {
+                // Set transition guard to prevent immediate re-triggering
+                this.isExitingConversation = true;
+
                 this.conversationActive = false;
                 TSH.State.setUIState('conversationActive', false);
                 this.conversationNPC = null;
@@ -3099,8 +3114,15 @@
                 this.npcSpeechBubble.setVisible(false);
                 this.speechBubble.setVisible(false);
 
-                // Clear dialogue option texts
-                this.dialogueOptionTexts.forEach(t => t.destroy());
+                // Explicitly remove all event listeners before destroying
+                this.dialogueOptionTexts.forEach(t => {
+                    if (t && t.removeAllListeners) {
+                        t.removeAllListeners();
+                    }
+                    if (t && t.destroy) {
+                        t.destroy();
+                    }
+                });
                 this.dialogueOptionTexts = [];
 
                 // Clear hotspot label
@@ -3111,6 +3133,11 @@
                     this.crosshairCursor.setVisible(true);
                     this.drawCrosshair(0xffffff);
                 }
+
+                // Clear transition guard after event propagation window
+                this.time.delayedCall(150, () => {
+                    this.isExitingConversation = false;
+                });
             }
 
             showDialogueOptions(nodeKey) {
@@ -3240,6 +3267,12 @@
                 console.log('[Conversation] option:', option);
                 console.log('[Conversation] option.heroLine:', option.heroLine);
                 console.log('[Conversation] currentNode:', currentNode);
+
+                // Set exit guard immediately if this is an exit option
+                // (prevents clicks during dialogue playback from reopening conversation)
+                if (option.exit) {
+                    this.isExitingConversation = true;
+                }
 
                 // Hide options while dialogue plays
                 this.dialogueOptionsUI.setVisible(false);
