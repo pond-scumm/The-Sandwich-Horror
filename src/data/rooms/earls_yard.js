@@ -303,7 +303,8 @@
             {
                 id: 'earl_npc',
                 ...LAYOUT.earl,
-                interactX: LAYOUT.earl.x, interactY: 0.82,
+                interactX: 744, interactY: 0.828,
+                interactFacing: 'right',  // Force Nate to face right (toward Earl)
                 name: 'Earl',
                 type: 'npc',
                 verbs: { action: 'Talk to', look: 'Look at' },

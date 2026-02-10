@@ -1,14 +1,67 @@
 === start ===
-# npc_state: behind_fence
 
-- Greeting
-nate:
-earl:
+- Hi! My name is Nathaniel Barnswallow.
+# once
+nate: Hi! My name is Nathaniel Barnswallow. I want to be a scientist. 
+earl: Howdy Nate! My name is Earl. Nice to meetcha.  
+
+- What smells so good?
+# once
+nate: Something smells delicious. What's cooking?
+earl: Oh a couple of burgers. Ground the meat myself, best way to get smells like these.
+
+- You're a bigfoot!
+# once
+nate: You're a bigfoot! A real life bigfoot!
+earl: Nothing gets past you eh? heh heh 
+earl: Yeah I've been a bigfoot for about as long as I can remember.
+> bigfoot
+
+- Good talk! I gotta go.
+nate: Good talk! I gotta go.
+earl: Stop by any time!
 > END
 
-- Ask about ladder
-# requires: !story.asked_about_ladder, has:ladder
-# set: story.asked_about_ladder
-nate:
-earl:
-> start
+=== bigfoot ===
+
+- What's that like?
+# once
+nate: What's it like being a bigfoot? Do you have to hide in caves?
+earl: Naw nothing like that. Mostly I keep to myself in this cozy little sanctuary. 
+earl: Sometimes Hector comes over and we play dominoes. Doesn't get much better than that.
+
+- Do you have a lot of relatives?
+# once
+nate: Are you one of a kind? Do you have a lot of relatives?
+earl: We're all one of a kind, but there are a lot of other bigfoots out there just like me.
+earl: All told, I'd say I have about 32 first cousins in this wood. We're close too!
+
+- Why can no one seem to get a good photo of you?
+# once
+nate: Why can no one seem to get a good photo of you?
+earl: I'm just not very photogenic, no need to rub it in. 
+
+- This is blowing my mind, can we talk about something normal?
+nate: This is blowing my mind, can we talk about something normal?
+earl: Of course! I'm happy to chat about any old thing. 
+> main
+
+=== main ===
+
+- How long have you lived here?
+nate: So how long have you lived here?
+earl: Oh quite a while now. I do like to travel some, but I feel pretty well settled in these parts. 
+earl: Sandwich is a nice town. And Hector is a good neighbor aside from the occasional small explosion.
+
+- Do you know Hector well?
+nate: do you know Hector well?
+earl: I'd say so. Known him through a lot of ups and downs these last few years. He seems to be doin better.
+
+- I couldn't help but notice your ladder...
+nate: That's a mighty nice ladder you have over there.
+earl: Sure is. Top of the line extend-o-matic. 
+
+- Good talk! I gotta go.
+nate: Good talk! I gotta go.
+earl: Stop by any time!
+> END

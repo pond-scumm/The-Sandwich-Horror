@@ -43,7 +43,9 @@
       "Bash(done)",
       "Bash(EOF)",
       "Bash(cmd.exe /c \"node tools\\\\export_dialogue.js\")",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(identify:*)",
+      "Bash(timeout:*)"
     ]
   }
 }

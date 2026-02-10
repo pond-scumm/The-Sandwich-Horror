@@ -1,0 +1,290 @@
+=== TSH Dialogue Import ===
+
+Loading current code state...
+  13 rooms, 34 items loaded
+Reading spreadsheet...
+
+Processing global defaults...
+  [DEBUG] Processing defaults.js:
+    examine:
+      Spreadsheet: "It doesn't look like anything to me."
+      Current code: "It doesn't look like anything to me."
+      Match: true
+      Replacement: SKIPPED (no change or not found)
+    use:
+      Spreadsheet: "Hmmmm no. "
+      Current code: "Hmmmm no. "
+      Match: true
+      Replacement: SKIPPED (no change or not found)
+    talkTo:
+      Spreadsheet: "I wouldn't know what to say."
+      Current code: "I wouldn't know what to say."
+      Match: true
+      Replacement: SKIPPED (no change or not found)
+Processing item defaults...
+  [DEBUG] Processing items.js:
+    borrowed_item:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    candle:
+      description:
+        Spreadsheet: "An unlit candle. I forgot I had this!"
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    clock:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    crowbar:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    monkey:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    damage_report:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    dusty_book:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    fuse:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    spray_paint:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    trophy_painted:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    hector_disguise:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    goggles:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    help_wanted_ad:
+      description:
+        Spreadsheet: ""HELP WANTED: Assistant needed for questionable scientific research. Must be willing to relocate to the middle of nowhere. Apply in person. Safety not guaranteed.""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: "I don't think this Help Wanted ad wants to help here."
+        Replacement: SKIPPED (no change or not found)
+    keycard:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    lab_coat:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    ladder:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    lit_candle:
+      description:
+        Spreadsheet: "I'm glad I have this in my pocket."
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: "I don't want to singe that with this ember."
+        Replacement: SKIPPED (no change or not found)
+    trophy_assembled:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    matches:
+      description:
+        Spreadsheet: "A box of matches. 'Strike anywhere' it says. Challenge accepted."
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: "Surprisingly, I don't think lighting that on fire will help"
+        Replacement: SKIPPED (no change or not found)
+    mirror:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    padlock:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    satellite_shoes:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    repaired_shoes:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    scalpel:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    sharpie:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    spring:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    spring_2:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    trophy_item_1:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    trophy_item_2:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    tv:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    tv_guide:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    brain:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    fake_trophy:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+    wrench:
+      description:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+      failDefault:
+        Spreadsheet: ""
+        Replacement: SKIPPED (no change or not found)
+
+Processing room sheets...
+
+Processing item combinations...
+  [DEBUG] Processing combinations.js:
+
+=== Import Complete ===
+  defaults.js: 0 lines (no changes)
+  items.js: 0 lines (no changes)
+  interior.js: 0 lines (no changes)
+  laboratory.js: 0 lines (no changes)
+  earls_yard.js: 0 lines (no changes)
+  back_lab.js: 0 lines (no changes)
+  backyard.js: 0 lines (no changes)
+  basement.js: 0 lines (no changes)
+  second_floor.js: 0 lines (no changes)
+  hectors_room.js: 0 lines (no changes)
+  franks_room.js: 0 lines (no changes)
+  front_of_house.js: 0 lines (no changes)
+  alien_room.js: 0 lines (no changes)
+  roof.js: 0 lines (no changes)
+  secure_storage.js: 0 lines (no changes)
+  combinations.js: 0 lines (no changes)
+
+Total: 0 lines across 0 files
+
+No changes detected — spreadsheet matches current code.

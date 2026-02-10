@@ -73,6 +73,10 @@ class UIScene extends Phaser.Scene {
         // Dialog overlay (shows speech text above inventory when open)
         this.dialogOverlay = null;
         this.dialogOverlayText = null;
+
+        // Debug panel (F9)
+        this.debugPanel = null;
+        this.debugPanelOpen = false;
     }
 
     create() {
@@ -120,6 +124,14 @@ class UIScene extends Phaser.Scene {
         // Create UI buttons
         this.createInventoryButton(width, height);
         this.createSettingsButton(width, height);
+
+        // F9 debug panel
+        this.input.keyboard.on('keydown-F9', () => {
+            if (!this.debugPanel) {
+                this.debugPanel = new TSH.DebugPanel(this);
+            }
+            this.debugPanel.toggle();
+        });
 
         console.log('[UIScene] Created - cursors, buttons, and inventory panel initialized');
     }
@@ -1183,7 +1195,12 @@ class UIScene extends Phaser.Scene {
     // ── UI Buttons ──────────────────────────────────────────────────────────
 
     canInteractWithUI() {
-        // Block all UI interactions if debug mode is active
+        // Block all UI interactions if debug panel is open
+        if (this.debugPanelOpen) {
+            return false;
+        }
+
+        // Block all UI interactions if spatial debug mode is active
         const gameScene = this.getActiveGameScene();
         if (gameScene && gameScene.debugEnabled) {
             return false;
