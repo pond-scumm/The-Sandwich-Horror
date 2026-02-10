@@ -216,8 +216,14 @@
             // ── Dialogue History ────────────────────────────────────────
             // Tracks which conversations have occurred.
             // Used to prevent repeats and unlock new dialogue options.
-            
+
             dialogueHistory: {},
+
+            // ── Once-Choice Tracking ────────────────────────────────────────
+            // Tracks dialogue options marked with # once that have been chosen.
+            // Format: { 'npcId:nodeKey:optionIndex': true }
+
+            onceChoices: {},
             
             // ── Rooms Visited ───────────────────────────────────────────
             visitedRooms: [],
@@ -450,11 +456,22 @@
         hasSeenDialogue(dialogueId) {
             return this._state.dialogueHistory[dialogueId] === true;
         },
-        
+
         markDialogueSeen(dialogueId) {
             this._state.dialogueHistory[dialogueId] = true;
         },
-        
+
+        // Once-choice tracking for dialogue options
+        hasChosenOnce(npcId, nodeKey, optionIndex) {
+            const key = `${npcId}:${nodeKey}:${optionIndex}`;
+            return this._state.onceChoices[key] === true;
+        },
+
+        markOnceChosen(npcId, nodeKey, optionIndex) {
+            const key = `${npcId}:${nodeKey}:${optionIndex}`;
+            this._state.onceChoices[key] = true;
+        },
+
         // ── Playtime ────────────────────────────────────────────────────
         
         addPlaytime(seconds) {

@@ -3026,16 +3026,21 @@
                 this.npcSpeechBubble.add(this.npcDialogText);
             }
 
-            enterConversation(npcData, dialogueTree) {
+            enterConversation(npcData, dialogueTree, npcId = null) {
                 console.log('[Conversation] enterConversation called');
                 console.log('[Conversation] npcData:', npcData);
                 console.log('[Conversation] dialogueTree:', dialogueTree);
+                console.log('[Conversation] npcId:', npcId);
 
                 this.conversationActive = true;
                 TSH.State.setUIState('conversationActive', true);
                 this.conversationNPC = npcData;
                 this.conversationData = dialogueTree;
-                this.conversationState = 'start';
+                this.conversationNPCId = npcId; // Store for once-tracking
+
+                // Select starting node based on NPC state
+                const startNode = this._selectStartingNode(dialogueTree, npcId);
+                this.conversationState = startNode;
 
                 // Freeze movement and hide normal UI
                 this.stopCharacterMovement();
@@ -3047,8 +3052,25 @@
                 }
 
                 // Show initial dialogue options
-                console.log('[Conversation] Calling showDialogueOptions with start');
-                this.showDialogueOptions('start');
+                console.log('[Conversation] Calling showDialogueOptions with', startNode);
+                this.showDialogueOptions(startNode);
+            }
+
+            _selectStartingNode(dialogueTree, npcId) {
+                if (!npcId) return 'start';
+
+                const npcState = TSH.State.getNPCState(npcId);
+                if (!npcState) return 'start';
+
+                // Find node with matching npc_state annotation
+                for (const [nodeKey, node] of Object.entries(dialogueTree)) {
+                    if (node.npcState === npcState) {
+                        console.log('[Conversation] Selected starting node:', nodeKey, 'for state:', npcState);
+                        return nodeKey;
+                    }
+                }
+
+                return 'start';
             }
 
             exitConversation() {
@@ -3057,6 +3079,7 @@
                 this.conversationNPC = null;
                 this.conversationData = null;
                 this.conversationState = null;
+                this.conversationNPCId = null;
                 this.awaitingNPCResponse = false;
 
                 // Hide conversation UI
@@ -3097,10 +3120,19 @@
                 }
 
                 // Filter out options that shouldn't show
-                const visibleOptions = node.options.filter(opt => {
-                    if (opt.condition) {
-                        return opt.condition(this);
+                const visibleOptions = node.options.filter((opt, index) => {
+                    // Check condition
+                    if (opt.condition && !opt.condition(this)) {
+                        return false;
                     }
+
+                    // Check once-choice tracking
+                    if (opt.actions && opt.actions.once && this.conversationNPCId) {
+                        if (TSH.State.hasChosenOnce(this.conversationNPCId, nodeKey, index)) {
+                            return false;
+                        }
+                    }
+
                     return true;
                 });
 
@@ -3194,10 +3226,16 @@
                 this.dialogueOptionsUI.setVisible(false);
                 this.awaitingNPCResponse = true;
 
-                // Mark option as used if it has a flag
+                // Process actions (flags, items, once-marking)
+                if (option.actions) {
+                    this._processDialogueActions(option.actions, currentNode, option);
+                }
+
+                // BACKWARDS COMPATIBILITY: Keep setFlag support
                 if (option.setFlag) {
                     this.setFlag(option.setFlag, true);
                 }
+
                 option.used = true;
 
                 // Hero says their line
@@ -3205,31 +3243,66 @@
                 this.showConversationLine(option.heroLine, 'hero', () => {
                     // Then NPC responds
                     if (option.npcResponse) {
-                        this.showConversationLine(option.npcResponse, 'npc', () => {
-                            this.awaitingNPCResponse = false;
-                            // Move to next node or show options again
-                            if (option.exit) {
-                                this.exitConversation();
-                            } else if (option.nextNode) {
-                                this.conversationState = option.nextNode;
-                                this.showDialogueOptions(option.nextNode);
-                            } else {
-                                // Stay on current node
-                                this.showDialogueOptions(currentNode);
-                            }
+                        // Handle npcResponse as array (multi-line support)
+                        const responses = Array.isArray(option.npcResponse)
+                            ? option.npcResponse
+                            : [option.npcResponse]; // Wrap legacy single string
+
+                        this._showNPCResponses(responses, 0, () => {
+                            this._finishDialogueChoice(option, currentNode);
                         });
                     } else {
-                        this.awaitingNPCResponse = false;
-                        if (option.exit) {
-                            this.exitConversation();
-                        } else if (option.nextNode) {
-                            this.conversationState = option.nextNode;
-                            this.showDialogueOptions(option.nextNode);
-                        } else {
-                            this.showDialogueOptions(currentNode);
-                        }
+                        this._finishDialogueChoice(option, currentNode);
                     }
                 });
+            }
+
+            _finishDialogueChoice(option, currentNode) {
+                this.awaitingNPCResponse = false;
+
+                if (option.exit) {
+                    this.exitConversation();
+                } else if (option.nextNode) {
+                    this.conversationState = option.nextNode;
+                    this.showDialogueOptions(option.nextNode);
+                } else {
+                    // Stay on current node
+                    this.showDialogueOptions(currentNode);
+                }
+            }
+
+            _showNPCResponses(responses, index, onComplete) {
+                if (index >= responses.length) {
+                    onComplete();
+                    return;
+                }
+
+                this.showConversationLine(responses[index], 'npc', () => {
+                    this._showNPCResponses(responses, index + 1, onComplete);
+                });
+            }
+
+            _processDialogueActions(actions, currentNode, option) {
+                // Set flags
+                if (actions.setFlags && actions.setFlags.length > 0) {
+                    actions.setFlags.forEach(flag => this.setFlag(flag, true));
+                }
+
+                // Add items
+                if (actions.addItems && actions.addItems.length > 0) {
+                    actions.addItems.forEach(itemId => TSH.State.addItem(itemId));
+                }
+
+                // Remove items
+                if (actions.removeItems && actions.removeItems.length > 0) {
+                    actions.removeItems.forEach(itemId => TSH.State.removeItem(itemId));
+                }
+
+                // Mark once-choice
+                if (actions.once && this.conversationNPCId) {
+                    const optionIndex = this.conversationData[currentNode].options.indexOf(option);
+                    TSH.State.markOnceChosen(this.conversationNPCId, currentNode, optionIndex);
+                }
             }
 
             showConversationLine(text, speaker, onComplete) {

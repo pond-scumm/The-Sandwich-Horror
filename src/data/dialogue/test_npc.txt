@@ -1,0 +1,66 @@
+=== start ===
+
+- Simple greeting
+nate: Hello there!
+earl: Well hello to you too!
+> END
+
+- Multi-line response
+nate: Tell me a story.
+earl: Oh boy, do I ever have a story.
+earl: It was a Tuesday, I think.
+earl: Found a UFO in my barn!
+> END
+
+- Conditional option with flag
+# requires: story.found_hector, !story.talked_to_earl
+nate: Have you seen Hector?
+earl: Can't say I have.
+# set: story.talked_to_earl
+> start
+
+- Item requirement test
+# requires: has:ladder
+nate: I have your ladder.
+earl: Thanks for bringing that back!
+# remove: ladder
+# add: wrench
+> start
+
+- Once option test
+# once
+nate: Nice weather today.
+earl: Sure is! Perfect for farming.
+> start
+
+- Multiple flags and actions
+# requires: story.found_hector, has:wrench
+# set: story.gave_wrench_to_earl
+# set: story.earl_helped
+# remove: wrench
+# add: key
+nate: Here's that wrench you needed.
+earl: Much appreciated!
+earl: Here, take this key as thanks.
+> grateful
+
+=== grateful ===
+
+- Thank Earl
+nate: Thanks for the key!
+earl: No problem at all.
+> END
+
+- Ask about the key
+# once
+nate: What does this key open?
+earl: That's for my shed out back.
+> grateful
+
+=== state_test ===
+# npc_state: behind_fence
+
+- State-specific dialogue
+nate: You seem stuck behind that fence.
+earl: Yeah, can't get out right now.
+> END

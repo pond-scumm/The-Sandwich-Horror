@@ -1,0 +1,14 @@
+=== start ===
+# npc_state: behind_fence
+
+- Greeting
+nate:
+earl:
+> END
+
+- Ask about ladder
+# requires: !story.asked_about_ladder, has:ladder
+# set: story.asked_about_ladder
+nate:
+earl:
+> start
