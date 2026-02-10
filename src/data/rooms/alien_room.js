@@ -325,6 +325,12 @@
                     setFlag: "story.test_action_complete"  // Test flag setting
                 }
             },
+            // TEST ACTION FUNCTION (Step 4 implementation test)
+            dresser_alien: {
+                spring: {
+                    action: "test_sequence"  // Calls TSH.Actions.test_sequence
+                }
+            },
             tv_soap: {
                 default: "I can't do anything with the TV while Harry is watching it. He'd probably vaporize me."
             },
