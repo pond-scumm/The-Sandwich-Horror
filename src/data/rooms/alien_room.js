@@ -174,7 +174,7 @@
             // === ALIEN NPC (Harry) - standing behind couch ===
             {
                 id: 'alien_harry',
-                x: 520, y: 0.58, w: 110, h: 0.28,
+                x: 517, y: 0.4165, w: 74, h: 0.255,
                 interactX: 520, interactY: 0.85,
                 name: 'Alien',
                 type: 'npc',
@@ -288,6 +288,14 @@
         // =====================================================================
 
         itemInteractions: {
+            // TEST ACTION OBJECT (Step 1 implementation test)
+            lamp_lava: {
+                candle: {
+                    dialogue: "I hold the candle up to the lava lamp. They glow in harmony for a moment. Very zen.",
+                    giveItem: "spring",  // Test item pickup
+                    setFlag: "story.test_action_complete"  // Test flag setting
+                }
+            },
             tv_soap: {
                 default: "I can't do anything with the TV while Harry is watching it. He'd probably vaporize me."
             },

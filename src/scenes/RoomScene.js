@@ -561,6 +561,7 @@ class RoomScene extends BaseScene {
                 id: hs.id,
                 interactX: hs.interactX,
                 interactY: height * hs.interactY,
+                interactFacing: hs.interactFacing,
                 name: hs.name,
                 type: hs.type,
                 verbLabels: hs.verbs ? {
@@ -699,7 +700,7 @@ class RoomScene extends BaseScene {
                 console.log('[RoomScene] Transition action from hotspot:', hsData?.id, '-> target:', trigger.target);
                 this.walkTo(hotspot.interactX, hotspot.interactY, () => {
                     this.transitionToScene(trigger.target, trigger.spawnPoint);
-                });
+                }, false, hotspot.interactFacing);
                 return;
             }
 
@@ -793,12 +794,91 @@ class RoomScene extends BaseScene {
         // 1. Check for specific item + hotspot interaction
         if (interactions[hsId] && interactions[hsId][item.id]) {
             const response = interactions[hsId][item.id];
-            const msg = response.replace('{item}', item.name).replace('{hotspot}', hotspot.name);
-            this.showDialog(msg);
-            return;
+
+            // Handle string responses (backwards compatible)
+            if (typeof response === 'string') {
+                const msg = response.replace('{item}', item.name).replace('{hotspot}', hotspot.name);
+                this.showDialog(msg);
+                return;
+            }
+
+            // Handle action objects
+            if (typeof response === 'object') {
+                // Check condition first (if present)
+                if (response.condition && typeof response.condition === 'function') {
+                    if (!response.condition()) {
+                        // Condition failed - show failDialogue
+                        const failMsg = response.failDialogue || '';
+                        if (failMsg) {
+                            this.showDialog(failMsg.replace('{item}', item.name).replace('{hotspot}', hotspot.name));
+                        } else {
+                            // No failDialogue provided - use fallback chain
+                            this.useFallbackDialogue(item, hotspot);
+                        }
+                        return;
+                    }
+                }
+
+                // Condition passed or no condition - execute action
+
+                // Complex action function (if specified)
+                if (response.action) {
+                    if (TSH.Actions && typeof TSH.Actions[response.action] === 'function') {
+                        TSH.Actions[response.action](this, hotspot, item);
+                    } else {
+                        console.error(`[RoomScene] Action function not found: TSH.Actions.${response.action}`);
+                        this.showDialog("Something went wrong."); // Graceful failure
+                    }
+                    return;
+                }
+
+                // Simple side effects (no custom action function)
+
+                // Show dialogue first
+                const dialogue = response.dialogue || '';
+                if (dialogue) {
+                    this.showDialog(dialogue.replace('{item}', item.name).replace('{hotspot}', hotspot.name));
+                } else {
+                    // Empty dialogue string - use fallback chain
+                    this.useFallbackDialogue(item, hotspot);
+                }
+
+                // Apply side effects
+                if (response.giveItem) {
+                    TSH.State.addItem(response.giveItem);
+                }
+
+                if (response.consumeItem) {
+                    TSH.State.removeItem(item.id);
+                }
+
+                if (response.setFlag) {
+                    TSH.State.setFlag(response.setFlag, true);
+                }
+
+                if (response.setFlags) {
+                    for (const [flag, value] of Object.entries(response.setFlags)) {
+                        TSH.State.setFlag(flag, value);
+                    }
+                }
+
+                if (response.removeHotspot) {
+                    this.removeHotspot(hsId);
+                }
+
+                if (response.pickupOverlay) {
+                    this.removePickupOverlay(response.pickupOverlay);
+                }
+
+                return;
+            }
         }
 
         // 2. Check item's failDefault
+        this.useFallbackDialogue(item, hotspot);
+    }
+
+    useFallbackDialogue(item, hotspot) {
         const itemDef = TSH.Items[item.id];
         if (itemDef && itemDef.failDefault) {
             const msg = itemDef.failDefault
@@ -808,7 +888,7 @@ class RoomScene extends BaseScene {
             return;
         }
 
-        // 3. Final fallback to global default
+        // Final fallback to global default
         const msg = TSH.Defaults.use
             .replace('{item}', item.name)
             .replace('{hotspot}', hotspot.name);
