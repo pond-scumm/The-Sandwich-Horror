@@ -310,9 +310,9 @@ class RoomScene extends BaseScene {
 
         // Setup flag listener for dynamic hotspot updates
         if (room.relevantFlags && Array.isArray(room.relevantFlags)) {
-            this.flagChangedHandler = (flag) => {
-                if (room.relevantFlags.includes(flag)) {
-                    console.log('[RoomScene] Relevant flag changed:', flag, '- refreshing hotspots');
+            this.flagChangedHandler = (data) => {
+                if (room.relevantFlags.includes(data.path)) {
+                    console.log('[RoomScene] Relevant flag changed:', data.path, '- refreshing hotspots');
                     this.refreshHotspots();
                 }
             };
