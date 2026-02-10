@@ -31,7 +31,7 @@ These sections are foundational — every task depends on them:
 | Task | Also Read |
 |------|-----------|
 | Building or modifying a room | §3.2 NPC Drawing, §3.3 Transition Cleanup, §8 Audio, §12 Tech Specs. Also read ROOM_DESIGN_BIBLE.md |
-| Writing dialogue or hotspot responses | §5 Item Combinations (for combination dialogue), §16 Conversation Mode, §23 Dialogue Editing System. Also read CREATIVE_BIBLE.md for Nate's voice |
+| Writing dialogue or hotspot responses | §5 Item Combinations (for combination dialogue), §16 Conversation Mode, §23 Dialogue Editing System, §24 Plain Text Dialogue System. Also read CREATIVE_BIBLE.md for Nate's voice |
 | Editing the dialogue spreadsheet | §23 Dialogue Editing System |
 | Working on audio | §8 Audio System (full section) |
 | Implementing puzzle logic | §4 Async/Await, §5 Item Combinations, §9 Entity States |
@@ -1508,3 +1508,70 @@ deno run --allow-read --allow-write --allow-env --allow-net tools/import_dialogu
 - Compares spreadsheet values against current code values — only writes files where dialogue actually changed
 - Logs which files were updated and how many lines changed
 - Does NOT modify game logic, positions, drawing code, or anything structural — only string literal values
+
+---
+
+## 24. Plain Text Dialogue System
+
+The plain text dialogue system stores NPC conversations in `.txt` files located in `src/data/dialogue/` (one file per NPC). Files are parsed at runtime via `TSH.DialogueLoader` and integrate with the existing conversation system. This provides an alternative to inline dialogue trees defined in scene files.
+
+**Format Reference:** See `src/data/dialogue/README.md` for complete syntax specification and examples.
+
+### Loading Dialogue
+
+```javascript
+// Load dialogue at runtime (async)
+const dialogue = await TSH.DialogueLoader.load('earl');
+this.enterConversation(npcData, dialogue, 'earl');
+
+// OLD way (inline dialogue trees still supported):
+const dialogue = this.getEarlDialogue();
+this.enterConversation(npcData, dialogue);
+```
+
+### Key Features
+
+| Feature | Description | Example |
+|---------|-------------|---------|
+| Multi-line NPC responses | NPC speaks multiple consecutive lines | `earl: First line\nearl: Second line` |
+| Once-choices | Options disappear after selection | `# once` annotation |
+| NPC state nodes | Starting node changes based on NPC state | `# npc_state: behind_fence` |
+| Item actions | Add/remove items on dialogue choice | `# add: key`, `# remove: ladder` |
+| Conditions | Show options based on flags/items | `# requires: story.found_hector, has:ladder` |
+
+### System Components
+
+**TSH.DialogueParser** — Parses `.txt` files into dialogue tree objects. Handles node definitions, option parsing, conditions, actions, and routing. Validates syntax and provides error messages.
+
+**TSH.DialogueLoader** — Loads dialogue files from `src/data/dialogue/` via fetch API and caches parsed trees for performance. No re-parsing on subsequent conversations with the same NPC.
+
+**Once-choice tracking** — Persists in GameState under `onceChoices` object. Survives save/load cycles. Tracks by `npcId:nodeKey:optionIndex`.
+
+**Starting node selection** — Automatic based on NPC state. When entering conversation, checks for nodes marked with `# npc_state: state_name` matching the NPC's current state. Falls back to `start` node if no match.
+
+### Backwards Compatibility
+
+- Inline dialogue trees (defined in scene files) continue to work unchanged
+- `npcId` parameter is optional (defaults to null)
+- Single-string `npcResponse` automatically wrapped in array
+- Legacy `setFlag` property still supported
+- Existing conversations in LaboratoryScene, AtticScene, etc. remain functional
+
+### File Structure
+
+```
+src/data/dialogue/
+├── README.md           # Format specification
+├── parser.js           # Parser module
+├── loader.js           # Loader module
+├── earl.txt            # Earl's dialogue
+├── test_npc.txt        # Test dialogue
+└── ...                 # Other NPC dialogue files
+```
+
+### Notes
+
+- Dialogue files use plain text format documented in README.md
+- Parser validates flags and warns on unknown flags
+- Loader caches parsed trees for performance
+- Fetch requires web server (GitHub Pages or local server)
