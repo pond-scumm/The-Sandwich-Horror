@@ -58,6 +58,10 @@ If context was compacted mid-session, re-read the Always Read sections and `git 
 - UIScene with cursor management, inventory panel, settings buttons (`src/scenes/UIScene.js`)
 - Inventory UI (button toggle, slots, selection, item cursor, item-on-item combinations)
 - Item pickup from hotspots (`giveItem`, `removeAfterPickup`, `pickupFlag`)
+- Action objects for item interactions (dialogue + side effects: `giveItem`, `setFlag`, `consumeItem`, `removeHotspot`, conditions, custom action functions)
+- Action function system (`src/data/actions/`) for complex puzzle sequences
+- Dynamic hotspots via `getHotspotData()` function with state-based conditionals
+- Automatic hotspot refresh (`relevantFlags` + `refreshHotspots()`) for mid-room state changes
 - State-driven hotspots (via `actionTrigger`, conditional NPCs, conditional dialogue options)
 - Items and combinations data (`src/data/items/items.js`, `combinations.js`)
 - Hotspot system with polygon support and highlighting (Shift/long-press)
@@ -340,12 +344,36 @@ TSH.Rooms.laboratory = {
     ],
 
     // Specific item-on-hotspot responses (all other combinations fall back to item failDefault or Global Use default)
+    // Supports both string responses (simple dialogue) and action objects (puzzle logic)
     itemInteractions: {
         portal_device: {
-            component_item: "That fits perfectly!"
-            // Per-hotspot defaults and _default are IGNORED by runtime — use item failDefaults instead
+            component_item: "That fits perfectly!",  // String: just shows dialogue
+            wrong_item: {                             // Object: dialogue + side effects
+                dialogue: "That doesn't fit.",
+                setFlag: "story.tried_wrong_item"
+            }
+        },
+        mattress: {
+            scalpel: {                                // Action object with condition
+                condition: () => !TSH.State.getFlag('clock.has_spring_2'),
+                failDialogue: "I already got the spring from there.",
+                dialogue: "I cut open the mattress and find a spring!",
+                giveItem: "spring_2",
+                setFlag: "clock.has_spring_2"
+            }
+        },
+        wall_clock: {
+            repaired_shoes: {                         // Complex action with custom function
+                condition: () => TSH.State.getFlag('clock.ladder_deployed'),
+                failDialogue: "I can't reach it from down here.",
+                action: "get_clock"                   // Calls TSH.Actions.get_clock(scene, hotspot, item)
+            }
         }
+        // Per-hotspot defaults and _default are IGNORED by runtime — use item failDefaults instead
     },
+
+    // Flags that trigger automatic hotspot refresh when changed (for dynamic puzzles)
+    relevantFlags: ['clock.ladder_deployed', 'clock.has_clock'],
 
     // First-visit entrance dialogue
     // [DISABLED — re-enable when testing is less frequent]
@@ -384,6 +412,46 @@ A single scene class (`RoomScene.js`) reads this data and renders any room.
 **Hotspot Data Format:** Room data uses `verbs` and `responses` objects. RoomScene internally transforms these to `verbLabels` and `lookResponse`/`useResponse`/`talkResponse` — but room data files should always use the `verbs`/`responses` format shown above.
 
 **Item Interaction Fallback:** When using an item on a hotspot, the runtime checks: (1) specific `itemInteractions[hotspot][item]` entry, (2) item's `failDefault` from spreadsheet, (3) Global Use default. Per-hotspot `.default` and `_default` entries are ignored. See §23 for full fallback chain documentation.
+
+**Action Objects:** Item interactions support both strings (simple dialogue) and objects (puzzle logic with side effects):
+
+```javascript
+itemInteractions: {
+    hotspot_id: {
+        item_id: "Simple string response",  // Shows dialogue only
+        item_id: {                           // Action object with side effects
+            dialogue: "Response text",       // Required (empty string = use fallback)
+            giveItem: "item_id",             // Add item to inventory
+            consumeItem: true,               // Remove the used item
+            setFlag: "flag.name",            // Set single flag to true
+            setFlags: {                      // Set multiple flags
+                "flag.one": true,
+                "flag.two": false
+            },
+            removeHotspot: true,             // Remove this hotspot from scene
+            pickupOverlay: "overlay_id",     // Remove a pickup overlay
+            condition: () => boolean,        // Optional: check before executing
+            failDialogue: "Not yet...",      // Shown if condition fails
+            action: "function_name"          // Calls TSH.Actions.function_name(scene, hotspot, item)
+        }
+    }
+}
+```
+
+**Execution Order:** (1) Check condition (if present), (2) Show dialogue, (3) Call custom action function (if `action` specified), OR apply simple side effects (giveItem, setFlag, etc.), (4) Hotspot refresh triggers if relevant flags changed.
+
+**Action Functions:** For complex multi-step sequences, define functions in `src/data/actions/*.js`:
+
+```javascript
+TSH.Actions.get_clock = function(scene, hotspot, item) {
+    scene.showDialog("I climb up and grab the clock!");
+    TSH.State.addItem('clock');
+    TSH.State.removeItem('repaired_shoes');
+    TSH.State.setFlag('clock.has_clock', true);
+    scene.removeHotspot('clock_wall');
+    // Can include delays, animations, multiple dialogue steps, etc.
+};
+```
 
 **Per-Hotspot State Switching [PLANNED — NOT YET IMPLEMENTED]:** A future enhancement will allow hotspots to define a `states` object with conditions and per-state responses, so a single hotspot can automatically switch its name, responses, and available actions based on game flags. This will likely be implemented through the dialogue spreadsheet pipeline. Until then, use the `getHotspotData()` pattern (§3.1) to build different hotspot arrays based on `TSH.State`.
 
@@ -429,16 +497,18 @@ getHotspotData(height) {
 
 **For rooms where puzzles aren't implemented yet**, hotspots can start simple with no conditionals. Add state conditionals when wiring up the puzzle logic for that room. Don't add speculative conditionals for puzzles that aren't built yet.
 
-**Mid-visit hotspot updates:** Rooms where state changes while the player is present (e.g., catching Hector's body) should declare relevant flags and listen for changes:
+**Mid-visit hotspot updates:** Rooms where state changes while the player is present (e.g., deploying a ladder, catching Hector's body) should declare `relevantFlags` in their room data. RoomScene automatically sets up listeners and calls `refreshHotspots()` when these flags change:
 
 ```javascript
-this.relevantFlags = ['hector.body_captured', 'hector.lab_coat_dropped'];
-TSH.State.on('flagChanged', (data) => {
-    if (this.relevantFlags.includes(data.path)) {
-        this.refreshHotspots();
-    }
-});
+TSH.Rooms.backyard = {
+    // ... room data ...
+    relevantFlags: ['clock.ladder_deployed', 'clock.has_clock'],
+    // When either flag changes, hotspots are automatically recreated
+    // to reflect new state (ladder appears, clock disappears, etc.)
+};
 ```
+
+The `refreshHotspots()` method recreates hotspots, pickup overlays, and debug overlay (if visible) without reloading the entire room. This allows for immediate visual feedback when puzzles progress.
 
 **What can change per hotspot:**
 | Property | Example |
