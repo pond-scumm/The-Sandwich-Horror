@@ -554,9 +554,24 @@ class RoomScene extends BaseScene {
 
     createHotspotsFromData(height) {
         const room = this.roomData;
-        if (!room.hotspots || room.hotspots.length === 0) return;
 
-        const hotspotData = room.hotspots.map(hs => {
+        // Support dynamic hotspot generation via getHotspotData function
+        let hotspots;
+        if (typeof room.getHotspotData === 'function') {
+            console.log('[RoomScene] Using getHotspotData function');
+            hotspots = room.getHotspotData(height);
+            console.log('[RoomScene] getHotspotData returned:', hotspots?.length, 'hotspots');
+        } else {
+            console.log('[RoomScene] Using static hotspots array');
+            hotspots = room.hotspots;
+        }
+
+        if (!hotspots || hotspots.length === 0) {
+            console.log('[RoomScene] No hotspots to create');
+            return;
+        }
+
+        const hotspotData = hotspots.map(hs => {
             const data = {
                 id: hs.id,
                 interactX: hs.interactX,
@@ -685,7 +700,12 @@ class RoomScene extends BaseScene {
 
         // CRITICAL: Check if this hotspot belongs to the current room
         // This prevents stale callbacks from previous rooms executing actions
-        const currentRoomHotspots = this.roomData?.hotspots || [];
+        let currentRoomHotspots;
+        if (typeof this.roomData?.getHotspotData === 'function') {
+            currentRoomHotspots = this.roomData.getHotspotData(this.scale.height);
+        } else {
+            currentRoomHotspots = this.roomData?.hotspots || [];
+        }
         const hotspotBelongsToRoom = currentRoomHotspots.some(h => h.id === hsData?.id);
         if (!hotspotBelongsToRoom) {
             console.warn('[RoomScene] Rejecting action from stale hotspot:', hsData?.id, '- not in current room:', this.roomId);
@@ -1609,11 +1629,20 @@ class RoomScene extends BaseScene {
 
     drawDebugHotspots(height) {
         const room = this.roomData;
-        if (!room.hotspots) return;
+
+        // Support dynamic hotspot generation via getHotspotData function
+        let hotspots;
+        if (typeof room.getHotspotData === 'function') {
+            hotspots = room.getHotspotData(height);
+        } else {
+            hotspots = room.hotspots;
+        }
+
+        if (!hotspots || hotspots.length === 0) return;
 
         const graphics = this.add.graphics();
 
-        room.hotspots.forEach((hs, index) => {
+        hotspots.forEach((hs, index) => {
             // Interact point (yellow dot) - same for both types
             const interactX = hs.interactX;
             const interactY = height * hs.interactY;
