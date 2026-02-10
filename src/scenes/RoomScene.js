@@ -633,7 +633,50 @@ class RoomScene extends BaseScene {
         });
     }
 
-    executeAction(action, hotspot) {
+    _getNPCIdFromHotspot(hotspotId) {
+        // Strip '_npc' suffix if present (earl_npc → earl)
+        if (hotspotId.endsWith('_npc')) {
+            return hotspotId.slice(0, -4);
+        }
+        // Otherwise use as-is (alien_harry → alien_harry)
+        return hotspotId;
+    }
+
+    _getNPCDataForConversation(npcId, hotspot) {
+        // Try sprite registry first (has current position)
+        const sprite = this.npcSprites?.[npcId];
+        if (sprite) {
+            const npcDef = this.roomData.npcs?.find(n => n.id === npcId);
+            return {
+                name: npcDef?.name || hotspot.name || 'NPC',
+                x: sprite.x,
+                y: sprite.y
+            };
+        }
+
+        // Fall back to room NPC definition
+        const npcDef = this.roomData.npcs?.find(n => n.id === npcId);
+        if (npcDef) {
+            const x = npcDef.position.x;
+            const y = typeof npcDef.position.y === 'number' && npcDef.position.y <= 1
+                ? this.scale.height * npcDef.position.y
+                : npcDef.position.y;
+            return {
+                name: npcDef.name || hotspot.name || 'NPC',
+                x: x,
+                y: y
+            };
+        }
+
+        // Ultimate fallback: use hotspot position
+        return {
+            name: hotspot.name || 'NPC',
+            x: hotspot.interactX || hotspot.x,
+            y: hotspot.interactY || hotspot.y
+        };
+    }
+
+    async executeAction(action, hotspot) {
         const hsData = hotspot._data;
 
         console.log('[RoomScene] executeAction:', action, 'hotspot:', hsData?.id, 'name:', hotspot.name);
@@ -717,6 +760,27 @@ class RoomScene extends BaseScene {
         } else if (action === 'Look At' || action === hotspot.verbLabels?.lookVerb) {
             this.showDialog(hotspot.lookResponse || TSH.Defaults.examine);
         } else if (action === 'Talk To' || action === hotspot.verbLabels?.talkVerb) {
+            // Check if this is an NPC hotspot
+            if (hotspot.type === 'npc') {
+                const npcId = this._getNPCIdFromHotspot(hsData.id);
+
+                try {
+                    // Attempt to load dialogue file
+                    const dialogueTree = await TSH.DialogueLoader.load(npcId);
+
+                    // Get NPC data for conversation
+                    const npcData = this._getNPCDataForConversation(npcId, hotspot);
+
+                    // Enter conversation mode
+                    this.enterConversation(npcData, dialogueTree, npcId);
+                    return;
+                } catch (error) {
+                    // Fall through to standard dialogue on error
+                    console.error('[RoomScene] Failed to load dialogue for', npcId, '- using fallback. Error:', error);
+                }
+            }
+
+            // Standard dialogue fallback
             this.showDialog(hotspot.talkResponse || TSH.Defaults.talkTo);
         }
     }

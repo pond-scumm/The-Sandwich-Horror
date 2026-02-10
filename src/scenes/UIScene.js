@@ -975,8 +975,8 @@ class UIScene extends Phaser.Scene {
             }
         } else if (key === 'crosshairColor') {
             this.drawCrosshair(value || 0xffffff);
-        } else if (key === 'dialogActive' || key === 'conversationActive') {
-            // Hide cursors when dialog/conversation is active
+        } else if (key === 'dialogActive') {
+            // Hide cursors when dialog is active (but NOT during conversation)
             if (value) {
                 this.crosshairCursor.setVisible(false);
                 this.itemCursor.setVisible(false);
@@ -1006,6 +1006,30 @@ class UIScene extends Phaser.Scene {
             }
             // Update inventory button visual
             this.updateInventoryButtonState();
+        } else if (key === 'conversationActive') {
+            // Hide/show UI buttons during conversation
+            if (value) {
+                // Hide inventory button during conversation
+                if (this.inventoryButton) {
+                    this.inventoryButton.setVisible(false);
+                }
+                // Hide settings button during conversation
+                if (this.settingsButton) {
+                    this.settingsButton.setVisible(false);
+                }
+                // Auto-close inventory panel if it's open
+                if (TSH.State.getUIState('inventoryOpen')) {
+                    TSH.State.setUIState('inventoryOpen', false);
+                }
+            } else {
+                // Show buttons when conversation ends
+                if (this.inventoryButton) {
+                    this.inventoryButton.setVisible(true);
+                }
+                if (this.settingsButton) {
+                    this.settingsButton.setVisible(true);
+                }
+            }
         }
     }
 

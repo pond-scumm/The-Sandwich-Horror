@@ -392,6 +392,13 @@
                         return;
                     }
 
+                    // Block all hotspot clicks during conversation, allow click to skip speech
+                    if (this.conversationActive && !this.justClickedDialogueOption) {
+                        this.skipConversationLine();
+                        this.clickedUI = true;
+                        return;
+                    }
+
                     // Settings menu has its own handlers
                     if (this.settingsMenuOpen) {
                         this.handleSettingsPointerDown(pointer);
@@ -1746,7 +1753,7 @@
                 const selectedItem = this.selectedItem;
 
                 // Don't show hotspot labels while dialog is active, inventory is open, or settings menu is open
-                if (this.dialogActive || this.inventoryOpen || this.settingsMenuOpen) {
+                if (this.dialogActive || this.inventoryOpen || this.settingsMenuOpen || this.conversationActive) {
                     this.hotspotLabel.setText('');
                     return;
                 }
@@ -3010,16 +3017,16 @@
                 this.npcSpeechBubble.setDepth(7000);
                 this.npcSpeechBubble.setVisible(false);
 
-                const fontSize = this.isMobile ? '22px' : '13px';
-                const strokeThickness = this.isMobile ? 4 : 3;
+                const fontSize = this.isMobile ? '60px' : '35px';  // Match hero size
+                const strokeThickness = this.isMobile ? 5 : 3;
 
                 this.npcDialogText = this.add.text(0, 0, '', {
-                    fontFamily: '"Press Start 2P", cursive',
+                    fontFamily: '"LucasArts SCUMM Solid", sans-serif',  // Match hero font
                     fontSize: fontSize,
-                    color: '#aaffaa',
+                    color: '#aaffaa',  // Keep green for NPC distinction
                     align: 'center',
-                    wordWrap: { width: width * 0.6 },
-                    lineSpacing: this.isMobile ? 10 : 6,
+                    wordWrap: { width: width * 0.85 },  // Match hero's 85% width
+                    lineSpacing: this.isMobile ? 4 : 2,  // Match hero's line spacing
                     stroke: '#000000',
                     strokeThickness: strokeThickness
                 }).setOrigin(0.5);
@@ -3032,19 +3039,24 @@
                 console.log('[Conversation] dialogueTree:', dialogueTree);
                 console.log('[Conversation] npcId:', npcId);
 
+                console.log('[Conversation] Step 1: Setting state...');
                 this.conversationActive = true;
                 TSH.State.setUIState('conversationActive', true);
                 this.conversationNPC = npcData;
                 this.conversationData = dialogueTree;
                 this.conversationNPCId = npcId; // Store for once-tracking
 
+                console.log('[Conversation] Step 2: Selecting starting node...');
                 // Select starting node based on NPC state
                 const startNode = this._selectStartingNode(dialogueTree, npcId);
+                console.log('[Conversation] startNode selected:', startNode);
                 this.conversationState = startNode;
 
+                console.log('[Conversation] Step 3: Freezing movement...');
                 // Freeze movement and hide normal UI
                 this.stopCharacterMovement();
 
+                console.log('[Conversation] Step 4: Setting up cursor...');
                 // Keep crosshair visible during conversation (desktop only)
                 if (this.crosshairCursor && !this.isMobile) {
                     this.crosshairCursor.setVisible(true);
@@ -3052,7 +3064,7 @@
                 }
 
                 // Show initial dialogue options
-                console.log('[Conversation] Calling showDialogueOptions with', startNode);
+                console.log('[Conversation] Step 5: Calling showDialogueOptions with', startNode);
                 this.showDialogueOptions(startNode);
             }
 
@@ -3212,6 +3224,13 @@
                 // Position at (0,0) since scrollFactor is 0 (screen-fixed)
                 this.dialogueOptionsUI.setPosition(0, 0);
                 this.dialogueOptionsUI.setVisible(true);
+
+                // Restore cursor when options reappear
+                if (this.crosshairCursor && !this.isMobile) {
+                    this.crosshairCursor.setVisible(true);
+                    this.drawCrosshair(0xffffff);  // Ensure white cursor
+                }
+
                 console.log('[Conversation] dialogueOptionsUI visible:', this.dialogueOptionsUI.visible);
                 console.log('[Conversation] dialogueOptionsUI position:', this.dialogueOptionsUI.x, this.dialogueOptionsUI.y);
             }
@@ -3225,6 +3244,11 @@
                 // Hide options while dialogue plays
                 this.dialogueOptionsUI.setVisible(false);
                 this.awaitingNPCResponse = true;
+
+                // Hide cursor while speech plays (direct call, not through state system)
+                if (this.crosshairCursor && !this.isMobile) {
+                    this.crosshairCursor.setVisible(false);
+                }
 
                 // Process actions (flags, items, once-marking)
                 if (option.actions) {
@@ -3306,6 +3330,15 @@
             }
 
             showConversationLine(text, speaker, onComplete) {
+                // Skip empty dialogue lines entirely
+                if (!text || text.trim() === '') {
+                    console.log('[Conversation] Skipping empty dialogue line');
+                    if (onComplete) {
+                        onComplete();
+                    }
+                    return;
+                }
+
                 const { width } = this.scale;
                 const scrollX = this.cameras.main.scrollX || 0;
 
@@ -3332,7 +3365,7 @@
 
                     // Position above NPC (use conversationNPC position)
                     let npcX = this.conversationNPC.x;
-                    let npcY = this.conversationNPC.y - 280;
+                    let npcY = this.conversationNPC.y - 480;  // Match hero offset (above head)
 
                     const halfWidth = this.npcDialogText.width / 2;
                     const camLeft = scrollX + halfWidth + 10;
