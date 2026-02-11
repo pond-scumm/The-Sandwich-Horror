@@ -3136,9 +3136,10 @@
                 // Show initial dialogue options (or play intro sequence first if present)
                 console.log('[Conversation] Step 5: Calling showDialogueOptions with', startNode);
 
-                // Check if node has intro sequence
-                if (this.conversationData[startNode]?.intro) {
-                    this._playIntroSequence(this.conversationData[startNode].intro, () => {
+                // Select and play intro sequence (if any match conditions)
+                const selectedIntro = this._selectIntroSequence(this.conversationData[startNode]);
+                if (selectedIntro) {
+                    this._playIntroSequence(selectedIntro, () => {
                         this.showDialogueOptions(startNode);
                     });
                 } else {
@@ -3166,6 +3167,25 @@
                 });
             }
 
+            _selectIntroSequence(node) {
+                if (!node) return null;
+
+                // If node has conditional intros array, select first matching one
+                if (node.intros && node.intros.length > 0) {
+                    for (const introBlock of node.intros) {
+                        // No condition = default (always matches)
+                        if (!introBlock.condition || introBlock.condition(this)) {
+                            return introBlock.lines;
+                        }
+                    }
+                    // No intro matched conditions
+                    return null;
+                }
+
+                // Backward compatibility: return single intro array if present
+                return node.intro || null;
+            }
+
             _selectStartingNode(dialogueTree, npcId) {
                 const npcState = npcId ? TSH.State.getNPCState(npcId) : null;
                 const entries = Object.entries(dialogueTree);
@@ -3175,9 +3195,12 @@
                     ? entries.filter(([_, node]) => node.npcState === npcState)
                     : entries;
 
-                if (stateMatches.length > 0) {
+                // If NPC has a state but no nodes match, fall back to all nodes (forgiving behavior)
+                const nodesToCheck = (stateMatches.length > 0) ? stateMatches : entries;
+
+                if (nodesToCheck.length > 0) {
                     // Check # default nodes first (in file order)
-                    for (const [key, node] of stateMatches) {
+                    for (const [key, node] of nodesToCheck) {
                         if (node.isDefault) {
                             // Evaluate requires condition if present
                             if (!node.condition || node.condition(this)) {
@@ -3187,18 +3210,18 @@
                         }
                     }
                     // No default passed — use first non-default node for this state
-                    for (const [key, node] of stateMatches) {
+                    for (const [key, node] of nodesToCheck) {
                         if (!node.isDefault) {
                             console.log('[Conversation] Selected starting node:', key, npcState ? 'for state: ' + npcState : '');
                             return key;
                         }
                     }
                     // All nodes are default and none passed — use first one anyway
-                    console.log('[Conversation] Falling back to first state-matched node:', stateMatches[0][0]);
-                    return stateMatches[0][0];
+                    console.log('[Conversation] Falling back to first node:', nodesToCheck[0][0]);
+                    return nodesToCheck[0][0];
                 }
 
-                // No state match — try "start"
+                // No nodes found — try "start"
                 if (dialogueTree['start']) return 'start';
 
                 // Last resort — first node in file

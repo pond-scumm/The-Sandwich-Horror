@@ -44,7 +44,7 @@ TSH.DialogueParser = {
         const lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         const node = {
             options: [],
-            intro: []
+            intros: null
         };
 
         let i = 0;
@@ -75,11 +75,34 @@ TSH.DialogueParser = {
             i++;
         }
 
-        // Parse intro lines (speaker: text lines before first option)
+        // Parse intro blocks (conditional groups before first option)
+        const introBlocks = [];
+        let currentBlock = {
+            condition: null,
+            lines: []
+        };
+
         while (i < lines.length && !lines[i].startsWith('-')) {
             const line = lines[i];
 
-            // Skip annotations
+            // Check for # requires: annotation (starts new intro block)
+            if (line.startsWith('# requires:')) {
+                // Save previous block if it has lines
+                if (currentBlock.lines.length > 0) {
+                    introBlocks.push(currentBlock);
+                }
+
+                // Start new block with condition
+                const requiresText = line.substring('# requires:'.length).trim();
+                currentBlock = {
+                    condition: this._parseCondition(requiresText),
+                    lines: []
+                };
+                i++;
+                continue;
+            }
+
+            // Skip other annotations
             if (line.startsWith('#')) {
                 i++;
                 continue;
@@ -90,21 +113,26 @@ TSH.DialogueParser = {
             if (speakerMatch) {
                 const speaker = speakerMatch[1].toLowerCase();
                 const text = speakerMatch[2];
-                // Only add if text is not empty
                 if (text && text.trim() !== '') {
-                    node.intro.push({ speaker, text });
+                    currentBlock.lines.push({ speaker, text });
                 }
-            } else {
-                // Warn about unparseable lines
+            } else if (line.trim() !== '') {
                 console.warn(`[DialogueParser] Skipping unparseable intro line: "${line}"`);
             }
 
             i++;
         }
 
-        // Set intro to null if empty (backwards compatibility)
-        if (node.intro.length === 0) {
-            node.intro = null;
+        // Save final block if it has lines
+        if (currentBlock.lines.length > 0) {
+            introBlocks.push(currentBlock);
+        }
+
+        // Store intro blocks or set to null for backward compatibility
+        if (introBlocks.length > 0) {
+            node.intros = introBlocks;
+        } else {
+            node.intros = null;
         }
 
         // Parse options
