@@ -3212,70 +3212,83 @@
                 }
 
                 // Panel background
-                const panelPadding = this.isMobile ? 20 : 15;
-                const optionHeight = this.isMobile ? 50 : 32;
-                const panelWidth = this.isMobile ? width * 0.85 : width * 0.45;
-                const panelHeight = panelPadding * 2 + visibleOptions.length * optionHeight;
+                const panelPadding = 15;
+                const panelWidth = width * 0.70;
                 const panelX = panelPadding;
-                const panelY = height - panelHeight - panelPadding;
+                const fontSize = '22px';
+                const fontFamily = '"LucasArts SCUMM Solid", cursive';
 
-                const bg = this.add.graphics();
-                bg.fillStyle(0x1a1a2a, 0.95);
-                bg.fillRoundedRect(panelX, panelY, panelWidth, panelHeight, 8);
-                bg.lineStyle(2, 0x4a4a6a, 1);
-                bg.strokeRoundedRect(panelX, panelY, panelWidth, panelHeight, 8);
-                bg.setScrollFactor(0);
-                this.dialogueOptionsUI.add(bg);
+                {
+                    // Dynamic option height to handle multi-line text
+                    const optionPadding = 20;
+                    const wrapWidth = panelWidth - panelPadding * 2 - 30;
 
-                // Add options as clickable text
-                const fontSize = this.isMobile ? '18px' : '11px';
-                visibleOptions.forEach((opt, index) => {
-                    const optY = panelY + panelPadding + index * optionHeight + optionHeight / 2;
-                    const optX = panelX + panelPadding + 15;
-
-                    // Bullet point
-                    const bullet = this.add.text(panelX + panelPadding, optY, '>', {
-                        fontFamily: '"Press Start 2P", cursive',
-                        fontSize: fontSize,
-                        color: '#ffcc00'
-                    }).setOrigin(0, 0.5).setScrollFactor(0);
-                    this.dialogueOptionsUI.add(bullet);
-
-                    const optText = this.add.text(optX, optY, opt.text, {
-                        fontFamily: '"Press Start 2P", cursive',
-                        fontSize: fontSize,
-                        color: opt.used ? '#666666' : '#ffffff',
-                        wordWrap: { width: panelWidth - panelPadding * 2 - 20 }
-                    }).setOrigin(0, 0.5).setScrollFactor(0);
-
-                    optText.setInteractive();
-
-                    optText.on('pointerover', () => {
-                        if (!opt.used) optText.setColor('#ffcc00');
-                        bullet.setColor('#ffffff');
-                        this.drawCrosshair(0xff0000); // Red cursor on hover
+                    // Pass 1: create texts off-screen to measure heights
+                    const measured = visibleOptions.map((opt) => {
+                        const optText = this.add.text(-9999, -9999, opt.text, {
+                            fontFamily: fontFamily,
+                            fontSize: fontSize,
+                            color: opt.used ? '#666666' : '#ffffff',
+                            wordWrap: { width: wrapWidth }
+                        }).setOrigin(0, 0.5).setScrollFactor(0);
+                        const h = Math.max(optText.height, 28) + optionPadding;
+                        return { opt, optText, height: h };
                     });
 
-                    optText.on('pointerout', () => {
-                        optText.setColor(opt.used ? '#666666' : '#ffffff');
-                        bullet.setColor('#ffcc00');
-                        this.drawCrosshair(0xffffff); // White cursor
-                    });
+                    const totalOptionsHeight = measured.reduce((sum, m) => sum + m.height, 0);
+                    const panelHeight = panelPadding * 2 + totalOptionsHeight;
+                    const panelY = height - panelHeight - panelPadding;
 
-                    optText.on('pointerdown', () => {
-                        // Set flag to prevent the global click handler from immediately skipping
-                        this.justClickedDialogueOption = true;
-                        this.handleDialogueChoice(opt, nodeKey);
-                        // Clear the flag after a short delay
-                        this.time.delayedCall(100, () => {
-                            this.justClickedDialogueOption = false;
+                    // Draw panel background
+                    const bg = this.add.graphics();
+                    bg.fillStyle(0x1a1a2a, 0.95);
+                    bg.fillRoundedRect(panelX, panelY, panelWidth, panelHeight, 8);
+                    bg.lineStyle(2, 0x4a4a6a, 1);
+                    bg.strokeRoundedRect(panelX, panelY, panelWidth, panelHeight, 8);
+                    bg.setScrollFactor(0);
+                    this.dialogueOptionsUI.add(bg);
+
+                    // Pass 2: position texts and add interactivity
+                    let runningY = panelY + panelPadding;
+                    measured.forEach(({ opt, optText, height: itemHeight }) => {
+                        const optY = runningY + itemHeight / 2;
+                        const optX = panelX + panelPadding + 25;
+
+                        const bullet = this.add.text(panelX + panelPadding, optY, '>', {
+                            fontFamily: fontFamily,
+                            fontSize: fontSize,
+                            color: '#ffcc00'
+                        }).setOrigin(0, 0.5).setScrollFactor(0);
+                        this.dialogueOptionsUI.add(bullet);
+
+                        optText.setPosition(optX, optY);
+
+                        optText.setInteractive();
+                        optText.on('pointerover', () => {
+                            if (!opt.used) optText.setColor('#ffcc00');
+                            bullet.setColor('#ffffff');
+                            this.drawCrosshair(0xff0000);
                         });
-                    });
+                        optText.on('pointerout', () => {
+                            optText.setColor(opt.used ? '#666666' : '#ffffff');
+                            bullet.setColor('#ffcc00');
+                            this.drawCrosshair(0xffffff);
+                        });
+                        optText.on('pointerdown', () => {
+                            this.justClickedDialogueOption = true;
+                            this.handleDialogueChoice(opt, nodeKey);
+                            this.time.delayedCall(100, () => {
+                                this.justClickedDialogueOption = false;
+                            });
+                        });
 
-                    this.dialogueOptionTexts.push(optText);
-                    this.dialogueOptionTexts.push(bullet);
-                    this.dialogueOptionsUI.add(optText);
-                });
+                        this.dialogueOptionTexts.push(optText);
+                        this.dialogueOptionTexts.push(bullet);
+                        this.dialogueOptionsUI.add(optText);
+
+                        runningY += itemHeight;
+                    });
+                }
 
                 // Position at (0,0) since scrollFactor is 0 (screen-fixed)
                 this.dialogueOptionsUI.setPosition(0, 0);
