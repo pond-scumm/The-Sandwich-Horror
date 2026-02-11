@@ -1,0 +1,762 @@
+================================================================================
+THE SANDWICH HORROR — NPC CONVERSATION FORMAT
+================================================================================
+
+INSTRUCTIONS
+------------
+Each NPC gets one .txt file (e.g., earl.txt, harry.txt, frank.txt).
+Save files in: src/data/dialogue/
+
+Each file contains one or more NODES. A node is a menu of options the
+player can choose from. Picking an option plays dialogue, then jumps
+to another node (or exits the conversation).
+
+Write all dialogue yourself. Leave nothing for AI to fill in.
+Use // at the start of a line for comments (ignored by parser).
+
+
+================================================================================
+LEGEND
+================================================================================
+
+NODES
+-----
+=== node_name ===           Start of a conversation node.
+                            node_name is a short lowercase label.
+                            A file can have many nodes.
+
+# npc_state: state_name    This node loads when the NPC is in this
+                            game state (e.g., behind_fence, visible).
+                            Use for major NPC changes only.
+
+# default                   This node is a candidate for the starting
+                            node. The game checks default nodes in
+                            order — first one whose conditions pass
+                            wins. Use with # requires: asked: to
+                            skip intros on repeat visits.
+
+# id: label                 Tags this node with an ID. Can be checked
+                            with asked:label on other nodes/options.
+                            Persists between conversations.
+
+# requires: conditions      Node-level conditions. If these fail, this
+                            node is skipped when selecting the start.
+
+
+INTRO SEQUENCES (before options)
+---------------------------------
+nate: Line of dialogue      Dialogue lines before the first option play
+earl: Line of dialogue       automatically when the node loads. Use for
+                            greetings or scene-setting that happens
+                            before the player sees choices.
+
+# requires: conditions      Make the intro conditional. Multiple intro
+                            blocks can exist — the first one whose
+                            conditions pass plays. Use # requires: on
+                            the first line of each intro block.
+                            Example: different greetings for first
+                            meeting vs. returning visitor.
+
+
+OPTIONS
+-------
+- Option text               A choice the player sees in the menu.
+                            Everything indented below belongs to
+                            this option.
+
+
+DIALOGUE
+--------
+nate: Line of dialogue      What Nate says. Use lowercase npc id.
+earl: Line of dialogue       What the NPC says.
+earl: Another line           Multiple lines play in sequence.
+                            You can go back and forth:
+                              nate: Really?
+                              earl: Really.
+                              nate: Wow.
+
+
+NAVIGATION
+----------
+> node_name                 After this option's dialogue, jump to
+                            that node and show its options.
+> END                       Exit the conversation.
+
+
+OPTION TAGS
+-----------
+# id: label                 Tags this option with an ID. Can be
+                            checked with asked:label elsewhere.
+                            Persists between conversations.
+
+# once                      Option disappears permanently after
+                            being chosen once.
+
+# requires: conditions      Option only shows if ALL conditions pass.
+
+# set: flag_name            Set a game flag to true.
+# add: item_id              Add item to player's inventory.
+# remove: item_id           Remove item from player's inventory.
+
+
+CONDITIONS (used with # requires:)
+-----------------------------------
+flag_name                   Game flag must be true
+!flag_name                  Game flag must be false
+has:item_id                 Player must have this item
+!has:item_id                Player must NOT have this item
+asked:label                 Option or node with this # id has been
+                            visited (persists between conversations)
+!asked:label                Option or node with this # id has NOT
+                            been visited
+npc_state:npc:state         NPC must be in this state
+visited:room_id             Player must have visited this room
+
+Combine with commas (ALL must be true):
+# requires: asked:intro, has:ladder, !clock.returned_item
+
+
+================================================================================
+HOW NODE SELECTION WORKS
+================================================================================
+
+When the player clicks Talk To on an NPC, the game picks a starting
+node using this priority:
+
+1. Check # npc_state: nodes — find all nodes matching the NPC's
+   current state (e.g., behind_fence)
+
+2. Among matching nodes, check # default nodes first — evaluate
+   their # requires: conditions. First one that passes wins.
+
+3. If no # default node passes, use the first non-default node
+   for that state.
+
+4. If no npc_state matches, use the node named "start" or the
+   first node in the file.
+
+Example flow for Earl (behind_fence state):
+  First visit:  intro wins (no requires, loads first)
+  Later visits: main wins (# default + asked:met_earl is true)
+
+
+================================================================================
+FEATURES & EXAMPLES
+================================================================================
+
+
+FEATURE 1: BASIC CONVERSATION
+------------------------------
+The simplest conversation. Player picks options, NPC responds,
+conversation loops or exits.
+
+    === start ===
+
+    - Hey there
+        nate: Hi, I'm Nathaniel. Some call me Nate.
+        earl: Earl. Nice to meet ya.
+        > start
+
+    - What is this place?
+        nate: So what's the deal with this house?
+        earl: That's Hector's place.
+        earl: He's a scientist. Bit of an odd duck.
+        earl: But he's a good neighbor.
+        > start
+
+    - I should go
+        nate: Nice talking to you.
+        earl: Come back anytime.
+        > END
+
+Key points:
+- > start loops back to the same node (shows all options again)
+- > END exits the conversation
+- Multiple earl: lines play one after another before returning
+
+
+FEATURE 2: LONG BACK-AND-FORTH EXCHANGES
+-----------------------------------------
+One option can trigger a whole scene between characters.
+Every line plays in sequence before the menu returns.
+
+    - Tell me about the experiment
+        nate: So what exactly happened in there tonight?
+        earl: Man, I heard the bang from my yard.
+        nate: You didn't come check on him?
+        earl: Hector's bangs are a Tuesday for me.
+        nate: This one was different though.
+        earl: They're always different.
+        earl: And they're always fine.
+        nate: Well... not this time.
+        earl: That bad, huh?
+        > start
+
+Key points:
+- Go back and forth between speakers as many times as you want
+- The whole exchange plays out before the player gets to pick again
+
+
+FEATURE 3: OPTION TEXT vs. SPOKEN TEXT
+--------------------------------------
+What the player reads in the menu can differ from what Nate says.
+
+    - Ask about the strange noises
+        nate: I keep hearing these weird sounds from the basement. What gives?
+        earl: Best not to go poking around down there.
+        > start
+
+The player sees "Ask about the strange noises" in the menu.
+When selected, Nate says the full sentence.
+
+
+FEATURE 4: SKIPPING THE INTRO ON REPEAT VISITS
+-----------------------------------------------
+There are two ways to change greetings after the first meeting.
+
+OPTION A: Conditional intro sequences (recommended for simple cases)
+Use # requires: before intro dialogue to show different greetings
+based on game state. Same options both times, just different greetings.
+
+    === start ===
+    # default
+
+    # requires: asked:met_earl
+    nate: Hey Earl.
+    earl: Howdy Nate, how's it hanging?
+
+    # requires: !asked:met_earl
+    earl: Well hello there, neighbor!
+    earl: Don't think I've seen you around before!
+
+    - Hi! My name is Nathaniel Barnswallow.
+        # id: met_earl
+        # once
+        nate: Hi! My name is Nathaniel Barnswallow. I want to be a scientist.
+        earl: Howdy Nate! My name is Earl. Nice to meetcha.
+
+    - What smells so good?
+        # once
+        nate: Something smells delicious. What's cooking?
+        earl: Oh a couple of burgers. Ground the meat myself.
+        > start
+
+    - Good talk! I gotta go.
+        nate: Good talk! I gotta go.
+        earl: Stop by any time!
+        > END
+
+How it works:
+- First visit: !asked:met_earl passes → formal greeting plays
+- Player picks first option → met_earl gets tracked
+- Second visit: asked:met_earl passes → casual greeting plays
+- Same options appear both times, just different intro
+
+
+OPTION B: Separate nodes (use when options need to be different)
+Use # id: on a node and # default + # requires: asked: on another
+when first meeting and returning visitor need completely different options.
+
+    === intro ===
+    # id: met_earl
+
+    - Who's there?
+        nate: Hello? Somebody back there?
+        earl: Who's asking?
+        nate: I'm Nathaniel. I'm working with Hector.
+        earl: Name's Earl. Welcome to the neighborhood.
+        > intro
+
+    - I should get back to work
+        nate: Nice meeting you, Earl.
+        earl: Later, neighbor.
+        > END
+
+
+    === main ===
+    # default
+    # requires: asked:met_earl
+
+    - How's it going?
+        nate: Hey Earl.
+        earl: Hey neighbor.
+        > main
+
+    - See you later
+        earl: Later.
+        > END
+
+How it works:
+- First visit: intro loads (no default nodes pass yet)
+- Entering intro node tracks met_earl
+- Second visit: main is # default, asked:met_earl passes
+- Player gets completely different options in main node
+
+When to use which:
+- Conditional intros (A): Same options, different greetings
+- Separate nodes (B): Different options for first vs. repeat visits
+
+
+FEATURE 5: UNLOCKING NEW OPTIONS AFTER ASKING SOMETHING
+--------------------------------------------------------
+Use # id: on one option and # requires: asked: on another to
+make follow-up questions appear.
+
+    === main ===
+
+    - Tell me about the neighborhood
+        # id: neighborhood_talk
+        earl: It's quiet here. Usually.
+        earl: Weird things happen sometimes though.
+        > main
+
+    - What kind of weird things?
+        # requires: asked:neighborhood_talk
+        earl: Lights in the sky. Strange sounds at night.
+        earl: But that ain't my business.
+        > main
+
+    - See you later
+        > END
+
+How it works:
+- First time: player sees "Tell me about the neighborhood"
+  and "See you later"
+- Player asks about neighborhood — neighborhood_talk is tracked
+- Now "What kind of weird things?" appears in the menu
+- Player can ask the follow-up question
+
+You can chain these as deep as you want:
+
+    - What kind of weird things?
+        # requires: asked:neighborhood_talk
+        # id: weird_things
+        earl: Lights in the sky. Strange sounds at night.
+        > main
+
+    - Has anyone else noticed?
+        # requires: asked:weird_things
+        earl: Folks around here learn not to ask questions.
+        > main
+
+
+FEATURE 6: REMOVING OPTIONS BASED ON WHAT'S BEEN SAID
+------------------------------------------------------
+Use !asked: to hide options once something else has been picked.
+
+    - You're a bigfoot!
+        # requires: !asked:introduced_self
+        nate: Wait... are you a bigfoot??
+        earl: And you're rude. We done?
+        > main
+
+    - I'm Nathaniel
+        # id: introduced_self
+        nate: Hi, I'm Nathaniel.
+        earl: Earl. Pleasure.
+        > main
+
+How it works:
+- Both options visible at first
+- If player picks "I'm Nathaniel", introduced_self is tracked
+- "You're a bigfoot!" disappears (requires !asked:introduced_self)
+- If player picks "You're a bigfoot!" first, it stays until
+  they introduce themselves
+
+
+FEATURE 7: EVOLVING OPTIONS (SAME TEXT, DIFFERENT RESPONSES)
+------------------------------------------------------------
+Use # once and # requires: asked: together to make the same
+option give different responses over time.
+
+    - Tell me about Hector
+        # id: hector_v1
+        # once
+        earl: He keeps to himself.
+        > main
+
+    - Tell me about Hector
+        # requires: asked:hector_v1
+        # id: hector_v2
+        # once
+        earl: Look, he's been through a lot.
+        earl: Just don't touch his stuff.
+        > main
+
+    - Tell me about Hector
+        # requires: asked:hector_v2
+        earl: I've told you everything I know, neighbor.
+        > main
+
+How it works:
+- First time: version 1 shows, gets picked, disappears (# once)
+- Second time: version 2 shows (requires hector_v1), disappears
+- Third time: version 3 shows and stays (no # once, it's the
+  permanent final version)
+
+
+FEATURE 8: # once FOR ONE-TIME FLAVOR
+--------------------------------------
+Use # once for questions the player would only ask once.
+No flags or ids needed — it just disappears after being picked.
+
+    - Nice hat
+        # once
+        nate: That's quite the chef hat.
+        earl: It was my grandmother's.
+        earl: Well, not this one exactly. But the spirit lives on.
+        > main
+
+    - Do you always grill alone?
+        # once
+        nate: Isn't it lonely grilling by yourself?
+        earl: I got the stars, the music, and the burgers.
+        earl: That's all the company I need.
+        > main
+
+These options appear once, get picked, and are gone forever.
+Good for color that doesn't need tracking.
+
+
+FEATURE 9: GAME FLAGS (# set:)
+-------------------------------
+Use # set: when a conversation needs to affect the game world
+beyond just dialogue. Flags must be predefined in GameState.js.
+
+    - Can I come over?
+        # requires: asked:asked_about_cooking
+        nate: Think I could come check out your yard?
+        earl: Sure, why not. Gate's around the side.
+        # set: clock.invited_to_yard
+        > END
+
+How it works:
+- # set: clock.invited_to_yard sets a game flag
+- This flag can unlock doors, change hotspot text, enable
+  room transitions — anything outside the conversation
+- Flags must exist in GameState.js or you'll get a warning
+
+When to use flags vs asked:
+- asked: = "has this been discussed?" (dialogue flow only)
+- flags = "has this happened in the game?" (affects everything)
+
+
+FEATURE 10: ITEM TRADING (# add: and # remove:)
+------------------------------------------------
+Give and take inventory items during conversation.
+
+    - I found your spatula!
+        # requires: clock.talked_to_earl, has:borrowed_item
+        # remove: borrowed_item
+        # add: ladder
+        # set: clock.returned_item
+        nate: Look what I found!
+        earl: No way! Old Faithful!
+        earl: Alright neighbor, the ladder's yours.
+        earl: It's leaning against the fence over there.
+        > main
+
+How it works:
+- Option only shows if: flag is set AND player has the item
+- # remove: takes the borrowed_item from inventory
+- # add: gives the ladder to the player
+- # set: marks the trade as complete (game flag)
+- The swap happens when the option is picked
+
+
+FEATURE 11: PUZZLE GATING WITH CONDITIONS
+-----------------------------------------
+Use # requires: to control when puzzle-related options appear.
+Combine multiple conditions with commas.
+
+    - About that ladder...
+        # requires: clock.need_ladder, !clock.talked_to_earl
+        # id: asked_about_ladder
+        # set: clock.talked_to_earl
+        nate: You wouldn't happen to have a ladder?
+        earl: Bring back my spatula first.
+        > main
+
+    - What spatula am I looking for?
+        # requires: asked:asked_about_ladder, !has:borrowed_item
+        nate: What does this spatula look like?
+        earl: Old Faithful. Wooden handle, bent at the tip.
+        > main
+
+How it works:
+- "About that ladder" needs: game flag set AND not already asked
+- "What spatula" needs: asked about ladder AND doesn't have item yet
+- Once the player finds the spatula, this option disappears
+  (!has:borrowed_item fails when they pick it up)
+
+
+FEATURE 12: SUB-CONVERSATIONS (JUMPING BETWEEN NODES)
+------------------------------------------------------
+Use multiple nodes for topic branches. Jump between them with >.
+
+    === main ===
+
+    - Tell me about the experiment
+        nate: What happened in there?
+        earl: How much time you got?
+        > experiment_talk
+
+    - I should get going
+        earl: Later, neighbor.
+        > END
+
+
+    === experiment_talk ===
+
+    - What was the bang?
+        earl: Sounded like a cannon going off.
+        > experiment_talk
+
+    - Was anyone hurt?
+        earl: Well... you saw Hector.
+        > experiment_talk
+
+    - Never mind, let's talk about something else
+        nate: You know what, forget I asked.
+        earl: Smart man.
+        > main
+
+How it works:
+- Player picks "Tell me about the experiment" — jumps to
+  experiment_talk node with different options
+- "Never mind" jumps back to main
+- Player can bounce between nodes freely
+
+
+FEATURE 13: NPC STATE CHANGES
+-----------------------------
+Use # npc_state: for completely different conversations when an NPC
+fundamentally changes (moves to a new location, changes behavior).
+
+    === fence_main ===
+    # npc_state: behind_fence
+    # default
+
+    - Hey Earl
+        earl: Hey neighbor.
+        > fence_main
+
+    - See you later
+        > END
+
+
+    === yard_intro ===
+    # npc_state: visible
+    # id: entered_yard
+
+    - Wow, nice place
+        nate: This yard is amazing.
+        earl: Thanks! Built it myself.
+        > yard_main
+
+
+    === yard_main ===
+    # npc_state: visible
+    # default
+    # requires: asked:entered_yard
+
+    - What are you grilling?
+        earl: Nice try, neighbor.
+        > yard_main
+
+    - I should head back
+        > END
+
+How it works:
+- When Earl is in "behind_fence" state — fence nodes load
+- When Earl changes to "visible" state — yard nodes load
+- State changes happen through game logic (not in dialogue files)
+- Each state can have its own intro/main pattern
+
+
+FEATURE 14: CHECKING OTHER GAME CONDITIONS
+-------------------------------------------
+Use has:, npc_state:, and visited: to check things beyond flags.
+
+    // Show if player has the candle
+    - Want a candle?
+        # requires: has:candle
+        nate: I've got this candle. Need it?
+        earl: What would I do with a candle?
+        > main
+
+    // Show if alien is on the roof
+    - Did you see that thing on the roof?
+        # requires: npc_state:alien:on_roof
+        nate: There's something on Hector's roof.
+        earl: I don't look up. Policy.
+        > main
+
+    // Show if player has been to the basement
+    - What's in the basement?
+        # requires: visited:basement
+        nate: I found the basement.
+        earl: Then you know more than I want to.
+        > main
+
+
+FEATURE 15: COMMENTS AND ORGANIZATION
+--------------------------------------
+Use // for notes to yourself. Use blank lines freely.
+The parser ignores both.
+
+    // ============================================================
+    // EARL — Bigfoot neighbor, grill enthusiast
+    // States: behind_fence, visible
+    // ============================================================
+
+    // ------------------------------------------------------------
+    // FIRST MEETING
+    // This intro plays once, then main takes over
+    // ------------------------------------------------------------
+
+    === intro ===
+    # npc_state: behind_fence
+    # id: met_earl
+
+    // Greeting — establishes Earl's personality
+    - Who's there?
+        nate: Hello? Somebody back there?
+        earl: Who's asking?
+        > intro
+
+    // This is the puzzle-critical option
+    // Player needs to ask about cooking before they can ask to visit
+    - What are you cooking?
+        # id: asked_about_cooking
+        nate: Whatever you're grilling smells incredible.
+        earl: Burgers. Secret family recipe.
+        > intro
+
+You can organize your file however you want. Comments and
+blank lines are completely ignored.
+
+
+FEATURE 16: CONDITIONAL INTRO SEQUENCES
+----------------------------------------
+Use multiple intro blocks with # requires: to play different
+dialogue before the menu based on game state. Perfect for
+greetings that change after first meeting.
+
+    === start ===
+    # default
+
+    // Returning visitor greeting
+    # requires: asked:met_frank
+    nate: Hey Frank.
+    frank: Back again, eh?
+
+    // First meeting greeting
+    # requires: !asked:met_frank
+    frank: Who the heck are you?
+    nate: I'm Nathaniel. Hector sent me.
+    frank: Great. Another science type.
+
+    - I need to borrow a wrench
+        # id: met_frank
+        nate: Got a wrench I could borrow?
+        frank: In the toolbox over there.
+        > start
+
+    - Never mind
+        nate: Actually, I should go.
+        > END
+
+How it works:
+- Intro blocks are separated by # requires: annotations
+- First matching intro plays, then the menu appears
+- Blank lines between blocks are for visual clarity only
+- If no intros match, menu appears immediately (no greeting)
+
+Technical details:
+- # requires: on a line before options = start of intro block
+- Works exactly like option conditions (asked:, has:, flags, etc.)
+- Multiple conditions allowed: # requires: asked:x, has:y, !flag_z
+- Blocks without # requires: act as default (always match)
+- Intro blocks are checked in order, first match wins
+
+When to use:
+- Same options, different greetings based on game state
+- For different options, use separate nodes instead (see Feature 4)
+
+
+================================================================================
+QUICK REFERENCE
+================================================================================
+
+STRUCTURE           WHAT IT DOES
+---------           ------------
+=== name ===        Start a node (menu of options)
+- Text              Start an option (player choice)
+nate: Text          Nate speaks (dialogue line)
+earl: Text          NPC speaks (use their id)
+> name              Jump to another node
+> END               Exit conversation
+
+INTRO SEQUENCES     WHAT IT DOES
+---------------     ------------
+nate: Text          Dialogue before options (plays automatically)
+earl: Text          (use speaker: format before first -)
+# requires: cond    Make intro conditional (starts new intro block)
+
+NODE TAGS           WHAT IT DOES
+---------           ------------
+# npc_state: x      Load this node when NPC is in state x
+# default           Try this node first as starting point
+# id: label         Track when this node is visited
+# requires: cond    Only use this node if conditions pass
+
+OPTION TAGS         WHAT IT DOES
+-----------         ------------
+# id: label         Track when this option is picked
+# once              Disappear after being picked once
+# requires: cond    Only show if conditions pass
+# set: flag         Set a game flag to true
+# add: item         Give item to player
+# remove: item      Take item from player
+
+CONDITIONS          WHAT IT CHECKS
+----------          --------------
+flag_name           Game flag is true
+!flag_name          Game flag is false
+has:item             Player has item
+!has:item            Player doesn't have item
+asked:label         This id has been visited
+!asked:label        This id has NOT been visited
+npc_state:npc:st    NPC is in this state
+visited:room        Player visited this room
+
+
+================================================================================
+TIPS
+================================================================================
+
+- Keep option text SHORT — it's what the player sees in the menu.
+  The actual dialogue (nate:/earl: lines) can be as long as you want.
+
+- asked: is for conversation flow. Flags are for game state.
+  "You mentioned weird things" = asked:weird_stuff
+  "Ladder available after trade" = clock.returned_item
+
+- When to use # once vs # requires:
+  # once = flavor/lore question, ask once and done
+  # requires: = puzzle logic, appears/disappears based on game state
+
+- The parser is forgiving:
+  - Blank lines are ignored
+  - Comments (//) are ignored
+  - Empty speaker lines (earl:) are skipped
+  - Options with no dialogue still show and navigate
+  - Unrecognized lines are skipped with a console warning
+  - A broken node won't crash the rest of the file
+
+- Flags must exist in GameState.js. Unknown flags show a warning
+  in the browser console. Ask Claude Code to add new ones.
+  asked: labels don't need predefinition — just write them.
+
+- Remember: Nate is conversational, not narrating. See CREATIVE_BIBLE.md.

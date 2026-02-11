@@ -11,6 +11,13 @@ This directory contains NPC dialogue files in plain text format. Each file repre
 # default
 # requires: condition1, condition2
 
+# requires: asked:greeted
+nate: Hey there.
+earl: Hey.
+
+# requires: !asked:greeted
+earl: Who are you?
+
 - Option text
 # requires: story.found_hector, has:ladder, !story.talked_to_earl
 # id: asked_about_key
@@ -36,6 +43,36 @@ nate: Different line
 - `# id: label` - (Optional) Tags this node with a persistent label. The label is marked as visited when the player enters this node. Can be checked with `asked:label` in conditions.
 - `# default` - (Optional) Marks this node as a candidate starting node. The first `# default` node whose `# requires:` condition passes is used as the starting node. If no default passes, the first non-default node is used instead.
 - `# requires: conditions` - (Optional, node-level) Conditions that must pass for this node to be selected as a `# default` starting node.
+
+### Intro Sequences
+Dialogue lines using `speaker: text` format before the first option (`-`) are intro sequences. They play automatically when the node loads, before showing the player any choices.
+
+**Conditional Intros:**
+- Use `# requires: conditions` before intro dialogue lines to create conditional intro blocks
+- Multiple intro blocks can exist in one node — first matching block plays
+- Blank lines between blocks are for visual organization (ignored by parser)
+- `# requires:` annotation starts a new intro block
+- If no conditions match, menu appears immediately with no intro
+
+**Example:**
+```
+=== start ===
+# default
+
+# requires: asked:met_earl
+nate: Hey Earl.
+earl: Howdy Nate.
+
+# requires: !asked:met_earl
+earl: Well hello there, neighbor!
+
+- Hi! My name is Nate.
+# id: met_earl
+...
+```
+
+First visit: `!asked:met_earl` matches → formal greeting plays
+Return visits: `asked:met_earl` matches → casual greeting plays
 
 ### Options
 - `- Option text` - Starts a player dialogue choice (bullet point)
@@ -152,27 +189,32 @@ earl: Sure thing, come on over!
 > main_conversation
 ```
 
-### Default Nodes with ID Tracking
+### Default Nodes with Conditional Intros
 ```
 === start ===
-# id: met_earl
-
-- Hi! My name is Nate.
-nate: Hi! I'm Nate.
-earl: Nice to meetcha!
-> END
-
-=== main ===
 # default
-# requires: asked:met_earl
 
-- How's it going?
-nate: How's it going, Earl?
-earl: Can't complain!
+# requires: asked:met_earl
+nate: Hey Earl.
+earl: Howdy Nate, how's it hanging?
+
+# requires: !asked:met_earl
+earl: Well hello there, neighbor!
+earl: Don't think I've seen you around before!
+
+- Hi! My name is Nathaniel Barnswallow.
+# id: met_earl
+# once
+nate: Hi! My name is Nathaniel Barnswallow. I want to be a scientist.
+earl: Howdy Nate! My name is Earl. Nice to meetcha.
+
+- Good talk! I gotta go.
+nate: Good talk! I gotta go.
+earl: Stop by any time!
 > END
 ```
 
-On first visit, `start` is used (no default passes because `met_earl` hasn't been marked yet). When the player enters the `start` node, `met_earl` gets marked. On subsequent visits, the `main` node's `# default` condition passes (`asked:met_earl` is true), so `main` is used as the starting node.
+On first visit, the `!asked:met_earl` intro block matches → Earl's formal greeting plays. When the player chooses the first option, `met_earl` gets marked. On subsequent visits, the `asked:met_earl` intro block matches → casual greeting plays instead. Same options both times, just different intro.
 
 ## Parser Robustness
 
