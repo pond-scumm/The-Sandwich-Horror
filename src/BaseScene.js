@@ -885,6 +885,9 @@
 
                 // Handle taps (not drags)
                 if (!gesture.isDragging) {
+                    // Block taps during conversation or dialogue
+                    if (this.conversationActive || this.dialogActive) return;
+
                     const currentTime = Date.now();
                     const timeSinceLastTap = currentTime - gesture.lastTapTime;
                     const isDoubleTap = timeSinceLastTap < gesture.doubleTapThreshold &&
@@ -3054,6 +3057,9 @@
 
                 console.log('[Conversation] Step 1: Setting state...');
                 this.conversationActive = true;
+                // Clear any stale hotspot hover state
+                this.currentHoveredHotspot = null;
+                this.setCrosshairHover(null);
                 TSH.State.setUIState('conversationActive', true);
                 this.conversationNPC = npcData;
                 this.conversationData = dialogueTree;

@@ -988,6 +988,7 @@ class RoomScene extends BaseScene {
             zone.on('pointerdown', (pointer) => {
                 if (this.debugEnabled) return;
                 if (this.inventoryOpen) return;
+                if (this.conversationActive || this.dialogActive) return;
 
                 // Mark as UI click to prevent background walk on pointerup
                 this.clickedUI = true;
