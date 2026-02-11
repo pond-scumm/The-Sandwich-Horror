@@ -3133,9 +3133,37 @@
                     this.drawCrosshair(0xffffff); // White cursor
                 }
 
-                // Show initial dialogue options
+                // Show initial dialogue options (or play intro sequence first if present)
                 console.log('[Conversation] Step 5: Calling showDialogueOptions with', startNode);
-                this.showDialogueOptions(startNode);
+
+                // Check if node has intro sequence
+                if (this.conversationData[startNode]?.intro) {
+                    this._playIntroSequence(this.conversationData[startNode].intro, () => {
+                        this.showDialogueOptions(startNode);
+                    });
+                } else {
+                    this.showDialogueOptions(startNode);
+                }
+            }
+
+            _playIntroSequence(introLines, onComplete) {
+                console.log('[Conversation] Playing intro sequence:', introLines);
+                this.dialogueOptionsUI.setVisible(false);
+                this._playIntroLine(introLines, 0, onComplete);
+            }
+
+            _playIntroLine(introLines, index, onComplete) {
+                if (index >= introLines.length) {
+                    onComplete();
+                    return;
+                }
+
+                const line = introLines[index];
+                const speakerType = line.speaker === 'nate' ? 'hero' : 'npc';
+
+                this.showConversationLine(line.text, speakerType, () => {
+                    this._playIntroLine(introLines, index + 1, onComplete);
+                });
             }
 
             _selectStartingNode(dialogueTree, npcId) {

@@ -537,12 +537,12 @@
                             this.showDialog("Hello? Anyone over there?", () => {
                                 // Neighbor pops up
                                 this.showNeighborSprite(height);
-                                // Start conversation with Earl's greeting
-                                this.startNeighborConversation(true);
+                                // Start conversation with Earl
+                                this.startNeighborConversation();
                             });
                         } else {
                             // Already talked before - just start conversation
-                            this.startNeighborConversation(false);
+                            this.startNeighborConversation();
                         }
                     } else {
                         this.showDialog(hotspot.talkResponse);
@@ -550,7 +550,7 @@
                 }
             }
 
-            startNeighborConversation(showGreeting = false) {
+            startNeighborConversation() {
                 const height = this.scale.height;
                 const npcData = {
                     name: 'Earl',
@@ -559,23 +559,8 @@
                 };
                 const dialogue = this.getNeighborDialogue();
 
-                if (showGreeting) {
-                    // Set up conversation state first
-                    this.conversationActive = true;
-                    this.conversationNPC = npcData;
-                    this.conversationData = dialogue;
-                    this.conversationState = 'start';
-                    this.stopCharacterMovement();
-                    if (this.crosshairCursor) this.crosshairCursor.setVisible(true);
-                    this.drawCrosshair(0xffffff);
-
-                    // Show Earl's greeting, then show options
-                    this.showConversationLine("Well hello there, neighbor! Don't think I've seen you around before!", 'npc', () => {
-                        this.showDialogueOptions('start');
-                    });
-                } else {
-                    this.enterConversation(npcData, dialogue);
-                }
+                // Use standard conversation flow (intro lines handled by dialogue system)
+                this.enterConversation(npcData, dialogue, 'earl');
             }
 
             handleDialogueChoice(option, currentNode) {

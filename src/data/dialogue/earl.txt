@@ -1,6 +1,9 @@
 === start ===
 # id: met_earl
 
+earl: Well hello there, neighbor!
+earl: Don't think I've seen you around before!
+
 - Hi! My name is Nathaniel Barnswallow.
 # once
 nate: Hi! My name is Nathaniel Barnswallow. I want to be a scientist. 

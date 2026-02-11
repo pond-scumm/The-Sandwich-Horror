@@ -43,7 +43,8 @@ TSH.DialogueParser = {
     _parseNode(content) {
         const lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         const node = {
-            options: []
+            options: [],
+            intro: []
         };
 
         let i = 0;
@@ -72,6 +73,38 @@ TSH.DialogueParser = {
             }
 
             i++;
+        }
+
+        // Parse intro lines (speaker: text lines before first option)
+        while (i < lines.length && !lines[i].startsWith('-')) {
+            const line = lines[i];
+
+            // Skip annotations
+            if (line.startsWith('#')) {
+                i++;
+                continue;
+            }
+
+            // Parse speaker: text format
+            const speakerMatch = line.match(/^(\w+):\s*(.*)$/);
+            if (speakerMatch) {
+                const speaker = speakerMatch[1].toLowerCase();
+                const text = speakerMatch[2];
+                // Only add if text is not empty
+                if (text && text.trim() !== '') {
+                    node.intro.push({ speaker, text });
+                }
+            } else {
+                // Warn about unparseable lines
+                console.warn(`[DialogueParser] Skipping unparseable intro line: "${line}"`);
+            }
+
+            i++;
+        }
+
+        // Set intro to null if empty (backwards compatibility)
+        if (node.intro.length === 0) {
+            node.intro = null;
         }
 
         // Parse options
