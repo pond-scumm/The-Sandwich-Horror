@@ -143,7 +143,7 @@
             {
                 id: 'earl',
                 name: 'Earl',
-                sprite: 'earl_placeholder',
+                sprite: 'earl_idle',
                 position: { x: 920, y: 0.82 },  // Well to the right of the grill
                 heightRatio: 1.15,  // Just slightly taller than Nate
                 interactX: 920,

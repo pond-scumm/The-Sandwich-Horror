@@ -192,11 +192,26 @@
                 if (!this.textures.exists('nate_idle')) {
                     this.load.image('nate_idle', 'assets/sprites/nate/nate_idle.png');
                 }
+                if (!this.textures.exists('nate_talk')) {
+                    this.load.spritesheet('nate_talk', 'assets/sprites/nate/Nate_Talking-Sheet.png', {
+                        frameWidth: 180,
+                        frameHeight: 610
+                    });
+                }
                 if (!this.textures.exists('hector_placeholder')) {
                     this.load.image('hector_placeholder', 'assets/sprites/hector_placeholder.png');
                 }
-                if (!this.textures.exists('earl_placeholder')) {
-                    this.load.image('earl_placeholder', 'assets/sprites/earl_placeholder.png');
+                if (!this.textures.exists('earl_idle')) {
+                    this.load.image('earl_idle', 'assets/sprites/earl/earl_idle.png');
+                }
+                if (!this.textures.exists('earl_idle_conversation')) {
+                    this.load.image('earl_idle_conversation', 'assets/sprites/earl/earl_idle_conversation.png');
+                }
+                if (!this.textures.exists('earl_talk')) {
+                    this.load.spritesheet('earl_talk', 'assets/sprites/earl/Earl_Talking-Sheet.png', {
+                        frameWidth: 180,
+                        frameHeight: 700
+                    });
                 }
                 if (!this.textures.exists('frank_placeholder')) {
                     this.load.image('frank_placeholder', 'assets/sprites/frank_placeholder.png');
@@ -219,6 +234,24 @@
                         }),
                         frameRate: 10,  // Starting point - will tune by eye
                         repeat: -1      // Loop indefinitely
+                    });
+                }
+
+                if (!this.anims.exists('nate_talk') && this.textures.exists('nate_talk')) {
+                    this.anims.create({
+                        key: 'nate_talk',
+                        frames: this.anims.generateFrameNumbers('nate_talk', { start: 0, end: 3 }),
+                        frameRate: 6,
+                        repeat: -1
+                    });
+                }
+
+                if (!this.anims.exists('earl_talk') && this.textures.exists('earl_talk')) {
+                    this.anims.create({
+                        key: 'earl_talk',
+                        frames: this.anims.generateFrameNumbers('earl_talk', { start: 0, end: 3 }),
+                        frameRate: 6,
+                        repeat: -1
                     });
                 }
 
@@ -2925,6 +2958,10 @@
                     this.showSingleDialog(this.dialogQueue.shift(), true);
                     this.time.delayedCall(150, () => { this.dialogSkipReady = true; });
                 } else {
+                    if (this.playerSprite && this.playerSprite.anims) {
+                        this.playerSprite.stop();
+                        this.playerSprite.setTexture('nate_idle');
+                    }
                     this.speechBubble.setVisible(false);
                     this.dialogText.setText('');
                     // Hide UIScene's dialog overlay too
@@ -2961,11 +2998,19 @@
                     this.speechBubble.setVisible(true);
                 }
 
+                if (this.playerSprite && this.playerSprite.anims) {
+                    this.playerSprite.play('nate_talk');
+                }
+
                 const displayTime = Math.max(1500, text.length * 40);
                 this.dialogTimer = this.time.delayedCall(displayTime, () => {
                     if (this.dialogQueue.length > 0) {
                         this.showSingleDialog(this.dialogQueue.shift(), true);
                     } else {
+                        if (this.playerSprite && this.playerSprite.anims) {
+                            this.playerSprite.stop();
+                            this.playerSprite.setTexture('nate_idle');
+                        }
                         this.speechBubble.setVisible(false);
                         this.dialogText.setText('');
                         // Hide UIScene's dialog overlay too
@@ -3065,6 +3110,11 @@
                 this.conversationData = dialogueTree;
                 this.conversationNPCId = npcId; // Store for once-tracking
 
+                // Swap Earl to conversation idle pose
+                if (npcId === 'earl' && this.npcSprites && this.npcSprites['earl']) {
+                    this.npcSprites['earl'].setTexture('earl_idle_conversation');
+                }
+
                 console.log('[Conversation] Step 2: Selecting starting node...');
                 // Select starting node based on NPC state
                 const startNode = this._selectStartingNode(dialogueTree, npcId);
@@ -3128,6 +3178,12 @@
             }
 
             exitConversation() {
+                // Restore Earl to normal idle pose
+                if (this.conversationNPCId === 'earl' && this.npcSprites && this.npcSprites['earl']) {
+                    this.npcSprites['earl'].stop();
+                    this.npcSprites['earl'].setTexture('earl_idle');
+                }
+
                 // Set transition guard to prevent immediate re-triggering
                 this.isExitingConversation = true;
 
@@ -3435,6 +3491,11 @@
                 this.conversationLineSpeaker = speaker;
 
                 if (speaker === 'hero') {
+                    // Play Nate's talking animation
+                    if (this.playerSprite && this.playerSprite.anims) {
+                        this.playerSprite.play('nate_talk');
+                    }
+
                     // Use existing speech bubble for hero
                     console.log('[Conversation] Showing hero line:', text);
                     console.log('[Conversation] speechBubble:', this.speechBubble);
@@ -3446,6 +3507,11 @@
                     console.log('[Conversation] Hero speech bubble visible:', this.speechBubble.visible);
                     console.log('[Conversation] Hero speech bubble position:', this.speechBubble.x, this.speechBubble.y);
                 } else {
+                    // Play Earl's talking animation when he's speaking
+                    if (this.conversationNPCId === 'earl' && this.npcSprites && this.npcSprites['earl']) {
+                        this.npcSprites['earl'].play('earl_talk');
+                    }
+
                     // Use NPC speech bubble
                     this.npcDialogText.setText(text);
 
@@ -3477,8 +3543,18 @@
                 }
 
                 if (this.conversationLineSpeaker === 'hero') {
+                    // Stop Nate's talking animation, return to idle
+                    if (this.playerSprite && this.playerSprite.anims) {
+                        this.playerSprite.stop();
+                        this.playerSprite.setTexture('nate_idle');
+                    }
                     this.speechBubble.setVisible(false);
                 } else {
+                    // Stop Earl's talking animation, return to conversation idle
+                    if (this.conversationNPCId === 'earl' && this.npcSprites && this.npcSprites['earl']) {
+                        this.npcSprites['earl'].stop();
+                        this.npcSprites['earl'].setTexture('earl_idle_conversation');
+                    }
                     this.npcSpeechBubble.setVisible(false);
                 }
 
