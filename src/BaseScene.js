@@ -3068,6 +3068,7 @@
                 console.log('[Conversation] Step 3: Freezing movement...');
                 // Freeze movement and hide normal UI
                 this.stopCharacterMovement();
+                if (this.hotspotLabel) this.hotspotLabel.setText('');
 
                 console.log('[Conversation] Step 4: Setting up cursor...');
                 // Keep crosshair visible during conversation (desktop only)
