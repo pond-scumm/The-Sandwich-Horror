@@ -240,7 +240,7 @@
                 if (!this.anims.exists('nate_talk') && this.textures.exists('nate_talk')) {
                     this.anims.create({
                         key: 'nate_talk',
-                        frames: this.anims.generateFrameNumbers('nate_talk', { start: 0, end: 3 }),
+                        frames: this.anims.generateFrameNumbers('nate_talk', { start: 0, end: 6 }),
                         frameRate: 6,
                         repeat: -1
                     });
