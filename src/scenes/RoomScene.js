@@ -119,6 +119,15 @@ class RoomScene extends BaseScene {
             audioToLoad.push(room.audio.music.key);
         }
 
+        // Additional station tracks (for radio cycling)
+        if (room.audio.music?.stations && Array.isArray(room.audio.music.stations)) {
+            room.audio.music.stations.forEach(station => {
+                if (station.key && !audioToLoad.includes(station.key)) {
+                    audioToLoad.push(station.key);
+                }
+            });
+        }
+
         // Additional audio layers (ambient, etc.)
         if (room.audio.layers && Array.isArray(room.audio.layers)) {
             room.audio.layers.forEach(layer => {
@@ -1133,7 +1142,27 @@ class RoomScene extends BaseScene {
 
         // Handle main music track
         if (room.audio.music) {
-            const { key, volume = 0.7, fade = 1000, effects = [] } = room.audio.music;
+            // If room has stations and player has a saved station, use that instead of default key
+            let musicKey = room.audio.music.key;
+            if (room.audio.music.stations && room.audio.music.stations.length > 0) {
+                // Access raw state (getFlag coerces to boolean, we need the integer index)
+                const parts = (this.roomId + '.radioStation').split('.');
+                let flagObj = TSH.State._state.flags;
+                for (const part of parts) {
+                    if (flagObj === undefined || flagObj === null) break;
+                    flagObj = flagObj[part];
+                }
+                const savedStation = typeof flagObj === 'number' ? flagObj : undefined;
+                if (savedStation !== undefined) {
+                    const station = room.audio.music.stations[savedStation];
+                    if (station) {
+                        musicKey = station.key;
+                    }
+                }
+            }
+
+            const { volume = 0.7, fade = 1000, effects = [] } = room.audio.music;
+            const key = musicKey;
 
             if (shouldContinueMusic) {
                 // Music continues - just adjust volume if needed
@@ -1164,6 +1193,28 @@ class RoomScene extends BaseScene {
                         console.warn('Could not seek audio:', e);
                     }
                     TSH.Audio.clearSavedPosition('main', this.roomId);
+                }
+
+                // Resume from radio station saved position (stored in state flags)
+                if (sound && room.audio.music.stations) {
+                    // Access raw state (getFlag coerces to boolean, we need the object)
+                    const rParts = (this.roomId + '.radioPositions').split('.');
+                    let rObj = TSH.State._state.flags;
+                    for (const rp of rParts) {
+                        if (rObj === undefined || rObj === null) break;
+                        rObj = rObj[rp];
+                    }
+                    const radioPositions = (typeof rObj === 'object' && rObj !== null) ? rObj : null;
+                    if (radioPositions && radioPositions[key] > 0) {
+                        try {
+                            sound.setSeek(radioPositions[key]);
+                            if (TSH.debug) {
+                                console.log(`[RoomScene] Resumed radio station "${key}" from ${radioPositions[key].toFixed(2)}s`);
+                            }
+                        } catch (e) {
+                            console.warn('Could not seek radio station audio:', e);
+                        }
+                    }
                 }
 
                 // Apply audio effects after a short delay

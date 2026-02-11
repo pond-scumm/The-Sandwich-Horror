@@ -104,7 +104,11 @@
                 key: 'earl_theme',
                 volume: 0.25,
                 fade: 1000,
-                effects: ['radio']  // Tinny radio sound effect
+                effects: ['radio'],  // Tinny radio sound effect
+                stations: [
+                    { key: 'earl_theme' },
+                    { key: 'earl_theme_2' }
+                ]
             },
             layers: [
                 {
@@ -272,8 +276,9 @@
                 verbs: { action: 'Listen', look: 'Examine' },
                 responses: {
                     look: "It's a old tube radio with great reception.",
-                    action: "I'll change the station."
-                }
+                    action: ""
+                },
+                actionTrigger: { type: 'action', action: 'cycle_radio_station' }
             },
             {
                 id: 'grill_charcoal',
