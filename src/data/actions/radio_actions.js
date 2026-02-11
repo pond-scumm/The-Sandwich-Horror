@@ -54,32 +54,43 @@
         // Stop current music
         TSH.Audio.stopMusic('main', { fade: 0 });
 
-        // Start new station
-        const sound = TSH.Audio.playMusic(nextStation.key, {
-            channel: 'main',
-            volume: musicConfig.volume || 0.25,
-            fade: 0
-        });
+        // Play radio static SFX, then start the next station when it finishes
+        const staticSound = TSH.Audio.playSFX('radio_static');
 
-        // Resume from saved position if available
-        if (sound) {
-            const positions = getRawFlag(roomId + '.radioPositions') || {};
-            const savedPos = positions[nextStation.key];
-            if (savedPos && savedPos > 0) {
-                try {
-                    sound.setSeek(savedPos);
-                } catch (e) {
-                    // Seek failed, play from beginning
+        function startNextStation() {
+            const sound = TSH.Audio.playMusic(nextStation.key, {
+                channel: 'main',
+                volume: musicConfig.volume || 0.25,
+                fade: 0
+            });
+
+            // Resume from saved position if available
+            if (sound) {
+                const positions = getRawFlag(roomId + '.radioPositions') || {};
+                const savedPos = positions[nextStation.key];
+                if (savedPos && savedPos > 0) {
+                    try {
+                        sound.setSeek(savedPos);
+                    } catch (e) {
+                        // Seek failed, play from beginning
+                    }
                 }
+            }
+
+            // Reapply radio effect after short delay (matches handleRoomAudio pattern)
+            const effects = musicConfig.effects || [];
+            if (effects.length > 0) {
+                scene.time.delayedCall(100, () => {
+                    scene.applyMusicEffects('main', effects);
+                });
             }
         }
 
-        // Reapply radio effect after short delay (matches handleRoomAudio pattern)
-        const effects = musicConfig.effects || [];
-        if (effects.length > 0) {
-            scene.time.delayedCall(100, () => {
-                scene.applyMusicEffects('main', effects);
-            });
+        if (staticSound) {
+            staticSound.once('complete', startNextStation);
+        } else {
+            // SFX not loaded — start next station immediately
+            startNextStation();
         }
 
         // Save new station index

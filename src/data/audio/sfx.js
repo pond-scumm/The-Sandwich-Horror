@@ -84,6 +84,13 @@
         //     volume: 0.5
         // },
 
+        // ========== ENVIRONMENT ==========
+        radio_static: {
+            key: 'sfx_radio_static',
+            path: 'assets/audio/sfx/radio_static.wav',
+            volume: 0.5
+        },
+
         // ========== CHARACTER ==========
         // Walk footsteps (left/right, 2 variants each for variation)
         stepwlkl1: {
