@@ -1032,7 +1032,8 @@
                 const worldX = pointer.x + scrollX;
                 const worldY = pointer.y + scrollY;
 
-                for (const hotspot of this.hotspots) {
+                for (let i = this.hotspots.length - 1; i >= 0; i--) {
+                    const hotspot = this.hotspots[i];
                     if (hotspot.polygon && hotspot.polygon.length >= 3) {
                         // Polygon hotspot - coordinates already in pixels
                         if (this.pointInPolygon(worldX, worldY, hotspot.polygon)) {
