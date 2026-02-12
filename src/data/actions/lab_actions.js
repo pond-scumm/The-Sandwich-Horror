@@ -35,4 +35,19 @@
         // Note: Knife block visual stays - it's a block with multiple scalpels
     };
 
+    // Toggle electrical panel open/closed
+    TSH.Actions.toggle_panel = function(scene, hotspot, item) {
+        const isOpen = TSH.State.getFlag('lab.panel_open');
+
+        if (isOpen) {
+            // Close the panel
+            TSH.State.setFlag('lab.panel_open', false);
+            scene.showDialog("I close the panel door.");
+        } else {
+            // Open the panel
+            TSH.State.setFlag('lab.panel_open', true);
+            scene.showDialog("I open the panel door. There's something inside.");
+        }
+    };
+
 })();

@@ -117,8 +117,8 @@
         
         // ── Clock Puzzle Items ──────────────────────────────────────────
         
-        spring: {
-            id: 'spring',
+        spring_1: {
+            id: 'spring_1',
             name: 'Spring',
             description: "",
             failDefault: "",
@@ -141,7 +141,7 @@
             description: "",
             failDefault: "",
             consumable: false,
-            combinable: ['spring', 'spring_2']
+            combinable: ['spring_1', 'spring_2']
         },
         
         repaired_shoes: {

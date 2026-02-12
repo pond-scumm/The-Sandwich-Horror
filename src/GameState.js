@@ -92,7 +92,12 @@
                     has_keycard: false,
                     has_lab_coat: false
                 },
-                
+
+                // Laboratory (Main Lab) items and interactions
+                lab: {
+                    panel_open: false            // Electrical panel state
+                },
+
                 // Computer / password puzzle
                 computer: {
                     tried_login: false,

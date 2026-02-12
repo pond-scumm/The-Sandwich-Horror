@@ -40,8 +40,8 @@
     
     // Springs + Satellite Shoes → Repaired Shoes
     // (Need both springs, done in two steps)
-    combinations[makeKey('spring', 'satellite_shoes')] = {
-        consumes: ['spring', 'satellite_shoes'],
+    combinations[makeKey('spring_1', 'satellite_shoes')] = {
+        consumes: ['spring_1', 'satellite_shoes'],
         produces: 'shoes_one_spring',
         dialogue: "I put one spring in. Still need another one.",
         setFlags: {}
@@ -62,8 +62,8 @@
         setFlags: {}
     };
     
-    combinations[makeKey('spring', 'shoes_one_spring')] = {
-        consumes: ['spring', 'shoes_one_spring'],
+    combinations[makeKey('spring_1', 'shoes_one_spring')] = {
+        consumes: ['spring_1', 'shoes_one_spring'],
         produces: 'repaired_shoes',
         dialogue: "Both springs are in! These satellite shoes are ready for action.",
         setFlags: { 'clock.shoes_repaired': true }

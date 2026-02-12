@@ -358,6 +358,42 @@
                 }
             });
 
+            // Broken electrical panel - can be opened/closed
+            // @state broken_panel: default, flag:lab.panel_open
+            hotspots.push({
+                id: 'broken_panel',
+                x: 2250, y: 0.335, w: 80, h: 0.16,
+                interactX: 2250, interactY: 0.82,
+                name: 'Electrical Panel',
+                verbs: { action: 'Use', look: 'Examine' },
+                responses: {
+                    look: "",
+                    action: ""
+                },
+                actionTrigger: {
+                    type: 'action',
+                    action: 'toggle_panel'
+                }
+            });
+
+            // Spring inside panel - only visible when panel is open
+            if (TSH.State.getFlag('lab.panel_open') && !TSH.State.hasItem('spring_1')) {
+                hotspots.push({
+                    id: 'spring_panel',
+                    x: 2215, y: 0.335, w: 25, h: 0.06,
+                    interactX: 2250, interactY: 0.82,
+                    name: 'Spring',
+                    verbs: { action: 'Take', look: 'Examine' },
+                    responses: {
+                        look: "",
+                        action: ""
+                    },
+                    giveItem: 'spring_1',
+                    pickupFlag: 'clock.has_spring_1',
+                    removeAfterPickup: true
+                });
+            }
+
             return hotspots;
         },
 
@@ -424,8 +460,49 @@
                         g.fillRect(hx + p, handleY + p, p, p * 5);
                     }
                 }
+            },
+            {
+                itemId: 'spring_1',
+                hotspotId: 'spring_panel',
+                x: 2215,
+                y: 0.335,
+                depth: 50,
+                draw: function(g, x, y, height) {
+                    // Only draw if panel is open
+                    if (!TSH.State.getFlag('lab.panel_open')) return;
+
+                    const p = 3;  // Pixel size
+
+                    const SPRING_METAL = 0xc0c0c0;
+                    const SPRING_DARK = 0x808080;
+
+                    // Draw small spring coil
+                    const springX = x - p * 4;
+                    const springY = y - p * 3;
+
+                    // Top coil
+                    g.fillStyle(SPRING_DARK);
+                    g.fillRect(springX, springY, p * 8, p);
+                    g.fillStyle(SPRING_METAL);
+                    g.fillRect(springX + p, springY + p, p * 6, p);
+
+                    // Middle coil
+                    g.fillStyle(SPRING_DARK);
+                    g.fillRect(springX, springY + p * 2, p * 8, p);
+                    g.fillStyle(SPRING_METAL);
+                    g.fillRect(springX + p, springY + p * 3, p * 6, p);
+
+                    // Bottom coil
+                    g.fillStyle(SPRING_DARK);
+                    g.fillRect(springX + p, springY + p * 4, p * 6, p);
+                    g.fillStyle(SPRING_METAL);
+                    g.fillRect(springX + p * 2, springY + p * 5, p * 4, p);
+                }
             }
         ],
+
+        // Flags that trigger hotspot refresh when changed
+        relevantFlags: ['lab.panel_open'],
 
         // =====================================================================
         // ITEM INTERACTIONS
@@ -1057,6 +1134,111 @@
         g.fillStyle(0x000000);
         g.fillRect(2978, height * 0.26, p*2, p*10);
         g.fillRect(2978, height * 0.28 + p*8, p*2, p*4);
+
+        // Electrical panel
+        const panelX = 2210;
+        const panelY = height * 0.255;
+        const panelW = p * 40;
+        const panelH = p * 58;
+        const isOpen = TSH.State.getFlag('lab.panel_open');
+
+        if (isOpen) {
+            // === OPEN PANEL ===
+
+            // Panel interior (dark inside)
+            g.fillStyle(0x303030);
+            g.fillRect(panelX, panelY, panelW, panelH);
+
+            // Interior frame (shows depth)
+            g.lineStyle(p, 0x202020);
+            g.strokeRect(panelX, panelY, panelW, panelH);
+
+            // Circuit breakers inside
+            g.fillStyle(0x505050);
+            for (let i = 0; i < 6; i++) {
+                const row = Math.floor(i / 2);
+                const col = i % 2;
+                const breakerX = panelX + p * 8 + col * p * 16;
+                const breakerY = panelY + p * 8 + row * p * 15;
+                g.fillRect(breakerX, breakerY, p * 8, p * 10);
+
+                // Breaker switch (small rectangle on each)
+                g.fillStyle(0x808080);
+                g.fillRect(breakerX + p * 3, breakerY + p * 2, p * 2, p * 3);
+                g.fillStyle(0x505050);
+            }
+
+            // Colored wiring
+            g.lineStyle(2, 0xff4444);
+            g.beginPath();
+            g.moveTo(panelX + p * 10, panelY + p * 12);
+            g.lineTo(panelX + p * 30, panelY + p * 20);
+            g.strokePath();
+
+            g.lineStyle(2, 0x4444ff);
+            g.beginPath();
+            g.moveTo(panelX + p * 26, panelY + p * 15);
+            g.lineTo(panelX + p * 12, panelY + p * 30);
+            g.strokePath();
+
+            g.lineStyle(2, 0x44ff44);
+            g.beginPath();
+            g.moveTo(panelX + p * 20, panelY + p * 25);
+            g.lineTo(panelX + p * 28, panelY + p * 35);
+            g.strokePath();
+
+            // Door swung open to the left
+            const doorW = p * 38;
+            const doorH = p * 54;
+            const doorX = panelX - doorW + p * 5;
+            const doorY = panelY + p * 2;
+
+            // Door outer surface (beige metal)
+            g.fillStyle(0xb0b0a0);
+            g.fillRect(doorX, doorY, doorW, doorH);
+
+            // Door frame
+            g.lineStyle(p, 0x606050);
+            g.strokeRect(doorX, doorY, doorW, doorH);
+
+            // Door handle (on left edge now that it's open)
+            g.fillStyle(0x404040);
+            g.fillRect(doorX + p * 4, doorY + doorH / 2 - p * 3, p * 4, p * 6);
+
+            // Warning label on door
+            g.fillStyle(0xffcc00);
+            g.fillRect(doorX + p * 12, doorY + p * 12, p * 20, p * 12);
+            g.fillStyle(0x000000);
+            g.fillRect(doorX + p * 14, doorY + p * 14, p * 2, p * 6);
+            g.fillRect(doorX + p * 14, doorY + p * 21, p * 2, p * 2);
+
+            // Hinges connecting door to panel
+            g.fillStyle(0x303030);
+            g.fillRect(panelX - p * 2, doorY + p * 5, p * 4, p * 4);
+            g.fillRect(panelX - p * 2, doorY + doorH - p * 9, p * 4, p * 4);
+
+        } else {
+            // === CLOSED PANEL ===
+
+            // Panel box (beige/gray metal)
+            g.fillStyle(0xb0b0a0);
+            g.fillRect(panelX, panelY, panelW, panelH);
+
+            // Panel frame (darker border)
+            g.lineStyle(p, 0x606050);
+            g.strokeRect(panelX, panelY, panelW, panelH);
+
+            // Door handle
+            g.fillStyle(0x404040);
+            g.fillRect(panelX + panelW - p * 8, panelY + panelH / 2 - p * 3, p * 4, p * 6);
+
+            // Warning label
+            g.fillStyle(0xffcc00);
+            g.fillRect(panelX + p * 8, panelY + p * 8, p * 20, p * 12);
+            g.fillStyle(0x000000);
+            g.fillRect(panelX + p * 10, panelY + p * 10, p * 2, p * 6);
+            g.fillRect(panelX + p * 10, panelY + p * 17, p * 2, p * 2);
+        }
 
         // Fire extinguisher by terminal
         g.fillStyle(0xcc2222);
