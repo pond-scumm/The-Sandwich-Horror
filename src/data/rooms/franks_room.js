@@ -21,14 +21,11 @@
     const LAYOUT = {
         door:          { x: 110, y: 0.48, w: 146, h: 0.474 },    // Door to hallway, far left
         window:        { x: 1170, y: 0.40, w: 146, h: 0.38 },    // Window to roof, far right
-        bed:           { x: 420, y: 0.60, w: 220, h: 0.28 },     // Twin bed, left side
-        nightstand:    { x: 610, y: 0.64, w: 90, h: 0.22 },      // Nightstand beside bed
+        bed:           { x: 640, y: 0.60, w: 440, h: 0.28 },     // Full bed, centered between door and window
+        nightstand:    { x: 340, y: 0.64, w: 180, h: 0.22 },     // Nightstand on left of bed (2x larger)
         dresser:       { x: 950, y: 0.58, w: 140, h: 0.32 },     // Dresser, right side
-        plant_floor_l: { x: 180, y: 0.80, w: 60, h: 0.16 },      // Floor plant, left
-        plant_floor_r: { x: 1100, y: 0.80, w: 60, h: 0.16 },     // Floor plant, right
-        plant_window:  { x: 1100, y: 0.55, w: 45, h: 0.12 },     // Small plant on windowsill
-        watering_can:  { x: 240, y: 0.82, w: 50, h: 0.12 },      // Watering can on floor
-        botanical:     { x: 700, y: 0.28, w: 110, h: 0.18 }      // Botanical drawing on wall
+        plant_floor_r: { x: 1070, y: 0.66, w: 60, h: 0.20 },     // Floor plant, between dresser and window
+        botanical:     { x: 640, y: 0.28, w: 110, h: 0.18 }      // Botanical drawing, centered over bed
     };
 
     // =========================================================================
@@ -57,7 +54,7 @@
             ambient: 0x7a8070,
             ambientMobile: 0x9a9888,
             sources: [
-                { id: 'lamp', x: 610, y: 0.54, radius: 280, color: 0xffdd88, intensity: 1.0 },
+                { id: 'lamp', x: 340, y: 0.54, radius: 280, color: 0xffdd88, intensity: 1.0 },
                 { id: 'moonlight', x: 1170, y: 0.40, radius: 220, color: 0xaabbdd, intensity: 0.6 }
             ]
         },
@@ -181,17 +178,6 @@
 
             // === FRONT ROW (floor items) ===
             {
-                id: 'plant_floor_left',
-                ...LAYOUT.plant_floor_l,
-                interactX: LAYOUT.plant_floor_l.x, interactY: 0.82,
-                name: 'Potted Plant',
-                verbs: { action: 'Water', look: 'Examine' },
-                responses: {
-                    look: "A large fern in a terracotta pot. It's absolutely thriving - deep green, not a brown leaf on it. The soil is moist. Someone's been taking care of this.",
-                    action: "It doesn't need water right now. It's perfect as it is."
-                }
-            },
-            {
                 id: 'plant_floor_right',
                 ...LAYOUT.plant_floor_r,
                 interactX: LAYOUT.plant_floor_r.x, interactY: 0.82,
@@ -200,28 +186,6 @@
                 responses: {
                     look: "A rubber plant in a ceramic pot. Glossy leaves, healthy stem. There's a little hand-written tag stuck in the soil: 'Ruby - doing great!'",
                     action: "Ruby is doing great. She doesn't need my help."
-                }
-            },
-            {
-                id: 'plant_windowsill',
-                ...LAYOUT.plant_window,
-                interactX: LAYOUT.window.x, interactY: 0.82,
-                name: 'Windowsill Plant',
-                verbs: { action: 'Water', look: 'Examine' },
-                responses: {
-                    look: "A tiny succulent catching the moonlight. It's in a hand-painted pot with little green vines decorating it. Cute.",
-                    action: "Succulents don't need much water. I'll leave it alone."
-                }
-            },
-            {
-                id: 'watering_can',
-                ...LAYOUT.watering_can,
-                interactX: LAYOUT.watering_can.x, interactY: 0.82,
-                name: 'Watering Can',
-                verbs: { action: 'Pick up', look: 'Examine' },
-                responses: {
-                    look: "A well-used metal watering can. Dented, scratched, but clean. There's still water in it - I can feel the weight when I nudge it with my foot.",
-                    action: "It's heavy. Frank must water these plants every day. That's dedication."
                 }
             }
         ]
@@ -375,13 +339,10 @@
         drawDoor(g, LAYOUT.door.x, floorY, p, C);
         drawWindow(g, LAYOUT.window.x, floorY, p, C);
         drawBotanicalDrawing(g, LAYOUT.botanical.x, floorY, p, C);
-        drawTwinBed(g, LAYOUT.bed.x, floorY, p, C);
-        drawNightstand(g, LAYOUT.nightstand.x, floorY, p, C);
+        drawFullBed(g, LAYOUT.bed.x, floorY, p, C);
+        drawLargeNightstand(g, LAYOUT.nightstand.x, floorY, p, C);
         drawDresser(g, LAYOUT.dresser.x, floorY, p, C);
-        drawFloorPlant(g, LAYOUT.plant_floor_l.x, floorY, p, C, 'fern');
         drawFloorPlant(g, LAYOUT.plant_floor_r.x, floorY, p, C, 'rubber');
-        drawWindowsillPlant(g, LAYOUT.plant_window.x, floorY, p, C);
-        drawWateringCan(g, LAYOUT.watering_can.x, floorY, p, C);
     }
 
     // =========================================================================
@@ -539,10 +500,10 @@
         g.fillRect(plantX + p * 2, plantY + p * 18, p * 3, p * 3);
     }
 
-    function drawTwinBed(g, x, floorY, p, C) {
-        const bedWidth = p * 55;
-        const bedHeight = p * 18;
-        const headboardHeight = p * 24;
+    function drawFullBed(g, x, floorY, p, C) {
+        const bedWidth = p * 83;   // 0.75 of 2x width
+        const bedHeight = p * 23;  // 1.25x taller
+        const headboardHeight = p * 30;  // 1.25x taller
         const depthOffset = p * 10;
         const baseY = floorY - bedHeight + depthOffset;
         const sideWidth = p * 3;
@@ -570,17 +531,6 @@
         g.fillStyle(C.CREAM_DARK);
         g.fillRect(x - bedWidth / 2 + p * 2, baseY - p * 3, bedWidth - p * 4, p * 3);
 
-        // Patchwork quilt (neat, made bed)
-        const patchSize = p * 6;
-        const colors = [C.QUILT_GREEN, C.QUILT_BLUE, C.QUILT_TAN];
-        for (let py = 0; py < 3; py++) {
-            for (let px = 0; px < 7; px++) {
-                const colorIndex = (px + py) % 3;
-                g.fillStyle(colors[colorIndex]);
-                g.fillRect(x - bedWidth / 2 + p * 4 + px * patchSize, baseY - p * 10 + py * patchSize, patchSize - p, patchSize - p);
-            }
-        }
-
         // Pillow
         g.fillStyle(C.CREAM_MID);
         g.fillRect(x - p * 10, baseY - p * 14, p * 20, p * 5);
@@ -594,9 +544,9 @@
         g.globalAlpha = 1.0;
     }
 
-    function drawNightstand(g, x, floorY, p, C) {
-        const standWidth = p * 16;
-        const standHeight = p * 18;
+    function drawLargeNightstand(g, x, floorY, p, C) {
+        const standWidth = p * 32;  // 2x wider
+        const standHeight = p * 23;  // 1.25x taller
         const depthOffset = p * 10;
         const baseY = floorY - standHeight + depthOffset;
         const sideWidth = p * 3;
@@ -751,69 +701,21 @@
             g.fillStyle(C.PLANT_LIGHT);
             g.fillRect(x - p * 4, baseY - p * 20, p * 8, p * 2);
         } else if (type === 'rubber') {
-            // Rubber plant stem
+            // Rubber plant stem - starts from inside the pot
+            const stemStartY = baseY + p * 2;  // Start from near top of pot
             g.fillStyle(C.PLANT_DARK);
-            g.fillRect(x - p, baseY - p * 2, p * 2, p * 20);
+            g.fillRect(x - p, stemStartY - p * 20, p * 2, p * 20);
 
-            // Large glossy leaves
+            // Large glossy leaves - positioned relative to stem
             g.fillStyle(C.PLANT_MID);
-            g.fillRect(x - p * 8, baseY - p * 18, p * 10, p * 8);
-            g.fillRect(x - p * 2, baseY - p * 14, p * 10, p * 8);
-            g.fillRect(x - p * 6, baseY - p * 10, p * 10, p * 8);
+            g.fillRect(x - p * 8, stemStartY - p * 20, p * 10, p * 8);
+            g.fillRect(x - p * 2, stemStartY - p * 16, p * 10, p * 8);
+            g.fillRect(x - p * 6, stemStartY - p * 12, p * 10, p * 8);
 
             g.fillStyle(C.PLANT_LIGHT);
-            g.fillRect(x - p * 6, baseY - p * 16, p * 4, p * 2);
-            g.fillRect(x, baseY - p * 12, p * 4, p * 2);
+            g.fillRect(x - p * 6, stemStartY - p * 18, p * 4, p * 2);
+            g.fillRect(x, stemStartY - p * 14, p * 4, p * 2);
         }
-    }
-
-    function drawWindowsillPlant(g, x, floorY, p, C) {
-        const potSize = p * 8;
-        const potY = floorY - 180 + p * 70;  // On windowsill
-
-        // Hand-painted pot (cream with green vines)
-        g.fillStyle(0xd8d0b8);
-        g.fillRect(x - potSize / 2, potY, potSize, potSize);
-
-        // Green vine decoration
-        g.fillStyle(C.PLANT_MID);
-        g.fillRect(x - p * 2, potY + p, p, p * 5);
-        g.fillRect(x - p, potY + p * 2, p * 2, p);
-        g.fillRect(x + p, potY + p * 3, p, p * 2);
-
-        // Succulent
-        g.fillStyle(C.PLANT_LIGHT);
-        g.fillRect(x - p * 2, potY - p * 4, p * 4, p * 4);
-        g.fillStyle(C.PLANT_BRIGHT);
-        g.fillRect(x - p, potY - p * 3, p * 2, p * 2);
-    }
-
-    function drawWateringCan(g, x, floorY, p, C) {
-        const canWidth = p * 12;
-        const canHeight = p * 10;
-        const baseY = floorY + p * 4;
-
-        // Can body (metal, dented)
-        g.fillStyle(C.METAL_DARK);
-        g.fillRect(x - canWidth / 2, baseY, canWidth, canHeight);
-        g.fillStyle(0x6a6a6a);
-        g.fillRect(x - canWidth / 2 + p, baseY + p, canWidth - p * 2, canHeight - p * 2);
-
-        // Dents and scratches
-        g.fillStyle(C.METAL_DARK);
-        g.fillRect(x - p * 3, baseY + p * 3, p * 2, p);
-        g.fillRect(x + p, baseY + p * 6, p * 3, p);
-
-        // Handle
-        g.fillStyle(C.METAL_DARK);
-        g.fillRect(x + canWidth / 2, baseY + p * 2, p * 4, p);
-        g.fillRect(x + canWidth / 2 + p * 3, baseY + p * 2, p, p * 4);
-
-        // Spout
-        g.fillStyle(C.METAL_DARK);
-        g.fillRect(x - canWidth / 2 - p * 4, baseY + p * 4, p * 5, p * 3);
-        g.fillStyle(0x6a6a6a);
-        g.fillRect(x - canWidth / 2 - p * 3, baseY + p * 5, p * 3, p);
     }
 
 })();
