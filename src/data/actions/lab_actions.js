@@ -36,17 +36,21 @@
     };
 
     // Toggle electrical panel open/closed
+    // Dialogue comes from spreadsheet via hotspot.useResponse
     TSH.Actions.toggle_panel = function(scene, hotspot, item) {
         const isOpen = TSH.State.getFlag('lab.panel_open');
 
-        if (isOpen) {
-            // Close the panel
-            TSH.State.setFlag('lab.panel_open', false);
-            scene.showDialog("I close the panel door.");
-        } else {
-            // Open the panel
-            TSH.State.setFlag('lab.panel_open', true);
-            scene.showDialog("I open the panel door. There's something inside.");
+        // Toggle the state
+        TSH.State.setFlag('lab.panel_open', !isOpen);
+
+        // Get dialogue from hotspot (populated from spreadsheet)
+        // State variants (default/flag:lab.panel_open) handled automatically by parseResponse
+        const rawResponse = hotspot.useResponse || hotspot._data?.responses?.action || "";
+        const dialogue = scene.parseResponse(rawResponse);
+
+        // Show dialogue only if it exists
+        if (dialogue) {
+            scene.showDialog(dialogue);
         }
     };
 
