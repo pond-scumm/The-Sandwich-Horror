@@ -111,7 +111,7 @@
                 name: 'Door to House',
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
-                    look: "The door back to the foyer. Feels like I just walked through it, but also like a lifetime ago.",
+                    look: "That's the door back to the house.",
                     action: "Back to the normal part of the house. Well, 'normal.'"
                 },
                 actionTrigger: {
@@ -159,7 +159,7 @@
                 name: 'Teleporter',
                 verbs: { action: 'Use', look: 'Examine' },
                 responses: {
-                    look: "Two circular pads side by side, connected by a mess of cables and a control panel. Very Star Trek. Very 'I hope this doesn't scramble my atoms.'",
+                    look: "Very Star Trek. Very 'I hope this doesn't scramble my atoms.'",
                     action: "I probably shouldn't just hop on without asking. That seems like a good way to end up as two of me. Or half of me."
                 }
             },
@@ -170,7 +170,7 @@
                 name: 'Teleporter Controls',
                 verbs: { action: 'Use', look: 'Examine' },
                 responses: {
-                    look: "Buttons, dials, a couple of levers. There's a label that says 'DEMATERIALIZATION SEQUENCE' which is both exciting and terrifying.",
+                    look: "Buttons, dials, a couple of levers. There's a label that says 'DEMATERIALIZATION SEQUENCE' which is both exciting and concerning.",
                     action: "Better not touch anything without knowing what I'm doing. The word 'dematerialization' demands respect."
                 }
             },
@@ -183,8 +183,8 @@
                 name: 'Workbench',
                 verbs: { action: 'Search', look: 'Examine' },
                 responses: {
-                    look: "A long metal workbench covered in equipment. Soldering irons, multimeters, half-assembled gizmos. This is where the magic happens.",
-                    action: "I rifle through carefully. Tools, spare parts, a half-eaten sandwich. The essentials of scientific discovery."
+                    look: "A long metal workbench covered in equipment and half-assembled gizmos. This is where the magic happens.",
+                    action: "Tools, spare parts, a half-eaten sandwich. The essentials of scientific discovery."
                 }
             },
             {
@@ -195,7 +195,7 @@
                 verbs: { action: 'Touch', look: 'Examine' },
                 responses: {
                     look: "Glass beakers, test tubes, bubbling liquids in colors that don't occur in nature. Some of them are glowing. That's probably fine.",
-                    action: "I gently tap one. It bubbles more aggressively. I stop tapping."
+                    action: "It shudders when I tap it."
                 }
             },
             {
@@ -218,8 +218,8 @@
                 name: 'Portal Device',
                 verbs: { action: 'Examine', look: 'Study' },
                 responses: {
-                    look: "Whoa. That is... a LOT of science happening right there. A massive ring of metal and glass, humming with power. Cables snake everywhere. Lights pulse in rhythm. This is the real deal.",
-                    action: "I lean in for a closer look. The air around it feels... charged. Electric. Like standing next to something that's about to change everything."
+                    look: "Whoa. That is... a LOT of science happening right there. ",
+                    action: "The air around it feels... charged. "
                 }
             },
 
@@ -231,7 +231,7 @@
                 name: 'Temporal Synchronizer',
                 verbs: { action: 'Touch', look: 'Examine' },
                 responses: {
-                    look: "A sophisticated clock mechanism integrated into the portal frame. It's ticking away steadily, keeping perfect time. The label reads 'TEMPORAL SYNCHRONIZER' which sounds way cooler than 'fancy clock.'",
+                    look: "A sophisticated mechanism integrated into the portal frame. It's ticking away steadily, keeping perfect time. The label reads 'TEMPORAL SYNCHRONIZER' which sounds way cooler than 'fancy clock.'",
                     action: "It's humming along perfectly. Probably best not to mess with something that has 'temporal' in the name."
                 }
             },
@@ -264,8 +264,8 @@
                 name: 'Stabilizer Cortex',
                 verbs: { action: 'Touch', look: 'Examine' },
                 responses: {
-                    look: "Is that a... brain? In a jar? Just casually wired into the machine? The label says 'STABILIZER CORTEX' but I know a brain when I see one. Cool. Cool cool cool.",
-                    action: "I'm not touching the brain. That's a rule I'm making right now. No touching brains."
+                    look: "Looks like an extremely elaborate and over-engineerd CPU. The label says 'STABILIZER CORTEX'.",
+                    action: "That's the brain of this device. I'm not touching the brain. That's a rule I'm making right now. No touching brains."
                 }
             },
 
@@ -278,7 +278,7 @@
                 verbs: { action: 'Use', look: 'Examine' },
                 responses: {
                     look: "Multiple screens, all showing scrolling data. Green text on black backgrounds. Very retro, very serious. This is mission control.",
-                    action: "I'd need to ask Hector before poking around in here. This looks like the kind of system where pressing the wrong key could be... consequential."
+                    action: "I'd need to ask before poking around in here. This looks like the kind of system where pressing the wrong key could be... consequential."
                 }
             },
 
@@ -290,7 +290,7 @@
                 name: 'Lab Coat',
                 verbs: { action: 'Take', look: 'Examine' },
                 responses: {
-                    look: "A spare lab coat hanging on a hook. Crisp, white, official-looking. The uniform of People Who Know Things.",
+                    look: "A spare lab coat hanging on a hook. Crisp, white, official-looking. The uniform of People Who Learn Things.",
                     action: "I should probably earn the right to wear one of these first. Can't just waltz in and start cosplaying as a scientist."
                 }
             },
@@ -303,8 +303,8 @@
                 name: 'Tesla Coils',
                 verbs: { action: 'Touch', look: 'Examine' },
                 responses: {
-                    look: "Tesla coils! Actual Tesla coils, just... casually existing. Electricity arcs between them in beautiful, terrifying patterns. This place is amazing.",
-                    action: "Touch the tesla coil, she says. It'll be fun, she says. No thank you. I like my hair the way it is."
+                    look: "Tesla coils! Actual Tesla coils, just... casually existing. This place is amazing.",
+                    action: "No thank you. I like my hair the way it is."
                 }
             },
             {
@@ -314,8 +314,8 @@
                 name: 'Wall Diagrams',
                 verbs: { action: 'Study', look: 'Examine' },
                 responses: {
-                    look: "Blueprints, schematics, hand-drawn diagrams. Some of it looks like physics, some of it looks like philosophy, and some of it looks like the ramblings of a beautiful madman.",
-                    action: "I trace the lines with my eyes. Portal mechanics, dimensional theory... I understand about every fifth word, but I want to understand all of them."
+                    look: "Blueprints, schematics, hand-drawn diagrams. Some of it looks like physics, some of it looks like philosophy, and some of it looks like the ramblings of a wonderful madman.",
+                    action: "Portal mechanics, dimensional theory... I understand about every fifth word, but I want to understand all of them."
                 }
             },
 
@@ -346,7 +346,7 @@
                 name: 'Knife Block',
                 verbs: { action: 'Use', look: 'Examine' },
                 responses: {
-                    look: "It's a collection of scalpels.",
+                    look: "It's an impressive collection of scalpels.",
                     action: [
                     { condition: () => TSH.State.hasItem('scalpel'), text: "One is enough." },
                     { text: "I'll just take one." }
@@ -367,7 +367,7 @@
                 name: 'Electrical Panel',
                 verbs: { action: 'Use', look: 'Examine' },
                 responses: {
-                    look: "",
+                    look: "It's a spring loaded electrical panel.",
                     action: ""
                 },
                 actionTrigger: {
