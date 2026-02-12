@@ -1,7 +1,7 @@
 # The Sandwich Horror — Architecture Guide
 ## For Claude Code Implementation
 
-Last Updated: February 11, 2026 (Added debug panel item registration requirement to item creation workflow)
+Last Updated: February 11, 2026 (Implemented state-based dialogue system with @state annotations and spreadsheet State column)
 
 ---
 
@@ -77,6 +77,7 @@ If context was compacted mid-session, re-read the Always Read sections and `git 
 - Debug overlay with coordinate display, hotspot visualization, walkable polygon
 - Dialogue export script (`tools/export_dialogue.js`) — exports all hotspot dialogue, items, flags, and combinations to `TSH_Hotspot_Dialogue.xlsx`
 - Dialogue import script (`tools/import_dialogue.js`) — reads `TSH_Hotspot_Dialogue.xlsx` and writes changed dialogue back into room data files
+- State-based dialogue system (`@state` annotations, State column, variant arrays) — enables multiple dialogue responses per hotspot verb based on game state, managed through spreadsheet
 
 ### Not Yet Built
 - **Cutscene/sequence system** — No async/await wrappers for walkTo/showDialog to enable scripted sequences
@@ -440,6 +441,8 @@ itemInteractions: {
 
 **Execution Order:** (1) Check condition (if present), (2) Show dialogue, (3) Call custom action function (if `action` specified), OR apply simple side effects (giveItem, setFlag, etc.), (4) Hotspot refresh triggers if relevant flags changed.
 
+**Known Limitation — Action Objects in Direct Hotspot Responses:** Currently, action objects only work in `itemInteractions`. Direct hotspot `responses` (look/action/talk) accept strings or variant arrays (for state-based dialogue), but not action objects with side effects. For hotspots that need conditional game logic (like "take item if you don't have it, else show 'already have it' message"), use `actionTrigger: { type: 'action', action: 'function_name' }` and create a custom action function. **Future improvement:** Support action objects directly in hotspot responses to match the `itemInteractions` pattern.
+
 **Action Functions:** For complex multi-step sequences, define functions in `src/data/actions/*.js`:
 
 ```javascript
@@ -453,7 +456,48 @@ TSH.Actions.get_clock = function(scene, hotspot, item) {
 };
 ```
 
-**Per-Hotspot State Switching [PLANNED — NOT YET IMPLEMENTED]:** A future enhancement will allow hotspots to define a `states` object with conditions and per-state responses, so a single hotspot can automatically switch its name, responses, and available actions based on game flags. This will likely be implemented through the dialogue spreadsheet pipeline. Until then, use the `getHotspotData()` pattern (§3.1) to build different hotspot arrays based on `TSH.State`.
+**IMPORTANT:** When action functions need to display hotspot dialogue (e.g., from `hotspot.useResponse`), they must use `scene.parseResponse()` to handle variant arrays:
+
+```javascript
+TSH.Actions.take_scalpel = function(scene, hotspot, item) {
+    // Get and parse response (handles both strings and variant arrays)
+    const rawResponse = hotspot.useResponse || hotspot._data?.responses?.action || "";
+    const dialogue = scene.parseResponse(rawResponse);
+
+    if (dialogue) {
+        scene.showDialog(dialogue);
+    }
+    // ... rest of action logic
+};
+```
+
+**State-Based Dialogue Responses:** Hotspots can define multiple dialogue variants for the same verb (look/action/talk) that change based on game state, without requiring separate hotspot definitions. Use the `@state` annotation in room files to enable this:
+
+```javascript
+// @state knife_block: default, has:scalpel
+{
+    id: 'knife_block',
+    name: 'Knife Block',
+    responses: {
+        look: "It's a collection of scalpels.",
+        action: "I'll just take one."  // Will be imported as variant array
+    },
+    actionTrigger: { type: 'action', action: 'take_scalpel' }
+}
+```
+
+The export script creates multiple spreadsheet rows (one per state). After editing dialogue in the spreadsheet, the import script generates conditional variant arrays:
+
+```javascript
+action: [
+    { condition: () => TSH.State.hasItem('scalpel'), text: "One is enough." },
+    { text: "I'll just take one." }
+]
+```
+
+The runtime (`parseResponse()` in RoomScene) evaluates conditions top-to-bottom and shows the first matching variant. See §23 for full workflow documentation.
+
+**For hotspots that change name, position, or available actions** (not just dialogue), continue using the `getHotspotData()` pattern (§3.1) to build different hotspot definitions based on `TSH.State`.
 
 **Hotspot Array Ordering:** Phaser creates input zones in array order. Later zones sit on top and receive pointer events first. Always place large background hotspots (e.g., `woods_background`, full vehicle bodies) at the start of the array, and smaller overlapping hotspots (e.g., sub-elements like doors/windows, props on top of backgrounds) later. Array order = bottom to top for input priority.
 
@@ -1516,13 +1560,33 @@ Every cell is a 1:1 mapping to a code value. No interpretation layer, no special
 
 ### State Column
 
-Supports conditional dialogue rows per hotspot:
+Enables multiple dialogue variants for a single hotspot response based on game state. Controlled by `@state` annotations in room files.
 
-- `default` — no state required (fallback row)
-- `FLAG_NAME` — row matches when that flag is true (e.g., `story.found_hector`)
-- `FLAG1, FLAG2` — all listed flags must be true
+**In the room file, add an annotation:**
+```javascript
+// @state knife_block: default, has:scalpel
+{
+    id: 'knife_block',
+    // ... hotspot definition
+}
+```
 
-The game checks rows **top-to-bottom** and uses the **first match**. Put most-specific states first, `default` last.
+**In the spreadsheet, you'll see multiple rows:**
+| Hotspot | State | Examine | Use |
+|---------|-------|---------|-----|
+| Knife Block | default | ... | I'll just take one. |
+| Knife Block | has:scalpel | ... | One is enough. |
+
+**Supported state syntax:**
+- `default` — Always matches (fallback, should be last)
+- `has:item_id` — Player has the item in inventory
+- `!has:item_id` — Player does NOT have the item
+- `flag:flag_name` — Game flag is set to true
+- `!flag:flag_name` — Game flag is NOT set
+
+**Runtime behavior:** The game evaluates conditions top-to-bottom and shows the first matching variant. Conditional states are automatically sorted before `default` during import.
+
+**Adding new states:** Update the `@state` annotation in the room file, re-run export, and new rows appear in the spreadsheet for editing.
 
 ### Export Script
 

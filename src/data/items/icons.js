@@ -326,6 +326,56 @@
             // Damage mark
             g.fillStyle(CRACK);
             pixel(g, 12, 6, CRACK, baseX, baseY);
+        },
+
+        // ── Scalpel ────────────────────────────────────────────────────
+        // Surgical scalpel with pointed blade
+        scalpel: function(graphics, x, y, size) {
+            const g = graphics;
+            // Center the icon (roughly 4x14 pixels - tall and thin)
+            const baseX = x - 2 * p;
+            const baseY = y - 7 * p;
+
+            // Colors
+            const BLADE = 0xc0c0c0;      // Silver blade
+            const BLADE_LIGHT = 0xe0e0e0; // Blade highlight
+            const BLADE_DARK = 0x808080;  // Blade shadow
+            const HANDLE = 0x4a4a4a;      // Dark handle
+            const HANDLE_LIGHT = 0x6a6a6a; // Handle highlight
+
+            // Blade (top) - pointed
+            g.fillStyle(BLADE_LIGHT);
+            pixel(g, 1, 0, BLADE_LIGHT, baseX, baseY); // Tip
+            pixel(g, 1, 1, BLADE_LIGHT, baseX, baseY);
+
+            g.fillStyle(BLADE);
+            for (let py = 2; py < 6; py++) {
+                pixel(g, 1, py, BLADE, baseX, baseY);
+            }
+
+            // Blade edge (left highlight)
+            g.fillStyle(BLADE_LIGHT);
+            pixel(g, 0, 2, BLADE_LIGHT, baseX, baseY);
+            pixel(g, 0, 3, BLADE_LIGHT, baseX, baseY);
+            pixel(g, 0, 4, BLADE_LIGHT, baseX, baseY);
+
+            // Blade edge (right shadow)
+            g.fillStyle(BLADE_DARK);
+            pixel(g, 2, 3, BLADE_DARK, baseX, baseY);
+            pixel(g, 2, 4, BLADE_DARK, baseX, baseY);
+            pixel(g, 2, 5, BLADE_DARK, baseX, baseY);
+
+            // Handle (bottom) - grip
+            g.fillStyle(HANDLE);
+            for (let py = 6; py < 14; py++) {
+                pixel(g, 1, py, HANDLE, baseX, baseY);
+            }
+
+            // Handle highlight (left edge)
+            g.fillStyle(HANDLE_LIGHT);
+            for (let py = 7; py < 13; py++) {
+                pixel(g, 0, py, HANDLE_LIGHT, baseX, baseY);
+            }
         }
 
     };

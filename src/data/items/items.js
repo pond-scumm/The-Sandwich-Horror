@@ -174,7 +174,7 @@
         scalpel: {
             id: 'scalpel',
             name: 'Scalpel',
-            description: "",
+            description: "As sharp as the devil himself.",
             failDefault: "",
             consumable: false,
             combinable: []

@@ -100,7 +100,8 @@
         // HOTSPOTS
         // =====================================================================
 
-        hotspots: [
+        getHotspotData(height) {
+            const hotspots = [
             // === DOORS ===
             // Coordinates use CENTER-BASED x,y (not top-left)
             {
@@ -331,6 +332,98 @@
                     action: ""
                 }
                 // Talk will trigger conversation via NPC system
+            }
+            ];
+
+            // === STATE-DRIVEN HOTSPOTS ===
+
+            // Knife block - different responses based on whether player has scalpel
+            // @state knife_block: default, has:scalpel
+            hotspots.push({
+                id: 'knife_block',
+                x: 940, y: 0.555, w: 60, h: 0.085,
+                interactX: 940, interactY: 0.82,
+                name: 'Knife Block',
+                verbs: { action: 'Use', look: 'Examine' },
+                responses: {
+                    look: "It's a collection of scalpels.",
+                    action: [
+                    { condition: () => TSH.State.hasItem('scalpel'), text: "One is enough." },
+                    { text: "I'll just take one." }
+                ]
+                },
+                actionTrigger: {
+                    type: 'action',
+                    action: 'take_scalpel'
+                }
+            });
+
+            return hotspots;
+        },
+
+        // =====================================================================
+        // PICKUP OVERLAYS
+        // =====================================================================
+
+        pickupOverlays: [
+            {
+                itemId: 'scalpel',
+                hotspotId: 'knife_block',
+                x: 940,
+                y: 0.555,
+                depth: 50,
+                draw: function(g, x, y, height) {
+                    const p = 2;
+                    // y is already in screen coordinates
+
+                    // Colors
+                    const WOOD = 0x6a4a2a;
+                    const WOOD_DARK = 0x4a3a1a;
+                    const WOOD_LIGHT = 0x8a6a4a;
+                    const METAL = 0x9a9a9a;
+                    const METAL_DARK = 0x6a6a6a;
+
+                    const blockWidth = p * 30;
+                    const blockHeight = p * 18;
+                    const blockX = x - blockWidth / 2;
+                    const blockY = y - blockHeight / 2;
+
+                    // Wooden block body
+                    g.fillStyle(WOOD);
+                    g.fillRect(blockX, blockY, blockWidth, blockHeight);
+
+                    // Block shadows (right and bottom)
+                    g.fillStyle(WOOD_DARK);
+                    g.fillRect(blockX + blockWidth - p * 3, blockY + p * 2, p * 3, blockHeight - p * 2);
+                    g.fillRect(blockX + p * 2, blockY + blockHeight - p * 3, blockWidth - p * 5, p * 3);
+
+                    // Block highlights (top and left)
+                    g.fillStyle(WOOD_LIGHT);
+                    g.fillRect(blockX, blockY, blockWidth, p * 2);
+                    g.fillRect(blockX, blockY, p * 2, blockHeight);
+
+                    // Knife slots (dark vertical lines in wood)
+                    g.fillStyle(WOOD_DARK);
+                    const slotX = blockX + p * 8;
+                    for (let i = 0; i < 4; i++) {
+                        g.fillRect(slotX + i * p * 5, blockY + p * 3, p, p * 8);
+                    }
+
+                    // Scalpel handles sticking out (gray lines above block)
+                    g.fillStyle(METAL);
+                    const handleY = blockY - p * 4;
+                    for (let i = 0; i < 4; i++) {
+                        const hx = slotX + i * p * 5;
+                        g.fillRect(hx, handleY, p, p * 7);
+                    }
+
+                    // Handle highlights
+                    g.fillStyle(METAL_DARK);
+                    for (let i = 0; i < 4; i++) {
+                        const hx = slotX + i * p * 5;
+                        g.fillRect(hx + p, handleY + p, p, p * 5);
+                    }
+                }
             }
         ],
 

@@ -124,6 +124,7 @@ function parseRoomSheet(ws, items) {
 
     // Find key column indices
     const hotspotIdCol = headers.lastIndexOf('Hotspot ID') + 1; // 1-indexed
+    const stateCol = headers.indexOf('State') + 1; // State column for variant conditions
     const examineCol = headers.indexOf('Examine') + 1;
     const useCol = headers.indexOf('Use') + 1;
     const talkToCol = headers.indexOf('TalkTo') + 1;
@@ -155,6 +156,7 @@ function parseRoomSheet(ws, items) {
         const hotspotId = (row.getCell(hotspotIdCol).value || '').toString().trim();
         if (!hotspotId) return; // Skip empty rows
 
+        const state = stateCol ? (row.getCell(stateCol).value || 'default').toString().trim() : 'default';
         const examine = cellToString(row.getCell(examineCol).value);
         const use = cellToString(row.getCell(useCol).value);
         const talkTo = cellToString(row.getCell(talkToCol).value);
@@ -169,7 +171,7 @@ function parseRoomSheet(ws, items) {
             }
         }
 
-        hotspots.push({ hotspotId, examine, use, talkTo, itemInteractions });
+        hotspots.push({ hotspotId, state, examine, use, talkTo, itemInteractions });
     });
 
     return hotspots;
@@ -329,6 +331,84 @@ function valueToCodeString(value) {
     return `"${escaped}"`;
 }
 
+// ── Generate condition function from state string ───────────────────────────
+
+function generateStateCondition(stateString) {
+    if (!stateString || stateString === 'default') {
+        return null; // No condition for default state
+    }
+
+    if (stateString.startsWith('has:')) {
+        const item = stateString.substring(4);
+        return `() => TSH.State.hasItem('${item}')`;
+    }
+
+    if (stateString.startsWith('!has:')) {
+        const item = stateString.substring(5);
+        return `() => !TSH.State.hasItem('${item}')`;
+    }
+
+    if (stateString.startsWith('flag:')) {
+        const flag = stateString.substring(5);
+        return `() => TSH.State.getFlag('${flag}')`;
+    }
+
+    if (stateString.startsWith('!flag:')) {
+        const flag = stateString.substring(6);
+        return `() => !TSH.State.getFlag('${flag}')`;
+    }
+
+    throw new Error(`Unknown state syntax: ${stateString}`);
+}
+
+// ── Generate variant array code from state variants ─────────────────────────
+
+function generateVariantArrayCode(variants) {
+    // variants is an array of {state, text} objects
+    // Generate multi-line formatted array:
+    // [
+    //     { condition: () => TSH.State.hasItem('scalpel'), text: "One is enough." },
+    //     { text: "I'll just take one." }
+    // ]
+
+    // Sort variants: conditional ones first, default last
+    const sortedVariants = [...variants].sort((a, b) => {
+        const aIsDefault = !a.state || a.state === 'default';
+        const bIsDefault = !b.state || b.state === 'default';
+        if (aIsDefault && !bIsDefault) return 1;  // a comes after b
+        if (!aIsDefault && bIsDefault) return -1; // a comes before b
+        return 0; // maintain original order
+    });
+
+    const elements = [];
+    for (const variant of sortedVariants) {
+        const condition = generateStateCondition(variant.state);
+        const escapedText = valueToCodeString(variant.text);
+
+        if (condition) {
+            elements.push(`{ condition: ${condition}, text: ${escapedText} }`);
+        } else {
+            // Default variant (no condition) - comes last
+            elements.push(`{ text: ${escapedText} }`);
+        }
+    }
+
+    // Format as multi-line array with proper indentation
+    const indent = '                    '; // 20 spaces to align with responses block
+    const lines = [
+        '[',
+        ...elements.map(el => `${indent}${el},`),
+        '                ]' // 16 spaces for closing bracket
+    ];
+
+    // Remove trailing comma from last element
+    if (lines.length > 2) {
+        lines[lines.length - 2] = lines[lines.length - 2].slice(0, -1);
+    }
+
+    return lines.join('\n');
+}
+
 // ── Replace a response property within a hotspot block ──────────────────────
 
 function replaceHotspotResponse(source, hotspotId, property, newValue) {
@@ -371,20 +451,50 @@ function replaceHotspotResponse(source, hotspotId, property, newValue) {
 
     const responsesBlock = source.substring(responsesBlockStart, responsesEnd);
 
-    // Find the property within the responses block
-    // Match: property: "string value" (handles escaped quotes)
-    const propPattern = new RegExp(
+    // Try to find property as either a string or variant array
+    // Pattern 1: property: "string value" (handles escaped quotes)
+    const stringPattern = new RegExp(
         `(${escapeRegex(property)}:\\s*)"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"`,
         's'
     );
-    const propMatch = propPattern.exec(responsesBlock);
-    if (!propMatch) return null;
+    const stringMatch = stringPattern.exec(responsesBlock);
 
-    // Get current value
-    const currentCodeString = `"${propMatch[2]}"`;
-    const currentValue = codeStringToValue(currentCodeString);
+    // Pattern 2: property: [ ... ] (variant array)
+    const arrayPattern = new RegExp(
+        `(${escapeRegex(property)}:\\s*)\\[([\\s\\S]*?)\\]`,
+        's'
+    );
+    const arrayMatch = arrayPattern.exec(responsesBlock);
 
-    if (currentValue === newValue) return null; // No change
+    let propMatch, isCurrentlyArray;
+    if (stringMatch && (!arrayMatch || stringMatch.index < arrayMatch.index)) {
+        propMatch = stringMatch;
+        isCurrentlyArray = false;
+    } else if (arrayMatch) {
+        propMatch = arrayMatch;
+        isCurrentlyArray = true;
+    } else {
+        return null; // Property not found
+    }
+
+    // Handle variant arrays (state-based dialogue)
+    if (Array.isArray(newValue)) {
+        // newValue is an array of {state, text} objects
+        // Generate variant array code
+        const variantCode = generateVariantArrayCode(newValue);
+        const newResponsesBlock = responsesBlock.substring(0, propMatch.index) +
+            propMatch[1] + variantCode +
+            responsesBlock.substring(propMatch.index + propMatch[0].length);
+        return source.substring(0, responsesBlockStart) + newResponsesBlock + source.substring(responsesEnd);
+    }
+
+    // Handle simple string value (newValue is a string)
+    if (!isCurrentlyArray) {
+        // Current is also a string - check if it's the same
+        const currentCodeString = `"${propMatch[2]}"`;
+        const currentValue = codeStringToValue(currentCodeString);
+        if (currentValue === newValue) return null; // No change
+    }
 
     // Build replacement
     const newCodeString = valueToCodeString(newValue);
@@ -802,14 +912,50 @@ function processRoomFile(roomId, sheetData, codeRoom) {
 
     // Build hotspot lookup from code
     const codeHotspots = {};
-    if (codeRoom && codeRoom.hotspots) {
-        for (const hs of codeRoom.hotspots) {
+    if (codeRoom) {
+        let hotspots = [];
+        if (codeRoom.hotspots) {
+            hotspots = codeRoom.hotspots;
+        } else if (codeRoom.getHotspotData) {
+            // Call getHotspotData with a dummy height (800px is standard)
+            hotspots = codeRoom.getHotspotData(800);
+        }
+        for (const hs of hotspots) {
             codeHotspots[hs.id] = hs;
         }
     }
 
+    // Group rows by (hotspotId, verb) to collect state variants
+    const variantGroups = {}; // key: "hotspotId:verb" => array of {state, text}
+
     for (const row of sheetData) {
-        const { hotspotId, examine, use, talkTo, itemInteractions } = row;
+        const { hotspotId, state, examine, use, talkTo } = row;
+
+        // Group examine variants
+        if (examine !== undefined && examine !== '') {
+            const key = `${hotspotId}:look`;
+            if (!variantGroups[key]) variantGroups[key] = [];
+            variantGroups[key].push({ state, text: examine });
+        }
+
+        // Group use/action variants
+        if (use !== undefined && use !== '') {
+            const key = `${hotspotId}:action`;
+            if (!variantGroups[key]) variantGroups[key] = [];
+            variantGroups[key].push({ state, text: use });
+        }
+
+        // Group talk variants
+        if (talkTo !== undefined && talkTo !== '') {
+            const key = `${hotspotId}:talk`;
+            if (!variantGroups[key]) variantGroups[key] = [];
+            variantGroups[key].push({ state, text: talkTo });
+        }
+    }
+
+    // Process each variant group
+    for (const [key, variants] of Object.entries(variantGroups)) {
+        const [hotspotId, verb] = key.split(':');
 
         // Check if hotspot exists in code
         if (!codeHotspots[hotspotId]) {
@@ -821,38 +967,48 @@ function processRoomFile(roomId, sheetData, codeRoom) {
         const isNPC = codeHotspot.type === 'npc' || codeHotspot.isNPC;
         const isTransition = !!codeHotspot.actionTrigger;
 
-        // Replace look/examine response
-        if (examine !== undefined) {
-            const result = replaceHotspotResponse(modified, hotspotId, 'look', examine);
-            if (result !== null) {
-                modified = result;
-                changeCount++;
+        // Skip action for transition hotspots that have no dialogue
+        const hasActionDialogue = variants.some(v => v.text && v.text.trim() !== '');
+        if (verb === 'action' && isTransition && !hasActionDialogue) continue;
+
+        // Skip talk for non-NPCs
+        if (verb === 'talk' && !isNPC) {
+            console.warn(`  Warning: TalkTo text for non-NPC '${hotspotId}' in ${roomId} — skipping`);
+            continue;
+        }
+
+        // Determine if this should be a variant array or simple string
+        let value;
+        if (variants.length === 1) {
+            // Single variant - use simple string
+            value = variants[0].text;
+        } else {
+            // Multiple variants - check if all have the same text
+            const allSameText = variants.every(v => v.text === variants[0].text);
+            if (allSameText) {
+                // All variants have same text - use simple string
+                value = variants[0].text;
+            } else {
+                // Different texts - use variant array
+                value = variants;
             }
         }
 
-        // Replace action/use response
-        // Skip for transition hotspots when spreadsheet cell is empty
-        // (export script intentionally blanks Use for transitions)
-        if (use !== undefined && !(isTransition && use === '')) {
-            const result = replaceHotspotResponse(modified, hotspotId, 'action', use);
-            if (result !== null) {
-                modified = result;
-                changeCount++;
-            }
+        const result = replaceHotspotResponse(modified, hotspotId, verb, value);
+        if (result !== null) {
+            modified = result;
+            changeCount++;
         }
+    }
 
-        // Replace talk response (only for NPCs)
-        if (talkTo !== undefined && talkTo !== '') {
-            if (isNPC) {
-                const result = replaceHotspotResponse(modified, hotspotId, 'talk', talkTo);
-                if (result !== null) {
-                    modified = result;
-                    changeCount++;
-                }
-            } else if (talkTo !== '') {
-                console.warn(`  Warning: TalkTo text for non-NPC '${hotspotId}' in ${roomId} — skipping`);
-            }
-        }
+    // Process item interactions (from original sheet data)
+    for (const row of sheetData) {
+        const { hotspotId, itemInteractions } = row;
+
+        if (!itemInteractions || Object.keys(itemInteractions).length === 0) continue;
+
+        // Check if hotspot exists in code
+        if (!codeHotspots[hotspotId]) continue;
 
         // Replace or insert item interaction strings
         const codeInteractions = (codeRoom.itemInteractions || {})[hotspotId] || {};

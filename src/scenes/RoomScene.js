@@ -698,6 +698,40 @@ class RoomScene extends BaseScene {
         }
     }
 
+    /**
+     * Parse a hotspot response, handling both simple strings and state-based variant arrays.
+     * @param {string|Array|Object} response - The response to parse
+     * @returns {string|Object|null} - The resolved response (string or action object), or null if no match
+     */
+    parseResponse(response) {
+        // Handle variant arrays (state-based dialogue)
+        if (Array.isArray(response)) {
+            for (const variant of response) {
+                // Check if this variant has a condition
+                if (!variant.condition || variant.condition()) {
+                    // Recursively parse the matched variant's text
+                    return this.parseResponse(variant.text);
+                }
+            }
+            // No matching variant found
+            console.warn('[RoomScene] No matching state variant found for response:', response);
+            return null;
+        }
+
+        // Handle action objects (e.g., { dialogue: "text", action: "someAction" })
+        if (typeof response === 'object' && response !== null && response.dialogue !== undefined) {
+            return response;
+        }
+
+        // Handle simple strings
+        if (typeof response === 'string') {
+            return response;
+        }
+
+        // Invalid response type
+        return null;
+    }
+
     _getNPCIdFromHotspot(hotspotId) {
         // Strip '_npc' suffix if present (earl_npc → earl)
         if (hotspotId.endsWith('_npc')) {
@@ -804,7 +838,10 @@ class RoomScene extends BaseScene {
 
             // Show pickup response
             const response = hsData.responses?.action || hsData.useResponse || `Got ${item.name}!`;
-            this.showDialog(response);
+            const parsedResponse = this.parseResponse(response);
+            if (parsedResponse) {
+                this.showDialog(parsedResponse);
+            }
 
             // Set flag if specified
             if (hsData.pickupFlag) {
@@ -826,9 +863,11 @@ class RoomScene extends BaseScene {
 
         // Default verb responses
         if (action === 'Use' || action === hotspot.verbLabels?.actionVerb) {
-            this.showDialog(hotspot.useResponse || TSH.Defaults.use);
+            const parsedResponse = this.parseResponse(hotspot.useResponse || TSH.Defaults.use);
+            if (parsedResponse) this.showDialog(parsedResponse);
         } else if (action === 'Look At' || action === hotspot.verbLabels?.lookVerb) {
-            this.showDialog(hotspot.lookResponse || TSH.Defaults.examine);
+            const parsedResponse = this.parseResponse(hotspot.lookResponse || TSH.Defaults.examine);
+            if (parsedResponse) this.showDialog(parsedResponse);
         } else if (action === 'Talk To' || action === hotspot.verbLabels?.talkVerb) {
             // Check if this is an NPC hotspot
             if (hotspot.type === 'npc') {
@@ -851,7 +890,8 @@ class RoomScene extends BaseScene {
             }
 
             // Standard dialogue fallback
-            this.showDialog(hotspot.talkResponse || TSH.Defaults.talkTo);
+            const parsedResponse = this.parseResponse(hotspot.talkResponse || TSH.Defaults.talkTo);
+            if (parsedResponse) this.showDialog(parsedResponse);
         }
     }
 

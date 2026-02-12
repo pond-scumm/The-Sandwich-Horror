@@ -466,7 +466,91 @@ function createItemCombinationsSheet(wb, items, combinations, existingLines) {
 
 // ── Room Sheets ─────────────────────────────────────────────────────────────
 
-function createRoomSheet(wb, roomId, room, items) {
+/**
+ * Parse @state annotations from room file source code
+ * Returns a map: { hotspot_id: ['state1', 'state2', ...] }
+ */
+function parseStateAnnotations(roomSource) {
+    const stateMap = {};
+    // Match: // @state hotspot_id: state1, state2, ...
+    // Use [^\n\r] to match everything except newlines
+    const regex = /\/\/ @state (\w+): ([^\n\r]+)/g;
+    let match;
+    while ((match = regex.exec(roomSource)) !== null) {
+        const hotspotId = match[1];
+        const states = match[2].trim().split(',').map(s => s.trim());
+        stateMap[hotspotId] = states;
+    }
+    return stateMap;
+}
+
+/**
+ * Extract state variants from a response (string or variant array)
+ * Returns: array of {state, text} objects
+ */
+function extractResponseVariants(response, states) {
+    if (!response) {
+        // No response - create empty variants for each state
+        return states.map(state => ({ state, text: '' }));
+    }
+
+    if (typeof response === 'string') {
+        // Simple string - use for all states (shouldn't happen with @state annotation, but handle it)
+        return states.map(state => ({ state, text: response }));
+    }
+
+    if (Array.isArray(response)) {
+        // Variant array - match each variant to its state by analyzing the condition
+        const variants = [];
+
+        for (const state of states) {
+            if (state === 'default') {
+                // Find variant with no condition
+                const defaultVariant = response.find(v => !v.condition);
+                variants.push({ state, text: defaultVariant?.text || '' });
+            } else if (state.startsWith('has:')) {
+                const itemId = state.substring(4);
+                // Find variant that checks for this item
+                const matchingVariant = response.find(v => {
+                    const condStr = v.condition?.toString() || '';
+                    return condStr.includes(`hasItem('${itemId}')`);
+                });
+                variants.push({ state, text: matchingVariant?.text || '' });
+            } else if (state.startsWith('!has:')) {
+                const itemId = state.substring(5);
+                const matchingVariant = response.find(v => {
+                    const condStr = v.condition?.toString() || '';
+                    return condStr.includes(`!`) && condStr.includes(`hasItem('${itemId}')`);
+                });
+                variants.push({ state, text: matchingVariant?.text || '' });
+            } else if (state.startsWith('flag:')) {
+                const flagName = state.substring(5);
+                const matchingVariant = response.find(v => {
+                    const condStr = v.condition?.toString() || '';
+                    return condStr.includes(`getFlag('${flagName}')`);
+                });
+                variants.push({ state, text: matchingVariant?.text || '' });
+            } else if (state.startsWith('!flag:')) {
+                const flagName = state.substring(6);
+                const matchingVariant = response.find(v => {
+                    const condStr = v.condition?.toString() || '';
+                    return condStr.includes(`!`) && condStr.includes(`getFlag('${flagName}')`);
+                });
+                variants.push({ state, text: matchingVariant?.text || '' });
+            } else {
+                // Unknown state type - use empty
+                variants.push({ state, text: '' });
+            }
+        }
+
+        return variants;
+    }
+
+    // Unknown type - create empty variants
+    return states.map(state => ({ state, text: '' }));
+}
+
+function createRoomSheet(wb, roomId, room, items, roomSource = '') {
     const sheetName = getSheetName(roomId);
     const ws = wb.addWorksheet(sheetName, { properties: { tabColor: { argb: 'FF2B5797' } } });
 
@@ -515,42 +599,66 @@ function createRoomSheet(wb, roomId, room, items) {
     // Build itemInteractions lookup
     const itemInteractions = room.itemInteractions || {};
 
+    // Parse state annotations from source
+    const stateAnnotations = roomSource ? parseStateAnnotations(roomSource) : {};
+
+    // Get hotspots - handle both static arrays and dynamic getHotspotData() functions
+    let hotspots = [];
+    if (room.hotspots) {
+        hotspots = room.hotspots;
+    } else if (room.getHotspotData) {
+        // Call getHotspotData with a dummy height (800px is standard)
+        hotspots = room.getHotspotData(800);
+    }
+
     // Add hotspot rows
-    const hotspots = room.hotspots || [];
     for (const hotspot of hotspots) {
         const responses = hotspot.responses || {};
         const isTransition = !!hotspot.actionTrigger;
 
-        // Determine values
-        const examine = responses.look || '';
-        const use = isTransition ? '' : (responses.action || '');
-        const talkTo = responses.talk || '';
+        // Check if this hotspot has state annotations
+        const states = stateAnnotations[hotspot.id] || ['default'];
 
-        const rowData = [hotspot.name, 'default', examine, use, talkTo];
+        // Extract variants for each verb
+        const examineVariants = extractResponseVariants(responses.look, states);
+        // For transitions, only blank Use if there's no explicit action response
+        const useVariants = (isTransition && !responses.action)
+            ? states.map(state => ({ state, text: '' }))
+            : extractResponseVariants(responses.action, states);
+        const talkToVariants = extractResponseVariants(responses.talk, states);
 
-        // Item columns
-        const hotspotItemInteractions = itemInteractions[hotspot.id] || {};
-        for (const item of itemList) {
-            // Look for specific item interaction (not 'default')
-            const interaction = hotspotItemInteractions[item.id];
-            rowData.push(interaction || '');
-        }
+        // Create one row per state variant
+        for (let i = 0; i < states.length; i++) {
+            const state = states[i];
+            const examine = examineVariants[i]?.text || '';
+            const use = useVariants[i]?.text || '';
+            const talkTo = talkToVariants[i]?.text || '';
 
-        // Hotspot ID (last column)
-        rowData.push(hotspot.id);
+            const rowData = [hotspot.name, state, examine, use, talkTo];
 
-        const row = ws.addRow(rowData);
+            // Item columns (only include in first row for each hotspot)
+            const hotspotItemInteractions = itemInteractions[hotspot.id] || {};
+            for (const item of itemList) {
+                const interaction = i === 0 ? (hotspotItemInteractions[item.id] || '') : '';
+                rowData.push(interaction);
+            }
 
-        // Style data cells
-        for (let c = 1; c <= headers.length; c++) {
-            const cell = row.getCell(c);
-            cell.border = BORDER_THIN;
-            cell.alignment = { vertical: 'top', wrapText: true };
+            // Hotspot ID (last column)
+            rowData.push(hotspot.id);
 
-            if (c === headers.length) {
-                // Hotspot ID
-                cell.fill = ID_FILL;
-                cell.font = ID_FONT;
+            const row = ws.addRow(rowData);
+
+            // Style data cells
+            for (let c = 1; c <= headers.length; c++) {
+                const cell = row.getCell(c);
+                cell.border = BORDER_THIN;
+                cell.alignment = { vertical: 'top', wrapText: true };
+
+                if (c === headers.length) {
+                    // Hotspot ID
+                    cell.fill = ID_FILL;
+                    cell.font = ID_FONT;
+                }
             }
         }
     }
@@ -634,7 +742,15 @@ async function main() {
     for (const roomId of ROOM_ORDER) {
         if (rooms[roomId]) {
             console.log(`  ${getSheetName(roomId)}...`);
-            createRoomSheet(wb, roomId, rooms[roomId], items);
+            // Load room source for state annotation parsing
+            const roomFile = resolve(ROOMS_DIR, `${roomId}.js`);
+            let roomSource = '';
+            try {
+                roomSource = Deno.readTextFileSync(roomFile);
+            } catch {
+                console.warn(`  Warning: Cannot read ${roomId}.js source`);
+            }
+            createRoomSheet(wb, roomId, rooms[roomId], items, roomSource);
             processedRooms.add(roomId);
         }
     }
@@ -643,7 +759,15 @@ async function main() {
     const remainingRooms = Object.keys(rooms).filter(id => !processedRooms.has(id)).sort();
     for (const roomId of remainingRooms) {
         console.log(`  ${getSheetName(roomId)} (new)...`);
-        createRoomSheet(wb, roomId, rooms[roomId], items);
+        // Load room source for state annotation parsing
+        const roomFile = resolve(ROOMS_DIR, `${roomId}.js`);
+        let roomSource = '';
+        try {
+            roomSource = Deno.readTextFileSync(roomFile);
+        } catch {
+            console.warn(`  Warning: Cannot read ${roomId}.js source`);
+        }
+        createRoomSheet(wb, roomId, rooms[roomId], items, roomSource);
     }
 
     // Attic placeholder (no room file yet)
