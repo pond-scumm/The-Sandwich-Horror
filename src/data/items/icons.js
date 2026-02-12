@@ -231,6 +231,101 @@
                     pixel(g, px, py, BOX_LIGHT, baseX, baseY);
                 }
             }
+        },
+
+        // ── Broken Moon Shoes ──────────────────────────────────────────
+        // Pair of vintage moon boots with broken spring soles
+        broken_moon_shoes: function(graphics, x, y, size) {
+            const g = graphics;
+            // Center the icon (roughly 16x11 pixels for a pair)
+            const baseX = x - 8 * p;
+            const baseY = y - 5.5 * p;
+
+            // Colors
+            const BOOT = 0x5a5a6a;
+            const BOOT_DARK = 0x3a3a4a;
+            const BOOT_LIGHT = 0x7a7a8a;
+            const SPRING = 0x8a8a8a;
+            const SOLE = 0x2a2a2a;
+            const CRACK = 0xaa3333;
+
+            // === LEFT BOOT ===
+
+            // Sole
+            g.fillStyle(SOLE);
+            for (let px = 1; px <= 5; px++) pixel(g, px, 10, SOLE, baseX, baseY);
+
+            // Spring coils
+            g.fillStyle(SPRING);
+            pixel(g, 1, 9, SPRING, baseX, baseY);
+            pixel(g, 3, 9, SPRING, baseX, baseY);
+            pixel(g, 5, 9, SPRING, baseX, baseY);
+
+            // Boot body
+            g.fillStyle(BOOT);
+            for (let py = 3; py < 9; py++) {
+                for (let px = 1; px < 6; px++) {
+                    pixel(g, px, py, BOOT, baseX, baseY);
+                }
+            }
+
+            // Left boot highlights
+            g.fillStyle(BOOT_LIGHT);
+            for (let py = 3; py < 9; py++) pixel(g, 1, py, BOOT_LIGHT, baseX, baseY);
+            for (let px = 2; px < 5; px++) pixel(g, px, 3, BOOT_LIGHT, baseX, baseY);
+
+            // Left boot shadows
+            g.fillStyle(BOOT_DARK);
+            for (let py = 4; py < 9; py++) pixel(g, 5, py, BOOT_DARK, baseX, baseY);
+
+            // Boot opening
+            g.fillStyle(BOOT_DARK);
+            pixel(g, 2, 2, BOOT_DARK, baseX, baseY);
+            pixel(g, 3, 2, BOOT_DARK, baseX, baseY);
+            pixel(g, 4, 2, BOOT_DARK, baseX, baseY);
+
+            // Damage mark
+            g.fillStyle(CRACK);
+            pixel(g, 3, 5, CRACK, baseX, baseY);
+
+            // === RIGHT BOOT ===
+
+            // Sole
+            g.fillStyle(SOLE);
+            for (let px = 10; px <= 14; px++) pixel(g, px, 10, SOLE, baseX, baseY);
+
+            // Spring coils
+            g.fillStyle(SPRING);
+            pixel(g, 10, 9, SPRING, baseX, baseY);
+            pixel(g, 12, 9, SPRING, baseX, baseY);
+            pixel(g, 14, 9, SPRING, baseX, baseY);
+
+            // Boot body
+            g.fillStyle(BOOT);
+            for (let py = 3; py < 9; py++) {
+                for (let px = 10; px < 15; px++) {
+                    pixel(g, px, py, BOOT, baseX, baseY);
+                }
+            }
+
+            // Right boot highlights
+            g.fillStyle(BOOT_LIGHT);
+            for (let py = 3; py < 9; py++) pixel(g, 10, py, BOOT_LIGHT, baseX, baseY);
+            for (let px = 11; px < 14; px++) pixel(g, px, 3, BOOT_LIGHT, baseX, baseY);
+
+            // Right boot shadows
+            g.fillStyle(BOOT_DARK);
+            for (let py = 4; py < 9; py++) pixel(g, 14, py, BOOT_DARK, baseX, baseY);
+
+            // Boot opening
+            g.fillStyle(BOOT_DARK);
+            pixel(g, 11, 2, BOOT_DARK, baseX, baseY);
+            pixel(g, 12, 2, BOOT_DARK, baseX, baseY);
+            pixel(g, 13, 2, BOOT_DARK, baseX, baseY);
+
+            // Damage mark
+            g.fillStyle(CRACK);
+            pixel(g, 12, 6, CRACK, baseX, baseY);
         }
 
     };

@@ -1,7 +1,7 @@
 # The Sandwich Horror — Architecture Guide
 ## For Claude Code Implementation
 
-Last Updated: February 9, 2026 (Added spawn direction, exit behavior, and player orientation documentation)
+Last Updated: February 11, 2026 (Added debug panel item registration requirement to item creation workflow)
 
 ---
 
@@ -763,6 +763,23 @@ TSH.ItemIcons = {
 ```
 
 2. The icon automatically appears in inventory and cursor when that item is selected.
+
+3. **Register the item in the debug panel** — Add the item ID to the appropriate category in `src/scenes/DebugPanel.js`:
+
+```javascript
+// ── Inventory item groups ────────────────────────────────────────────
+const ITEM_GROUPS = {
+    'General': ['help_wanted_ad', 'crowbar', 'matches', 'candle', 'lit_candle', 'damage_report'],
+    'Lab / Hector': ['keycard', 'lab_coat', 'dusty_book'],
+    'Clock': ['broken_moon_shoes', 'spring', 'spring_2', 'satellite_shoes', 'repaired_shoes', 'ladder', 'borrowed_item', 'scalpel', 'clock'],
+    'Power': ['padlock', 'monkey', 'fuse'],
+    'Screen': ['tv_guide', 'wrench', 'tv'],
+    'Brain': ['brain', 'trophy_item_1', 'trophy_item_2', 'trophy_assembled', 'spray_paint', 'trophy_painted', 'sharpie', 'fake_trophy', 'goggles', 'hector_disguise'],
+    'Finale': ['mirror']
+};
+```
+
+**Why this matters:** Items not listed in `ITEM_GROUPS` won't appear in the F9 debug panel's Inventory tab and won't generate pickup events in the Events log. Always add new items to the appropriate puzzle category.
 
 ### Helper Pattern
 

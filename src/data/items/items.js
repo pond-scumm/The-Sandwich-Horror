@@ -37,7 +37,16 @@
             consumable: true,
             combinable: []
         },
-        
+
+        broken_moon_shoes: {
+            id: 'broken_moon_shoes',
+            name: 'Broken Moon Shoes',
+            description: "",
+            failDefault: "",
+            consumable: false,
+            combinable: []
+        },
+
         // ── Lab / Hector Items ──────────────────────────────────────────
         
         keycard: {

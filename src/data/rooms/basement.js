@@ -22,6 +22,7 @@
         frank_npc:       { x: 1280, y: 0.52, w: 80,  h: 0.40 },
         brain_jar:       { x: 1800, y: 0.40, w: 100, h: 0.17 },
         jars_various:    { x: 1550, y: 0.48, w: 160, h: 0.20 },
+        broken_moon_shoes: { x: 1790, y: 0.63, w: 80, h: 0.10 },
         cobwebs:         { x: 70,   y: 0.17, w: 100, h: 0.17 },
         lightbulb:       { x: 589,  y: 0.217, w: 80, h: 0.081 },
         task_lamp:       { x: 1192, y: 0.413, w: 45, h: 0.155 },
@@ -184,6 +185,19 @@
                     action: "Better not. These look like the kind of things that end badly when touched."
                 }
             },
+            {
+                id: 'broken_moon_shoes',
+                ...LAYOUT.broken_moon_shoes,
+                interactX: LAYOUT.broken_moon_shoes.x, interactY: 0.82,
+                name: 'Broken Moon Shoes',
+                giveItem: 'broken_moon_shoes',
+                removeAfterPickup: true,
+                verbs: { action: 'Take', look: 'Examine' },
+                responses: {
+                    look: "",
+                    action: ""
+                }
+            },
 
             // === ENVIRONMENT DETAILS ===
             {
@@ -247,7 +261,52 @@
         // PICKUP OVERLAYS
         // =====================================================================
 
-        pickupOverlays: [],
+        pickupOverlays: [
+            {
+                itemId: 'broken_moon_shoes',
+                hotspotId: 'broken_moon_shoes',
+                x: 1790,
+                y: 0.63,
+                depth: 50,
+                draw: function(g, x, y, height) {
+                    const p = 2;
+                    // y is already in screen coordinates, don't multiply by height
+
+                    // Simple cardboard box
+                    const BOX = 0x8a7a5a;
+                    const BOX_DARK = 0x5a4a3a;
+                    const BOX_LIGHT = 0xaa9a7a;
+                    const TAPE = 0xccaa77;
+
+                    const boxWidth = p * 30;
+                    const boxHeight = p * 20;
+                    const boxX = x - boxWidth / 2;
+                    const boxY = y - boxHeight / 2;
+
+                    // Box main body
+                    g.fillStyle(BOX);
+                    g.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+                    // Box shadows (right and bottom)
+                    g.fillStyle(BOX_DARK);
+                    g.fillRect(boxX + boxWidth - p * 3, boxY + p * 2, p * 3, boxHeight - p * 2);
+                    g.fillRect(boxX + p * 2, boxY + boxHeight - p * 3, boxWidth - p * 5, p * 3);
+
+                    // Box highlights (left and top)
+                    g.fillStyle(BOX_LIGHT);
+                    g.fillRect(boxX, boxY, p * 2, boxHeight);
+                    g.fillRect(boxX, boxY, boxWidth, p * 2);
+
+                    // Packing tape strips (horizontal)
+                    g.fillStyle(TAPE);
+                    g.fillRect(boxX + p * 3, boxY + p * 9, boxWidth - p * 6, p * 2);
+
+                    // Cardboard seam (vertical center)
+                    g.fillStyle(BOX_DARK);
+                    g.fillRect(boxX + boxWidth / 2 - p, boxY + p * 2, p * 2, boxHeight - p * 4);
+                }
+            }
+        ],
 
         // =====================================================================
         // ITEM INTERACTIONS

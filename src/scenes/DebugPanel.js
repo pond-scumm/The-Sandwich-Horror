@@ -30,7 +30,7 @@
     const ITEM_GROUPS = {
         'General': ['help_wanted_ad', 'crowbar', 'matches', 'candle', 'lit_candle', 'damage_report'],
         'Lab / Hector': ['keycard', 'lab_coat', 'dusty_book'],
-        'Clock': ['spring', 'spring_2', 'satellite_shoes', 'repaired_shoes', 'ladder', 'borrowed_item', 'scalpel', 'clock'],
+        'Clock': ['broken_moon_shoes', 'spring', 'spring_2', 'satellite_shoes', 'repaired_shoes', 'ladder', 'borrowed_item', 'scalpel', 'clock'],
         'Power': ['padlock', 'monkey', 'fuse'],
         'Screen': ['tv_guide', 'wrench', 'tv'],
         'Brain': ['brain', 'trophy_item_1', 'trophy_item_2', 'trophy_assembled', 'spray_paint', 'trophy_painted', 'sharpie', 'fake_trophy', 'goggles', 'hector_disguise'],
