@@ -21,22 +21,22 @@
 
     const LAYOUT = {
         // Far left - fire extinguisher on wall
-        fire_ext:       { x: 140, y: 0.428, w: 50, h: 0.20 },
+        fire_ext:       { x: 140, y: 0.457, w: 53, h: 0.172 },
 
         // Left - Large workbench (all items aligned to actual drawing positions)
-        workbench:      { x: 320, y: 0.58, w: 240, h: 0.14 },
-        beakers:        { x: 280, y: 0.50, w: 100, h: 0.08 },
-        microscope:     { x: 396, y: 0.50, w: 32, h: 0.08 },
+        workbench:      { x: 321, y: 0.582, w: 234, h: 0.092 },
+        beaker_holder:  { x: 345, y: 0.395, w: 141, h: 0.062 },  // Tall stand with jar
+        microscope:     { x: 546, y: 0.395, w: 40, h: 0.062 },   // On top of cabinet
 
         // Center-left - Equipment cabinet
-        cabinet:        { x: 550, y: 0.58, w: 100, h: 0.38 },
+        cabinet:        { x: 548, y: 0.598, w: 106, h: 0.316 },
 
         // Center-right - Laser doorway and grid (visual only, no hotspot for doorway)
         laser_doorway:  { x: 780, y: 0.52, w: 240, h: 0.44 },
-        lasers_grid:    { x: 780, y: 0.54, w: 240, h: 0.38 },
+        lasers_grid:    { x: 779, y: 0.465, w: 258, h: 0.506 },
 
         // Far right - "AUX SEC" robot hatch
-        hatch_robot:    { x: 1100, y: 0.60, w: 160, h: 0.40 }
+        hatch_robot:    { x: 1101, y: 0.527, w: 154, h: 0.373 }
     };
 
     // =========================================================================
@@ -125,14 +125,14 @@
                 }
             },
             {
-                id: 'beakers_colorful',
-                ...LAYOUT.beakers,
-                interactX: LAYOUT.beakers.x, interactY: 0.82,
-                name: 'Colorful Beakers',
-                verbs: { action: 'Touch', look: 'Look at' },
+                id: 'beaker_holder',
+                ...LAYOUT.beaker_holder,
+                interactX: LAYOUT.beaker_holder.x, interactY: 0.82,
+                name: 'Beaker Holder',
+                verbs: { action: 'Take', look: 'Examine' },
                 responses: {
-                    look: "Test tubes and beakers filled with liquids in vibrant colors - blues, greens, purples. Some are bubbling gently. Very science-y.",
-                    action: "I'm not touching those. They could be anything from soda to liquified time. Better safe than sorry."
+                    look: "",
+                    action: ""
                 }
             },
             {
@@ -334,29 +334,8 @@
         g.fillRect(x + benchWidth/2 - p * 8, baseY + benchHeight, legWidth, legHeight);
 
         // === ITEMS ON WORKBENCH ===
-        // Colorful beakers and test tubes
-        const beakerColors = [C.LAB_GREEN, C.LAB_BLUE, C.LAB_PURPLE, C.LAB_CYAN];
-        for (let i = 0; i < 8; i++) {
-            const beakerX = x - benchWidth/2 + p * 8 + i * p * 7;
-            const color = beakerColors[i % beakerColors.length];
-            const tall = i % 3 === 0;
-
-            g.fillStyle(color);
-            g.fillRect(beakerX, baseY - (tall ? p * 8 : p * 6), p * 3, (tall ? p * 8 : p * 6));
-
-            // Glass highlight
-            g.fillStyle(0xffffff);
-            g.fillRect(beakerX, baseY - (tall ? p * 7 : p * 5), p, p);
-        }
-
-        // Microscope (right side of bench)
-        const microX = x + benchWidth/2 - p * 15;
-        g.fillStyle(C.METAL_MID);
-        g.fillRect(microX, baseY - p * 10, p * 8, p * 10);
-        g.fillStyle(C.METAL_LIGHT);
-        g.fillRect(microX + p * 2, baseY - p * 12, p * 4, p * 2);
-        g.fillStyle(C.METAL_DARK);
-        g.fillRect(microX + p * 3, baseY - p * 14, p * 2, p * 2);
+        // Beaker holder with glass jar (left side)
+        drawBeakerHolder(g, x - benchWidth/2 + p * 20, baseY, p, C);
 
         // Papers evenly spaced on bench (4 stacks)
         g.fillStyle(C.PAPER);
@@ -603,6 +582,62 @@
         // Door handle
         g.fillStyle(C.METAL_DARK);
         g.fillRect(x + cabWidth/2 - p * 6, baseY + cabHeight/2, p * 3, p * 6);
+
+        // === MICROSCOPE ON TOP OF CABINET ===
+        const microX = x;
+        const microY = baseY - p * 10;
+        g.fillStyle(C.METAL_MID);
+        g.fillRect(microX - p * 4, microY, p * 8, p * 10);
+        g.fillStyle(C.METAL_LIGHT);
+        g.fillRect(microX - p * 2, microY - p * 2, p * 4, p * 2);
+        g.fillStyle(C.METAL_DARK);
+        g.fillRect(microX - p, microY - p * 4, p * 2, p * 2);
+    }
+
+    function drawBeakerHolder(g, x, baseY, p, C) {
+        const standWidth = p * 2;
+        const standHeight = p * 24;
+        const baseWidth = p * 12;      // 2x larger
+        const baseHeight = p * 4;      // 2x larger
+        const armLength = p * 18;      // Length to jar start
+        const armThickness = p * 2;    // 2x thicker
+        const jarWidth = p * 10;       // 2x larger
+        const jarHeight = p * 14;      // 2x larger
+
+        // Base (on workbench surface) - 2x larger
+        g.fillStyle(0x1a1a1a);  // Black
+        g.fillRect(x - baseWidth/2, baseY - baseHeight, baseWidth, baseHeight);
+
+        // Tall stand
+        g.fillStyle(0x1a1a1a);  // Black
+        g.fillRect(x - standWidth/2, baseY - standHeight, standWidth, standHeight);
+
+        // Glass jar - positioned on the arm
+        const jarX = x + armLength;
+        const armY = baseY - standHeight - armThickness/2;
+        const jarY = armY + armThickness/2 - jarHeight/2;  // Center jar on arm
+
+        // Jar body (glass - semi-transparent blue-ish)
+        g.fillStyle(0x4a6a7a);
+        g.fillRect(jarX, jarY, jarWidth, jarHeight);
+
+        // Liquid inside (greenish/cyan chemical)
+        g.fillStyle(C.LAB_CYAN);
+        g.fillRect(jarX + p, jarY + p * 3, jarWidth - p * 2, jarHeight - p * 5);
+
+        // Glass highlight
+        g.fillStyle(0x8aaaaa);
+        g.fillRect(jarX, jarY, p, jarHeight - p);
+        g.fillRect(jarX, jarY, jarWidth - p, p);
+
+        // Jar rim (darker)
+        g.fillStyle(0x2a3a4a);
+        g.fillRect(jarX, jarY, jarWidth, p);
+
+        // Arm extending through/over the glass (drawn last so it's on top)
+        const totalArmLength = armLength + jarWidth + p * 4;  // Extends through jar and beyond
+        g.fillStyle(0x1a1a1a);
+        g.fillRect(x, armY, totalArmLength, armThickness);
     }
 
     function drawFireExtinguisher(g, x, floorY, p, C) {
