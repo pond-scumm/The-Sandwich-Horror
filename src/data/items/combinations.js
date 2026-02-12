@@ -84,6 +84,21 @@
         setFlags: {}
     };
 
+    // Half-Broken Moon Shoes + Spring → Moon Shoes (Fully Repaired)
+    combinations[makeKey('spring_1', 'half_broken_moon_shoes')] = {
+        consumes: ['spring_1', 'half_broken_moon_shoes'],
+        produces: 'moon_shoes',
+        dialogue: "",  // Dialogue from spreadsheet
+        setFlags: {}
+    };
+
+    combinations[makeKey('spring_2', 'half_broken_moon_shoes')] = {
+        consumes: ['spring_2', 'half_broken_moon_shoes'],
+        produces: 'moon_shoes',
+        dialogue: "",  // Dialogue from spreadsheet
+        setFlags: {}
+    };
+
     // ── Brain Puzzle Combinations ────────────────────────────────────────
     
     // Trophy parts → Assembled trophy

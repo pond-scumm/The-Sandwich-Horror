@@ -53,6 +53,15 @@
             description: "",
             failDefault: "",
             consumable: false,
+            combinable: ['spring_1', 'spring_2']
+        },
+
+        moon_shoes: {
+            id: 'moon_shoes',
+            name: 'Moon Shoes',
+            description: "",
+            failDefault: "",
+            consumable: false,
             combinable: []
         },
 
