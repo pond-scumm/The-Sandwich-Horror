@@ -317,11 +317,12 @@ class RoomScene extends BaseScene {
         // Setup debug overlay (toggle with ` key)
         this.setupDebugOverlay();
 
-        // Setup flag listener for dynamic hotspot updates
+        // Setup flag listener for dynamic hotspot updates and room regeneration
         if (room.relevantFlags && Array.isArray(room.relevantFlags)) {
             this.flagChangedHandler = (data) => {
                 if (room.relevantFlags.includes(data.path)) {
-                    console.log('[RoomScene] Relevant flag changed:', data.path, '- refreshing hotspots');
+                    console.log('[RoomScene] Relevant flag changed:', data.path, '- regenerating room and hotspots');
+                    this.regenerateLayers();
                     this.refreshHotspots();
                 }
             };
@@ -575,6 +576,25 @@ class RoomScene extends BaseScene {
 
         graphics.setDepth(0);
         this.layers.push(graphics);
+    }
+
+    regenerateLayers() {
+        // Destroy existing layer sprites
+        if (this.layers && this.layers.length > 0) {
+            this.layers.forEach(layer => {
+                if (layer && layer.destroy) {
+                    layer.destroy();
+                }
+            });
+        }
+
+        // Clear layers array
+        this.layers = [];
+
+        // Re-render all layers with current state
+        const worldWidth = this.worldWidth || this.roomData.width || 3200;
+        const height = this.cameras.main.height;
+        this.renderLayers(worldWidth, height);
     }
 
     // ========== HOTSPOTS ==========
