@@ -189,6 +189,15 @@
             combinable: []
         },
 
+        spring_2: {
+            id: 'spring_2',
+            name: 'Spring',
+            description: "",
+            failDefault: "",
+            consumable: false,
+            combinable: []
+        },
+
         clock: {
             id: 'clock',
             name: 'Clock',

@@ -25,7 +25,8 @@
         nightstand:    { x: 340, y: 0.64, w: 180, h: 0.22 },     // Nightstand on left of bed (2x larger)
         dresser:       { x: 950, y: 0.58, w: 140, h: 0.32 },     // Dresser, right side
         plant_floor_r: { x: 1070, y: 0.66, w: 60, h: 0.20 },     // Floor plant, between dresser and window
-        botanical:     { x: 640, y: 0.28, w: 110, h: 0.18 }      // Botanical drawing, centered over bed
+        botanical:     { x: 640, y: 0.28, w: 110, h: 0.18 },     // Botanical drawing, centered over bed
+        spring_bed:    { x: 640, y: 0.60, w: 60, h: 0.10 }       // Spring on mattress (only visible after cutting)
     };
 
     // =========================================================================
@@ -87,6 +88,17 @@
 
         npcs: [],
 
+        relevantFlags: ['franks_room.bed_cut', 'franks_room.spring_taken'],  // Refresh when bed is cut or spring is taken
+
+        itemInteractions: {
+            bed_frank: {
+                scalpel: {
+                    dialogue: "",  // Dialogue from spreadsheet
+                    setFlag: 'franks_room.bed_cut'
+                }
+            }
+        },
+
         firstVisit: {
             delay: 600,
             dialogue: "Frank's room. There are plants everywhere. This is someone who really cares about growing things."
@@ -97,7 +109,8 @@
         // =====================================================================
         // Order: bottom to top (large background first, overlapping items after)
 
-        hotspots: [
+        getHotspotData: function() {
+            const hotspots = [
             // === BACK ROW (wall-mounted, large) ===
             {
                 id: 'door_hallway',
@@ -145,14 +158,29 @@
             {
                 id: 'bed_frank',
                 ...LAYOUT.bed,
-                interactX: LAYOUT.bed.x, interactY: 0.82,
-                name: 'Bed',
+                interactX: 511, interactY: 0.817,
+                name: 'Lumpy Bed',
                 verbs: { action: 'Lie down', look: 'Examine' },
                 responses: {
                     look: "A simple twin bed with a patchwork quilt. It's made up neatly - hospital corners and everything. The pillow has a faint green stain on it. Grass? Fertilizer? Something plant-related.",
                     action: "Not my bed. I'm not that tired yet."
                 }
             },
+            // Spring on bed - only appears after cutting bed and before picking up
+            ...(TSH.State.getFlag('franks_room.bed_cut') && !TSH.State.getFlag('franks_room.spring_taken') ? [{
+                id: 'spring_bed',
+                ...LAYOUT.spring_bed,
+                interactX: LAYOUT.bed.x, interactY: 0.82,
+                name: 'Spring',
+                verbs: { action: 'Take', look: 'Examine' },
+                responses: {
+                    look: "",
+                    action: ""
+                },
+                giveItem: 'spring_2',
+                removeAfterPickup: true,
+                pickupFlag: 'franks_room.spring_taken'
+            }] : []),
             {
                 id: 'nightstand_frank',
                 ...LAYOUT.nightstand,
@@ -188,7 +216,10 @@
                     action: "Ruby is doing great. She doesn't need my help."
                 }
             }
-        ]
+        ];
+
+            return hotspots;
+        }
     };
 
     // =========================================================================
@@ -531,17 +562,40 @@
         g.fillStyle(C.CREAM_DARK);
         g.fillRect(x - bedWidth / 2 + p * 2, baseY - p * 3, bedWidth - p * 4, p * 3);
 
-        // Pillow
-        g.fillStyle(C.CREAM_MID);
-        g.fillRect(x - p * 10, baseY - p * 14, p * 20, p * 5);
-        g.fillStyle(C.CREAM_LIGHT);
-        g.fillRect(x - p * 8, baseY - p * 13, p * 4, p * 2);
+        // Spring on mattress (if bed is cut but spring not taken)
+        if (TSH.State.getFlag('franks_room.bed_cut') && !TSH.State.getFlag('franks_room.spring_taken')) {
+            const springX = x;
+            const springY = baseY - p * 15;  // Positioned to sit on mattress with no gap
+            const SPRING_METAL = 0xc0c0c0;
+            const SPRING_DARK = 0x808080;
+            const SPRING_LIGHT = 0xe0e0e0;
 
-        // Grass stain on pillow (subtle green)
-        g.fillStyle(C.PLANT_DARK);
-        g.globalAlpha = 0.3;
-        g.fillRect(x - p * 4, baseY - p * 13, p * 6, p * 2);
-        g.globalAlpha = 1.0;
+            // Draw large spring coils on mattress
+            // Top coil
+            g.fillStyle(SPRING_DARK);
+            g.fillRect(springX - p * 8, springY, p * 16, p * 2);
+            g.fillStyle(SPRING_METAL);
+            g.fillRect(springX - p * 7, springY + p * 2, p * 14, p * 2);
+
+            // Middle coil
+            g.fillStyle(SPRING_DARK);
+            g.fillRect(springX - p * 9, springY + p * 4, p * 18, p * 2);
+            g.fillStyle(SPRING_METAL);
+            g.fillRect(springX - p * 8, springY + p * 6, p * 16, p * 2);
+
+            // Bottom coil
+            g.fillStyle(SPRING_DARK);
+            g.fillRect(springX - p * 7, springY + p * 8, p * 14, p * 2);
+            g.fillStyle(SPRING_METAL);
+            g.fillRect(springX - p * 6, springY + p * 10, p * 12, p * 2);
+
+            // Highlights
+            g.fillStyle(SPRING_LIGHT);
+            g.fillRect(springX - p * 6, springY + p * 3, p, p);
+            g.fillRect(springX + p * 5, springY + p * 3, p, p);
+            g.fillRect(springX - p * 7, springY + p * 7, p, p);
+            g.fillRect(springX + p * 6, springY + p * 7, p, p);
+        }
     }
 
     function drawLargeNightstand(g, x, floorY, p, C) {

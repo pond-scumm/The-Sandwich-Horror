@@ -478,6 +478,49 @@
             pixel(g, 7, 10, SPRING_LIGHT, baseX, baseY);
         },
 
+        // ── Spring 2 ───────────────────────────────────────────────────────
+        // Identical to spring_1 (both are coiled metal springs)
+        spring_2: function(graphics, x, y, size) {
+            const g = graphics;
+            const baseX = x - 6 * p;
+            const baseY = y - 7 * p;
+
+            const SPRING_METAL = 0xc0c0c0;
+            const SPRING_DARK = 0x808080;
+            const SPRING_LIGHT = 0xe0e0e0;
+
+            // Draw spring coils (zigzag pattern for top-down view)
+            // Top coil
+            for (let px = 2; px <= 9; px++) {
+                pixel(g, px, 2, SPRING_DARK, baseX, baseY);
+            }
+            for (let px = 3; px <= 8; px++) {
+                pixel(g, px, 3, SPRING_METAL, baseX, baseY);
+            }
+            pixel(g, 3, 4, SPRING_LIGHT, baseX, baseY);
+            pixel(g, 8, 4, SPRING_LIGHT, baseX, baseY);
+
+            // Middle coils
+            for (let px = 1; px <= 10; px++) {
+                pixel(g, px, 5, SPRING_DARK, baseX, baseY);
+            }
+            for (let px = 2; px <= 9; px++) {
+                pixel(g, px, 6, SPRING_METAL, baseX, baseY);
+            }
+            pixel(g, 2, 7, SPRING_LIGHT, baseX, baseY);
+            pixel(g, 9, 7, SPRING_LIGHT, baseX, baseY);
+
+            // Bottom coil
+            for (let px = 3; px <= 8; px++) {
+                pixel(g, px, 8, SPRING_DARK, baseX, baseY);
+            }
+            for (let px = 4; px <= 7; px++) {
+                pixel(g, px, 9, SPRING_METAL, baseX, baseY);
+            }
+            pixel(g, 4, 10, SPRING_LIGHT, baseX, baseY);
+            pixel(g, 7, 10, SPRING_LIGHT, baseX, baseY);
+        },
+
         // Alias for spring_2 (same visual)
         spring_2: function(graphics, x, y, size) {
             TSH.ItemIcons.spring_1(graphics, x, y, size);
