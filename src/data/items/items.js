@@ -44,6 +44,15 @@
             description: "",
             failDefault: "",
             consumable: false,
+            combinable: ['spring_1', 'spring_2']
+        },
+
+        half_broken_moon_shoes: {
+            id: 'half_broken_moon_shoes',
+            name: 'Half-Broken Moon Shoes',
+            description: "",
+            failDefault: "",
+            consumable: false,
             combinable: []
         },
 
@@ -119,20 +128,20 @@
         
         spring_1: {
             id: 'spring_1',
-            name: 'Spring',
+            name: 'Spring 1',
             description: "",
             failDefault: "",
             consumable: false,
-            combinable: ['satellite_shoes']
+            combinable: ['satellite_shoes', 'broken_moon_shoes']
         },
-        
+
         spring_2: {
             id: 'spring_2',
-            name: 'Spring',
+            name: 'Spring 2',
             description: "",
             failDefault: "",
             consumable: false,
-            combinable: ['satellite_shoes']
+            combinable: ['satellite_shoes', 'broken_moon_shoes']
         },
         
         satellite_shoes: {
@@ -183,15 +192,6 @@
         tongs: {
             id: 'tongs',
             name: 'Tongs',
-            description: "",
-            failDefault: "",
-            consumable: false,
-            combinable: []
-        },
-
-        spring_2: {
-            id: 'spring_2',
-            name: 'Spring',
             description: "",
             failDefault: "",
             consumable: false,

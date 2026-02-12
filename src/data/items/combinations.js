@@ -68,7 +68,22 @@
         dialogue: "Both springs are in! These satellite shoes are ready for action.",
         setFlags: { 'clock.shoes_repaired': true }
     };
-    
+
+    // Broken Moon Shoes + Spring → Half-Broken Moon Shoes
+    combinations[makeKey('spring_1', 'broken_moon_shoes')] = {
+        consumes: ['spring_1', 'broken_moon_shoes'],
+        produces: 'half_broken_moon_shoes',
+        dialogue: "",  // Dialogue from spreadsheet
+        setFlags: {}
+    };
+
+    combinations[makeKey('spring_2', 'broken_moon_shoes')] = {
+        consumes: ['spring_2', 'broken_moon_shoes'],
+        produces: 'half_broken_moon_shoes',
+        dialogue: "",  // Dialogue from spreadsheet
+        setFlags: {}
+    };
+
     // ── Brain Puzzle Combinations ────────────────────────────────────────
     
     // Trophy parts → Assembled trophy
