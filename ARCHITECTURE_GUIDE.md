@@ -1155,6 +1155,7 @@ tools/
 - Don't write monolithic scene classes with inline drawing code
 - Don't use callback pyramids (use async/await)
 - Don't put dialogue strings inside scene classes — dialogue is authored in `TSH_Hotspot_Dialogue.xlsx` and exported/imported via the dialogue pipeline (§23). Room data files contain the runtime copy.
+- Don't hardcode dialogue in action functions — use `scene.parseResponse(hotspot.useResponse)` to read dialogue from spreadsheet (§3, lines 459-472). Action functions should handle game logic only; dialogue comes from room data populated by import script.
 - Don't hardcode puzzle logic inside hotspot handlers (use action functions)
 - Don't create separate CSS/JS files — this is a single-page game
 - Don't write placeholder or AI-generated dialogue text for hotspots or items — use empty strings and let Chris author dialogue in the spreadsheet (§23)
