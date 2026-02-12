@@ -106,12 +106,15 @@
 
         npcs: [],
 
+        relevantFlags: ['storage.beaker_holder_taken'],  // Refresh when beaker holder is taken
+
         // =====================================================================
         // HOTSPOTS
         // =====================================================================
         // Order: bottom to top (large background first, overlapping items after)
 
-        hotspots: [
+        getHotspotData: function() {
+            const hotspots = [
             // === LARGE WORKBENCH (left side) ===
             {
                 id: 'workbench_lab',
@@ -124,7 +127,8 @@
                     action: "I carefully look through the clutter. Lots of interesting chemistry happening here, but nothing I can use right now."
                 }
             },
-            {
+            // Beaker holder - only show if not already taken
+            ...(TSH.State.getFlag('storage.beaker_holder_taken') ? [] : [{
                 id: 'beaker_holder',
                 ...LAYOUT.beaker_holder,
                 interactX: LAYOUT.beaker_holder.x, interactY: 0.82,
@@ -133,8 +137,11 @@
                 responses: {
                     look: "",
                     action: ""
-                }
-            },
+                },
+                giveItem: 'tongs',
+                removeAfterPickup: true,
+                pickupFlag: 'storage.beaker_holder_taken'
+            }]),
             {
                 id: 'microscope',
                 ...LAYOUT.microscope,
@@ -196,7 +203,10 @@
                     action: "It's bolted to the wall. Plus I don't have a fire. Yet."
                 }
             }
-        ]
+        ];
+
+            return hotspots;
+        }
     };
 
     // =========================================================================
@@ -599,45 +609,49 @@
         const standHeight = p * 24;
         const baseWidth = p * 12;      // 2x larger
         const baseHeight = p * 4;      // 2x larger
-        const armLength = p * 18;      // Length to jar start
-        const armThickness = p * 2;    // 2x thicker
-        const jarWidth = p * 10;       // 2x larger
-        const jarHeight = p * 14;      // 2x larger
 
-        // Base (on workbench surface) - 2x larger
+        // Base (on workbench surface) - always visible
         g.fillStyle(0x1a1a1a);  // Black
         g.fillRect(x - baseWidth/2, baseY - baseHeight, baseWidth, baseHeight);
 
-        // Tall stand
+        // Tall stand - always visible
         g.fillStyle(0x1a1a1a);  // Black
         g.fillRect(x - standWidth/2, baseY - standHeight, standWidth, standHeight);
 
-        // Glass jar - positioned on the arm
-        const jarX = x + armLength;
-        const armY = baseY - standHeight - armThickness/2;
-        const jarY = armY + armThickness/2 - jarHeight/2;  // Center jar on arm
+        // Only draw arm and jar if beaker holder hasn't been taken
+        if (!TSH.State.getFlag('storage.beaker_holder_taken')) {
+            const armLength = p * 18;      // Length to jar start
+            const armThickness = p * 2;    // 2x thicker
+            const jarWidth = p * 10;       // 2x larger
+            const jarHeight = p * 14;      // 2x larger
 
-        // Jar body (glass - semi-transparent blue-ish)
-        g.fillStyle(0x4a6a7a);
-        g.fillRect(jarX, jarY, jarWidth, jarHeight);
+            // Glass jar - positioned on the arm
+            const jarX = x + armLength;
+            const armY = baseY - standHeight - armThickness/2;
+            const jarY = armY + armThickness/2 - jarHeight/2;  // Center jar on arm
 
-        // Liquid inside (greenish/cyan chemical)
-        g.fillStyle(C.LAB_CYAN);
-        g.fillRect(jarX + p, jarY + p * 3, jarWidth - p * 2, jarHeight - p * 5);
+            // Jar body (glass - semi-transparent blue-ish)
+            g.fillStyle(0x4a6a7a);
+            g.fillRect(jarX, jarY, jarWidth, jarHeight);
 
-        // Glass highlight
-        g.fillStyle(0x8aaaaa);
-        g.fillRect(jarX, jarY, p, jarHeight - p);
-        g.fillRect(jarX, jarY, jarWidth - p, p);
+            // Liquid inside (greenish/cyan chemical)
+            g.fillStyle(C.LAB_CYAN);
+            g.fillRect(jarX + p, jarY + p * 3, jarWidth - p * 2, jarHeight - p * 5);
 
-        // Jar rim (darker)
-        g.fillStyle(0x2a3a4a);
-        g.fillRect(jarX, jarY, jarWidth, p);
+            // Glass highlight
+            g.fillStyle(0x8aaaaa);
+            g.fillRect(jarX, jarY, p, jarHeight - p);
+            g.fillRect(jarX, jarY, jarWidth - p, p);
 
-        // Arm extending through/over the glass (drawn last so it's on top)
-        const totalArmLength = armLength + jarWidth + p * 4;  // Extends through jar and beyond
-        g.fillStyle(0x1a1a1a);
-        g.fillRect(x, armY, totalArmLength, armThickness);
+            // Jar rim (darker)
+            g.fillStyle(0x2a3a4a);
+            g.fillRect(jarX, jarY, jarWidth, p);
+
+            // Arm extending through/over the glass (drawn last so it's on top)
+            const totalArmLength = armLength + jarWidth + p * 4;  // Extends through jar and beyond
+            g.fillStyle(0x1a1a1a);
+            g.fillRect(x, armY, totalArmLength, armThickness);
+        }
     }
 
     function drawFireExtinguisher(g, x, floorY, p, C) {

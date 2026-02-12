@@ -378,6 +378,63 @@
             }
         },
 
+        // ── Tongs ──────────────────────────────────────────────────────────
+        // Laboratory tongs/clamp for holding beakers
+        tongs: function(graphics, x, y, size) {
+            const g = graphics;
+            // Center the icon (roughly 10x14 pixels)
+            const baseX = x - 5 * p;
+            const baseY = y - 7 * p;
+
+            // Colors
+            const METAL = 0x3a3a3a;         // Dark metal
+            const METAL_LIGHT = 0x5a5a5a;   // Metal highlight
+            const GRIP = 0x2a2a2a;          // Grip pads
+
+            // Left arm (top to bottom)
+            g.fillStyle(METAL);
+            pixel(g, 2, 0, METAL, baseX, baseY);  // Left grip top
+            pixel(g, 1, 1, METAL, baseX, baseY);
+            pixel(g, 1, 2, METAL, baseX, baseY);
+            pixel(g, 2, 3, METAL, baseX, baseY);
+            pixel(g, 2, 4, METAL, baseX, baseY);
+            pixel(g, 3, 5, METAL, baseX, baseY);  // Angling toward center
+            pixel(g, 4, 6, METAL, baseX, baseY);  // Pivot point
+
+            // Right arm (mirror)
+            pixel(g, 7, 0, METAL, baseX, baseY);  // Right grip top
+            pixel(g, 8, 1, METAL, baseX, baseY);
+            pixel(g, 8, 2, METAL, baseX, baseY);
+            pixel(g, 7, 3, METAL, baseX, baseY);
+            pixel(g, 7, 4, METAL, baseX, baseY);
+            pixel(g, 6, 5, METAL, baseX, baseY);  // Angling toward center
+            pixel(g, 5, 6, METAL, baseX, baseY);  // Pivot point
+
+            // Pivot/hinge (center)
+            pixel(g, 4, 7, METAL, baseX, baseY);
+            pixel(g, 5, 7, METAL, baseX, baseY);
+
+            // Handle arms (spreading out from pivot)
+            pixel(g, 3, 8, METAL, baseX, baseY);
+            pixel(g, 2, 9, METAL, baseX, baseY);
+            pixel(g, 2, 10, METAL, baseX, baseY);
+            pixel(g, 2, 11, METAL, baseX, baseY);
+            pixel(g, 6, 8, METAL, baseX, baseY);
+            pixel(g, 7, 9, METAL, baseX, baseY);
+            pixel(g, 7, 10, METAL, baseX, baseY);
+            pixel(g, 7, 11, METAL, baseX, baseY);
+
+            // Grip pads (dark circles at ends)
+            g.fillStyle(GRIP);
+            pixel(g, 2, 1, GRIP, baseX, baseY);
+            pixel(g, 7, 1, GRIP, baseX, baseY);
+
+            // Metal highlights
+            g.fillStyle(METAL_LIGHT);
+            pixel(g, 1, 3, METAL_LIGHT, baseX, baseY);
+            pixel(g, 8, 3, METAL_LIGHT, baseX, baseY);
+        },
+
         // ── Spring ─────────────────────────────────────────────────────────
         // Coiled metal spring
         spring_1: function(graphics, x, y, size) {

@@ -180,6 +180,15 @@
             combinable: []
         },
 
+        tongs: {
+            id: 'tongs',
+            name: 'Tongs',
+            description: "",
+            failDefault: "",
+            consumable: false,
+            combinable: []
+        },
+
         clock: {
             id: 'clock',
             name: 'Clock',
