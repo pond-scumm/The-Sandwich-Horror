@@ -180,11 +180,11 @@
                     this.load.image('nate_placeholder', 'assets/sprites/nate_placeholder.png');
                 }
 
-                // Load spritesheet for walk animation (6 frames horizontal, 180x610 each)
+                // Load spritesheet for walk animation (6 frames horizontal, 400x610 each)
                 if (!this.textures.exists('nate_walk')) {
                     this.load.spritesheet('nate_walk',
-                        'assets/sprites/nate/HeroWalkingRight1-Sheet.png', {
-                        frameWidth: 180,
+                        'assets/sprites/nate/nate_walking-Sheet.png', {
+                        frameWidth: 400,
                         frameHeight: 610
                     });
                 }
