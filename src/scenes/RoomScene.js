@@ -918,7 +918,7 @@ class RoomScene extends BaseScene {
         }
     }
 
-    useItemOnHotspot(item, hotspot) {
+    async useItemOnHotspot(item, hotspot) {
         const room = this.roomData;
         const interactions = room.itemInteractions || {};
         const hsId = hotspot._data?.id || hotspot.id;
@@ -966,16 +966,16 @@ class RoomScene extends BaseScene {
 
                 // Simple side effects (no custom action function)
 
-                // Show dialogue first
+                // Show dialogue first and wait for it to complete
                 const dialogue = response.dialogue || '';
                 if (dialogue) {
-                    this.showDialog(dialogue.replace('{item}', item.name).replace('{hotspot}', hotspot.name));
+                    await this.showDialog(dialogue.replace('{item}', item.name).replace('{hotspot}', hotspot.name));
                 } else {
                     // Empty dialogue string - use fallback chain
                     this.useFallbackDialogue(item, hotspot);
                 }
 
-                // Apply side effects
+                // Apply side effects after dialogue completes
                 if (response.giveItem) {
                     TSH.State.addItem(response.giveItem);
                 }

@@ -361,7 +361,11 @@
 
             earl_npc: {
                 help_wanted_ad: "I don't think he's the one who's looking for help. He seems to have it all figured out.",
-                            tongs: "earl: My grill claws! | earl: I never thought I'd see them again! | earl: Thanks bud.",
+                tongs: {
+                    dialogue: "earl: My grill claws! | earl: I never thought I'd see them again! | earl: Thanks bud.",
+                    consumeItem: true,
+                    setFlag: "clock.returned_borrowed_item"
+                }
 },
 },
 
