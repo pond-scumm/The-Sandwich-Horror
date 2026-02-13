@@ -283,6 +283,9 @@ class RoomScene extends BaseScene {
         // Create hotspots from room data
         this.createHotspotsFromData(height);
 
+        // Build NPC position cache for dialogue system
+        this.buildNPCPositionCache();
+
         // Create pickup overlays (dynamic graphics for pickable items)
         this.createPickupOverlays(height);
 
@@ -1126,6 +1129,33 @@ class RoomScene extends BaseScene {
                 console.log('[RoomScene] Created NPC sprite:', npc.id, 'at', x, y);
             } else {
                 console.warn('[RoomScene] NPC sprite not found:', spriteKey);
+            }
+        });
+    }
+
+    // ========== NPC POSITION CACHE ==========
+
+    buildNPCPositionCache() {
+        this.npcPositions = {};
+
+        // Get positions from NPC sprites
+        if (this.npcSprites) {
+            Object.keys(this.npcSprites).forEach(npcId => {
+                const sprite = this.npcSprites[npcId];
+                this.npcPositions[npcId] = { x: sprite.x, y: sprite.y };
+            });
+        }
+
+        // Fallback from NPC hotspots (type: 'npc')
+        this.hotspots.forEach(hotspot => {
+            if (hotspot.type === 'npc') {
+                const npcId = hotspot.id.replace(/_npc$/, '');
+                if (!this.npcPositions[npcId]) {
+                    this.npcPositions[npcId] = {
+                        x: hotspot.interactX || hotspot.x,
+                        y: hotspot.interactY || hotspot.y
+                    };
+                }
             }
         });
     }

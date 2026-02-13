@@ -299,7 +299,7 @@
                 verbs: { action: 'Take', look: 'Examine' },
                 responses: {
                     look: "A sturdy aluminum ladder. That would be really useful for reaching high places...",
-                    action: "I should really ask permission before stea- er, borrowing the ladder."
+                    action: "earl: Hang on there, neighbor! | earl: I can't let old stretch out of my sight. | I should really ask permission before stea- er, borrowing the ladder."
                 }
                 // TODO: Once player returns Earl's item, this becomes available to take
             },
@@ -361,7 +361,8 @@
 
             earl_npc: {
                 help_wanted_ad: "I don't think he's the one who's looking for help. He seems to have it all figured out.",
-            },
+                            tongs: "earl: My grill claws! | earl: I never thought I'd see them again! | earl: Thanks bud.",
+},
 },
 
         firstVisit: {

@@ -62,6 +62,7 @@
                 this.dialogCallback = null;
                 this.dialogActive = false;
                 this.dialogSkipReady = false;
+                this.currentDialogSpeaker = null;  // Track current speaker for animation cleanup
 
                 // Conversation mode (dialogue trees with NPCs)
                 this.conversationActive = false;
@@ -2912,12 +2913,20 @@
                         resolve();
                     };
 
-                    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+                    // Support pipe-separated multi-line dialogue (e.g., "earl: Hi! | nate: Hello!")
+                    let lines;
+                    if (text.includes(' | ')) {
+                        lines = text.split(' | ').map(s => s.trim());
+                    } else {
+                        // Fallback: split by sentence punctuation
+                        lines = text.match(/[^.!?]+[.!?]+/g) || [text];
+                        lines = lines.map(s => s.trim());
+                    }
 
-                    if (sentences.length > 1) {
-                        this.dialogQueue = sentences.slice(1).map(s => s.trim());
+                    if (lines.length > 1) {
+                        this.dialogQueue = lines.slice(1);
                         this.startDialogSequence();
-                        this.showSingleDialog(sentences[0].trim(), true);
+                        this.showSingleDialog(lines[0], true);
                     } else {
                         this.showSingleDialog(text, false);
                     }
@@ -2984,35 +2993,93 @@
                     this.startDialogSequence();
                 }
 
-                // When inventory is open, use UIScene's dialog overlay (renders above inventory)
-                const uiScene = this.scene.get('UIScene');
-                if (TSH.State.isInventoryOpen() && uiScene && uiScene.showDialogOverlay) {
-                    uiScene.showDialogOverlay(text);
-                    this.speechBubble.setVisible(false);
-                } else {
-                    if (uiScene && uiScene.hideDialogOverlay) {
-                        uiScene.hideDialogOverlay();
-                    }
-                    this.dialogText.setText(text);
-                    this.updateSpeechBubblePosition();
-                    this.speechBubble.setVisible(true);
-                }
+                // Parse speaker prefix
+                const { speaker, text: displayText } = this._parseSpeaker(text);
 
-                if (this.playerSprite && this.playerSprite.anims) {
-                    this.playerSprite.play('nate_talk');
-                }
-
-                const displayTime = Math.max(1500, text.length * 40);
-                this.dialogTimer = this.time.delayedCall(displayTime, () => {
-                    if (this.dialogQueue.length > 0) {
-                        this.showSingleDialog(this.dialogQueue.shift(), true);
-                    } else {
+                // Stop previous speaker's animation before starting new one
+                if (this.currentDialogSpeaker) {
+                    if (this.currentDialogSpeaker === 'nate') {
                         if (this.playerSprite && this.playerSprite.anims) {
                             this.playerSprite.stop();
                             this.playerSprite.setTexture('nate_idle');
                         }
+                    } else {
+                        if (this.npcSprites?.[this.currentDialogSpeaker]) {
+                            this.npcSprites[this.currentDialogSpeaker].stop();
+                            if (this.textures.exists(`${this.currentDialogSpeaker}_idle`)) {
+                                this.npcSprites[this.currentDialogSpeaker].setTexture(`${this.currentDialogSpeaker}_idle`);
+                            }
+                        }
+                    }
+                }
+
+                // Track current speaker
+                this.currentDialogSpeaker = speaker;
+
+                // When inventory is open, use UIScene's dialog overlay (renders above inventory)
+                const uiScene = this.scene.get('UIScene');
+                if (TSH.State.isInventoryOpen() && uiScene && uiScene.showDialogOverlay) {
+                    uiScene.showDialogOverlay(displayText);
+                    this.speechBubble.setVisible(false);
+                    this.npcSpeechBubble.setVisible(false);
+                } else {
+                    if (uiScene && uiScene.hideDialogOverlay) {
+                        uiScene.hideDialogOverlay();
+                    }
+
+                    if (speaker === 'nate') {
+                        // Nate's speech bubble
+                        this.dialogText.setText(displayText);
+                        this.updateSpeechBubblePosition();
+                        this.speechBubble.setVisible(true);
+                        this.npcSpeechBubble.setVisible(false);
+
+                        if (this.playerSprite && this.playerSprite.anims) {
+                            this.playerSprite.play('nate_talk');
+                        }
+                    } else {
+                        // NPC speech bubble
+                        this.npcDialogText.setText(displayText);
+                        this._positionNPCSpeechBubble(speaker);
+                        this.npcSpeechBubble.setVisible(true);
                         this.speechBubble.setVisible(false);
+
+                        // Play NPC talk animation if available
+                        if (this.npcSprites?.[speaker] && this.anims.exists(`${speaker}_talk`)) {
+                            this.npcSprites[speaker].play(`${speaker}_talk`);
+                        }
+                    }
+                }
+
+                const displayTime = Math.max(1500, displayText.length * 40);
+                this.dialogTimer = this.time.delayedCall(displayTime, () => {
+                    if (this.dialogQueue.length > 0) {
+                        this.showSingleDialog(this.dialogQueue.shift(), true);
+                    } else {
+                        // Stop current speaker's animation
+                        if (this.currentDialogSpeaker === 'nate') {
+                            if (this.playerSprite && this.playerSprite.anims) {
+                                this.playerSprite.stop();
+                                this.playerSprite.setTexture('nate_idle');
+                            }
+                        } else {
+                            if (this.npcSprites?.[this.currentDialogSpeaker]) {
+                                this.npcSprites[this.currentDialogSpeaker].stop();
+                                if (this.textures.exists(`${this.currentDialogSpeaker}_idle`)) {
+                                    this.npcSprites[this.currentDialogSpeaker].setTexture(`${this.currentDialogSpeaker}_idle`);
+                                }
+                            }
+                        }
+
+                        // Clear speaker tracking
+                        this.currentDialogSpeaker = null;
+
+                        // Hide both speech bubbles
+                        this.speechBubble.setVisible(false);
+                        this.npcSpeechBubble.setVisible(false);
                         this.dialogText.setText('');
+                        this.npcDialogText.setText('');
+
                         // Hide UIScene's dialog overlay too
                         const uiScene = this.scene.get('UIScene');
                         if (uiScene && uiScene.hideDialogOverlay) {
@@ -3062,6 +3129,53 @@
                 textX = Phaser.Math.Clamp(textX, camLeft, camRight);
 
                 this.speechBubble.setPosition(textX, textY);
+            }
+
+            // Parse speaker prefix from dialogue text
+            // Returns { speaker: 'nate' | 'earl' | etc, text: string }
+            _parseSpeaker(text) {
+                // Trim whitespace (handles " earl:" from split results)
+                const trimmedText = text.trim();
+
+                const match = trimmedText.match(/^(\w+):\s*(.+)$/s);  // s flag allows multiline
+                if (match) {
+                    const speakerId = match[1].toLowerCase();
+                    const lineText = match[2].trim();
+
+                    // Valid speakers: 'nate' or any NPC in current room
+                    // (RoomScene extends BaseScene, so this.npcPositions is available)
+                    if (speakerId === 'nate' || (this.npcPositions && this.npcPositions[speakerId])) {
+                        return { speaker: speakerId, text: lineText };
+                    }
+                }
+
+                // No speaker prefix found - default to Nate
+                return { speaker: 'nate', text: trimmedText };
+            }
+
+            // Position NPC speech bubble above specified NPC
+            _positionNPCSpeechBubble(npcId) {
+                // RoomScene extends BaseScene, so this.npcPositions is available
+                const npcPos = this.npcPositions?.[npcId];
+
+                if (!npcPos) {
+                    console.warn(`No position found for NPC: ${npcId}`);
+                    return;
+                }
+
+                const { width } = this.scale;
+                const scrollX = this.cameras.main.scrollX || 0;
+
+                let npcX = npcPos.x;
+                let npcY = npcPos.y - 480;  // Same offset as Nate
+
+                // Clamp to screen edges
+                const halfWidth = this.npcDialogText.width / 2;
+                const camLeft = scrollX + halfWidth + 10;
+                const camRight = scrollX + width - halfWidth - 10;
+                npcX = Phaser.Math.Clamp(npcX, camLeft, camRight);
+
+                this.npcSpeechBubble.setPosition(npcX, npcY);
             }
 
             // ========== CONVERSATION SYSTEM (NPC Dialogue Trees) ==========
