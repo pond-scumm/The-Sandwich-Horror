@@ -822,6 +822,49 @@ class RoomScene extends BaseScene {
         if ((action === 'Use' || action === hotspot.verbLabels?.actionVerb) && hsData?.actionTrigger) {
             const trigger = hsData.actionTrigger;
 
+            if (trigger.type === 'npc_conversation') {
+                // Show Nate's action response first (if it exists)
+                const useResponse = hotspot.useResponse;
+                if (useResponse) {
+                    const parsedResponse = this.parseResponse(useResponse);
+                    if (parsedResponse) {
+                        // Show Nate's dialogue, then show Earl and start conversation
+                        await this.showDialog(parsedResponse);
+                    }
+                }
+
+                // Show the NPC
+                this.showNPC(trigger.npcId);
+
+                // Load and start conversation
+                try {
+                    const dialogue = await TSH.DialogueLoader.load(trigger.dialogue);
+                    const npc = this.roomData.npcs?.find(n => n.id === trigger.npcId);
+                    if (npc) {
+                        // Get NPC position
+                        const npcX = npc.position.x;
+                        const npcY = typeof npc.position.y === 'number' && npc.position.y <= 1
+                            ? this.scale.height * npc.position.y
+                            : npc.position.y;
+
+                        const npcData = {
+                            name: npc.name || hotspot.name || 'NPC',
+                            x: npcX,
+                            y: npcY
+                        };
+
+                        // Store trigger info for cleanup
+                        this.activeConversationTrigger = trigger;
+
+                        this.enterConversation(npcData, dialogue, trigger.npcId);
+                    }
+                } catch (error) {
+                    console.error('[RoomScene] Failed to load dialogue for npc_conversation:', error);
+                    this.showDialog("...");
+                }
+                return;
+            }
+
             if (trigger.type === 'transition') {
                 console.log('[RoomScene] Transition action from hotspot:', hsData?.id, '-> target:', trigger.target);
                 this.walkTo(hotspot.interactX, hotspot.interactY, () => {
@@ -1125,12 +1168,51 @@ class RoomScene extends BaseScene {
                     sprite.setScale(baseScale * npc.heightRatio);
                 }
 
+                // Handle initial visibility
+                if (npc.hidden) {
+                    sprite.setVisible(false);
+                }
+
                 this.npcSprites[npc.id] = sprite;
-                console.log('[RoomScene] Created NPC sprite:', npc.id, 'at', x, y);
+                console.log('[RoomScene] Created NPC sprite:', npc.id, 'at', x, y, 'hidden:', !!npc.hidden);
             } else {
                 console.warn('[RoomScene] NPC sprite not found:', spriteKey);
             }
         });
+    }
+
+    // ========== NPC VISIBILITY CONTROL ==========
+
+    showNPC(npcId) {
+        const sprite = this.npcSprites?.[npcId];
+        if (sprite) {
+            sprite.setVisible(true);
+            console.log('[RoomScene] Showing NPC:', npcId);
+        } else {
+            console.warn('[RoomScene] Cannot show NPC - sprite not found:', npcId);
+        }
+    }
+
+    hideNPC(npcId) {
+        const sprite = this.npcSprites?.[npcId];
+        if (sprite) {
+            sprite.setVisible(false);
+            console.log('[RoomScene] Hiding NPC:', npcId);
+        }
+    }
+
+    // Override exitConversation to hide NPC if triggered via npc_conversation
+    exitConversation() {
+        // Hide NPC if conversation was triggered via npc_conversation action
+        if (this.activeConversationTrigger?.type === 'npc_conversation') {
+            this.hideNPC(this.activeConversationTrigger.npcId);
+            this.activeConversationTrigger = null;
+        }
+
+        // Call parent exitConversation
+        if (super.exitConversation) {
+            super.exitConversation();
+        }
     }
 
     // ========== NPC POSITION CACHE ==========

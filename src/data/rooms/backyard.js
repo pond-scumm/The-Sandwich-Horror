@@ -119,10 +119,16 @@
 
         layers: [
             {
-                name: 'room',
+                name: 'background',
+                scrollFactor: 1.0,
+                depth: 40,
+                draw: drawBackyardBackground
+            },
+            {
+                name: 'foreground',
                 scrollFactor: 1.0,
                 depth: 50,
-                draw: drawBackyardRoom
+                draw: drawBackyardForeground
             }
         ],
 
@@ -136,7 +142,19 @@
 
         exits: [],
 
-        npcs: [],
+        npcs: [
+            {
+                id: 'earl_at_fence',
+                name: 'Earl',
+                sprite: 'earl_idle',
+                position: { x: LAYOUT.fence_gate.x, y: 0.85 },  // Just eyes peeking above fence
+                heightRatio: 1.15,
+                depth: 45,  // Between background (40) and foreground/fence (50)
+                hidden: true,  // Controlled by conversation system
+                interactX: LAYOUT.fence_gate.x,
+                interactY: 0.82
+            }
+        ],
 
         // =====================================================================
         // HOTSPOTS (State-Driven)
@@ -222,8 +240,8 @@
                 name: 'Doghouse',
                 verbs: { action: 'Look inside', look: 'Examine' },
                 responses: {
-                    look: "'FLUFFY' is painted on the side. Where's Fluffy? Actually... do I want to know?",
-                    action: "Empty. Just some old dog toys and... is that a tiny lab coat? What happened to Fluffy?!"
+                    look: "FLUFFY' is painted on the side. Where's Fluffy?",
+                    action: "Empty. Just some old dog toys and... is that a tiny lab coat? What happened to Fluffy?"
                 }
             },
             {
@@ -286,22 +304,6 @@
                     action: "So pretty! Whoever lives over there really knows how to set a mood."
                 }
             },
-            {
-                id: 'fence_gate',
-                ...LAYOUT.fence_gate,
-                interactX: LAYOUT.fence_gate.x, interactY: 0.82,
-                name: 'Fence Gate',
-                verbs: { action: 'Open', look: 'Examine' },
-                responses: {
-                    look: "A wooden gate in the fence leading to Earl's yard. I can hear music and smell BBQ from the other side.",
-                    action: null
-                },
-                actionTrigger: {
-                    type: 'transition',
-                    target: 'earls_yard',
-                    spawnPoint: 'from_backyard'
-                }
-            },
 
             // === SHED (perpendicular, mostly off-screen right) ===
             {
@@ -331,6 +333,46 @@
             ];
 
             // === CONDITIONAL HOTSPOTS (based on game state) ===
+
+            // Fence gate - locked (before invitation)
+            if (!TSH.State.getFlag('clock.earl_invited')) {
+                hotspots.push({
+                    id: 'fence_gate',
+                    ...LAYOUT.fence_gate,
+                    interactX: LAYOUT.fence_gate.x, interactY: 0.82,
+                    name: 'Fence Gate',
+                    verbs: { action: 'Open', look: 'Examine' },
+                    responses: {
+                        look: "A wooden gate in the fence leading to the neighbor's yard. I can hear music and smell BBQ from the other side.",
+                        action: "Hello? Is anyone over there?"
+                    },
+                    actionTrigger: {
+                        type: 'npc_conversation',
+                        npcId: 'earl_at_fence',
+                        dialogue: 'earl_fence'
+                    }
+                });
+            }
+
+            // Fence gate - open (after invitation)
+            if (TSH.State.getFlag('clock.earl_invited')) {
+                hotspots.push({
+                    id: 'fence_gate',
+                    ...LAYOUT.fence_gate,
+                    interactX: LAYOUT.fence_gate.x, interactY: 0.82,
+                    name: 'Fence Gate',
+                    verbs: { action: 'Open', look: 'Examine' },
+                    responses: {
+                        look: "The gate to Earl's yard. He said I'm welcome anytime.",
+                        action: null
+                    },
+                    actionTrigger: {
+                        type: 'transition',
+                        target: 'earls_yard',
+                        spawnPoint: 'from_backyard'
+                    }
+                });
+            }
 
             // Clock on wall (only if not taken yet)
             if (!TSH.State.getFlag('clock.has_clock')) {
@@ -375,7 +417,7 @@
         // RELEVANT FLAGS (triggers automatic hotspot refresh)
         // =====================================================================
 
-        relevantFlags: ['clock.ladder_deployed', 'clock.has_clock'],
+        relevantFlags: ['clock.ladder_deployed', 'clock.has_clock', 'clock.earl_invited'],
 
         // =====================================================================
         // ITEM INTERACTIONS
@@ -388,9 +430,14 @@
                     consumeItem: true,
                     setFlag: "clock.ladder_deployed"
                 },
-                moon_shoes: "The shoes give me some bounce, but I can't reach it from down here.",
-                ladder_shoes: "I climb the ladder, put on the moon shoes, and JUMP! Whoa— *CRASH* I hit the ceiling! But hey, the clock fell off the wall. Newton would be furious."
-            },
+                moon_shoes: "The shoes give me some bounce, but I still can't reach it from down here.",
+                ladder_shoes: "I climb the ladder, put on the moon shoes, and JUMP! Whoa— *CRASH* I hit the ceiling! But hey, the clock fell off the wall. Newton would be furious.",
+                broken_moon_shoes: "These would be perfect if they weren't broken.",
+                half_broken_moon_shoes: "These would be perfect if they weren't still broken. ",
+                spring_1: "I'm not sure throwing a spring at the clock is going to be enough.",
+                spring_2: "I'm not sure throwing a spring at the clock is going to be enough.",
+                tongs: "Definitely not long enough to reach the clock. Plus the clock seems firmly attached to the wall.",
+},
             ladder_deployed: {
                 moon_shoes: {
                     dialogue: "I climb the ladder, put on the moon shoes, and JUMP! *CRASH* I grab the clock as I bounce off the wall. Success!",
@@ -1088,7 +1135,105 @@
     }
 
     // =========================================================================
-    // MAIN ROOM DRAWING FUNCTION
+    // BACKGROUND LAYER (sky, stars, moon, ground)
+    // =========================================================================
+
+    function drawBackyardBackground(g, scene, worldWidth, height) {
+        const floorY = height * 0.72; // MEDIUM camera
+        const skyHeight = floorY;
+
+        // === NIGHT SKY (single dark color) ===
+        g.fillStyle(COLORS.SKY_DARK);
+        g.fillRect(0, 0, worldWidth, skyHeight);
+
+        // Stars
+        drawStars(g, worldWidth, skyHeight);
+
+        // Moon (positioned far right, not blocked by house)
+        drawMoon(g, LAYOUT.moon.x, height * LAYOUT.moon.y);
+    }
+
+    // =========================================================================
+    // FOREGROUND LAYER (fence, house, yard items)
+    // =========================================================================
+
+    function drawBackyardForeground(g, scene, worldWidth, height) {
+        const floorY = height * 0.72; // MEDIUM camera
+
+        // === GROUND/GRASS (drawn first in foreground to cover Earl's feet) ===
+        g.fillStyle(COLORS.GRASS_DARK);
+        g.fillRect(0, floorY, worldWidth, height - floorY);
+
+        // Grass texture
+        for (let gx = 0; gx < worldWidth; gx += p*25) {
+            g.fillStyle(COLORS.GRASS_MID);
+            g.fillRect(gx + p*3, floorY + p*3, p*10, p*3);
+            g.fillStyle(COLORS.GRASS_LIGHT);
+            g.fillRect(gx + p*14, floorY + p*5, p*8, p*2);
+        }
+
+        // Overgrown grass tufts
+        for (let tx = 0; tx < worldWidth; tx += p*35) {
+            const tHeight = p * (5 + ((tx * 3) % 8));
+            g.fillStyle(COLORS.GRASS_WILD);
+            g.fillRect(tx + p*6, floorY - tHeight, p*3, tHeight);
+            g.fillRect(tx + p*10, floorY - tHeight + p, p*2, tHeight - p);
+        }
+
+        // === FENCE (spans full width, behind everything - taller to reach eye level) ===
+        const fenceHeight = p * 115;
+        drawFence(g, 0, floorY, worldWidth, fenceHeight);
+
+        // === STRING LIGHTS (above fence) ===
+        drawStringLights(g, 50, floorY - fenceHeight - p*15, worldWidth - 100);
+
+        // === FENCE GATE (to Earl's yard) ===
+        drawFenceGate(g, LAYOUT.fence_gate.x, floorY, fenceHeight);
+
+        // === HOUSE EXTERIOR (left side - fills full vertical height) ===
+        const houseWidth = p * 280;
+        drawHouseExterior(g, 0, floorY, houseWidth, floorY);
+
+        // Back door on house — derive top Y from hotspot center and height
+        const doorTopY = LAYOUT.back_door.y - LAYOUT.back_door.h / 2; // 0.30
+        drawBackDoor(g, LAYOUT.back_door.x, height * doorTopY, floorY);
+
+        // Window on house (convert center to top-left for drawing)
+        const windowW = LAYOUT.window.w;
+        const windowH = height * LAYOUT.window.h;
+        const windowX = LAYOUT.window.x - windowW / 2;
+        const windowY = height * LAYOUT.window.y - windowH / 2;
+        drawWindow(g, windowX, windowY, windowW, windowH);
+
+        // Clock on wall (only if not taken yet)
+        if (!TSH.State.getFlag('clock.has_clock')) {
+            drawClock(g, LAYOUT.clock.x, height * LAYOUT.clock.y);
+        }
+
+        // Deployed ladder (conditional - only when flag is set)
+        if (TSH.State.getFlag('clock.ladder_deployed')) {
+            const ladderHeight = height * LAYOUT.ladder.h;
+            const ladderBottomY = height * (LAYOUT.ladder.y + LAYOUT.ladder.h / 2);
+            drawLadder(g, LAYOUT.ladder.x, ladderBottomY, ladderHeight);
+        }
+
+        // === BULKHEAD (on house, below window) ===
+        drawBulkhead(g, LAYOUT.bulkhead.x, floorY);
+
+        // === YARD ITEMS (all sitting on grass, slightly in front of fence) ===
+        drawClothesline(g, LAYOUT.clothesline.x - p*35, LAYOUT.clothesline.x + p*35, height * 0.38, floorY);
+        drawDoghouse(g, LAYOUT.doghouse.x, floorY);
+        drawGarden(g, LAYOUT.garden.x - p*100, floorY, p*200);
+        drawGnome(g, LAYOUT.gnome.x, floorY);
+        drawTelescope(g, LAYOUT.telescope.x, floorY);
+        drawTrashCans(g, LAYOUT.trash.x, floorY);
+
+        // === SHED (perpendicular, mostly off-screen right) ===
+        drawShedPerpendicular(g, LAYOUT.shed.x, floorY, height);
+    }
+
+    // =========================================================================
+    // MAIN ROOM DRAWING FUNCTION (DEPRECATED - kept for reference)
     // =========================================================================
 
     function drawBackyardRoom(g, scene, worldWidth, height) {

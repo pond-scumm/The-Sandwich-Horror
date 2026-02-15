@@ -1,0 +1,35 @@
+=== start ===
+
+earl: Hey there!
+earl: You Hector's new assistant?
+
+- Yeah, I'm Nate. Nice to meet you!
+# id: met_earl
+nate: Yeah, I'm Nate. Nice to meet you!
+earl: Name's Earl. Welcome to the neighborhood!
+earl: You picked quite a mentor there. Things are always interesting next door.
+
+- What's that smell?
+# once
+nate: Something smells amazing! What are you cooking?
+earl: Just throwing some burgers on the grill. Nothing fancy.
+earl: The secret is in the seasoning!
+
+- Are those... tiki torches?
+# once
+nate: Are those tiki torches I see back there?
+earl: Sure are! I like to keep the ambiance nice, you know?
+earl: Good music, good food, good vibes.
+
+- Mind if I come over?
+# requires: asked:met_earl
+# set: clock.earl_invited
+nate: This party looks great! Mind if I come over?
+earl: Of course! The gate's always open for neighbors.
+earl: Come on through whenever you like!
+> END
+
+- I should get back to work.
+nate: I should get back to work. Good talking to you!
+earl: Anytime, neighbor! Gate's right there if you change your mind.
+> END
