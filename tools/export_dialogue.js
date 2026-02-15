@@ -426,6 +426,11 @@ function createItemCombinationsSheet(wb, items, combinations, existingLines) {
     headerRow.getCell(6).font = { bold: true, color: { argb: 'FF808080' } };
     headerRow.getCell(6).border = BORDER_THIN;
 
+    // Freeze top row
+    ws.views = [
+        { state: 'frozen', ySplit: 1 }
+    ];
+
     // Build all unique item pairs (alphabetical by name)
     const itemList = Object.values(items).sort((a, b) => a.name.localeCompare(b.name));
 
@@ -596,6 +601,11 @@ function createRoomSheet(wb, roomId, room, items, roomSource = '') {
         }
     }
 
+    // Freeze first row and first column
+    ws.views = [
+        { state: 'frozen', xSplit: 1, ySplit: 1 }
+    ];
+
     // Build itemInteractions lookup
     const itemInteractions = room.itemInteractions || {};
 
@@ -607,8 +617,35 @@ function createRoomSheet(wb, roomId, room, items, roomSource = '') {
     if (room.hotspots) {
         hotspots = room.hotspots;
     } else if (room.getHotspotData) {
-        // Call getHotspotData with a dummy height (800px is standard)
-        hotspots = room.getHotspotData(800);
+        // Call getHotspotData multiple times with different mock states to capture
+        // all conditional hotspots (e.g., ladder_deployed that only appears when flag is true)
+        // Use composite key (id + name) to avoid losing variants with different names
+        const hotspotsMap = new Map();
+
+        // State 1: All flags false, no items
+        globalThis.TSH.State.getFlag = () => false;
+        globalThis.TSH.State.hasItem = () => false;
+        let hotspots1 = room.getHotspotData(800);
+        hotspots1.forEach(h => hotspotsMap.set(`${h.id}_${h.name}`, h));
+
+        // State 2: All flags true, no items
+        globalThis.TSH.State.getFlag = () => true;
+        globalThis.TSH.State.hasItem = () => false;
+        let hotspots2 = room.getHotspotData(800);
+        hotspots2.forEach(h => hotspotsMap.set(`${h.id}_${h.name}`, h));
+
+        // State 3: All flags false, all items
+        globalThis.TSH.State.getFlag = () => false;
+        globalThis.TSH.State.hasItem = () => true;
+        let hotspots3 = room.getHotspotData(800);
+        hotspots3.forEach(h => hotspotsMap.set(`${h.id}_${h.name}`, h));
+
+        // Merged list (deduplicated by id+name)
+        hotspots = Array.from(hotspotsMap.values());
+
+        // Reset mock state to default
+        globalThis.TSH.State.getFlag = () => false;
+        globalThis.TSH.State.hasItem = () => false;
     }
 
     // Add hotspot rows
