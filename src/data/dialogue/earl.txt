@@ -4,6 +4,10 @@
 earl: Well hello there, neighbor!
 earl: Don't think I've seen you around before!
 
+# requires: asked:met_earl
+nate: Hey Earl.
+earl: Howdy Nate, how's it hanging?
+
 - Hi! My name is Nathaniel Barnswallow.
 # id: met_earl
 # once
@@ -13,14 +17,56 @@ earl: Howdy Nate! My name is Earl. Nice to meetcha.
 - What smells so good?
 # once
 nate: Something smells delicious. What's cooking?
-earl: Oh a couple of burgers. Ground the meat myself, best way to get smells like these.
+earl: Just a couple of burgers. Ground the meat myself, best way to get smells like these.
 
 - You're a bigfoot!
-# once
+# id:bigfoot
 nate: You're a bigfoot! A real life bigfoot!
 earl: Nothing gets past you eh? heh heh
 earl: Yeah I've been a bigfoot for about as long as I can remember.
 > bigfoot
+
+- How long have you lived here?
+# requires: asked:bigfoot
+# once
+# id:lived
+nate: So how long have you lived here?
+earl: Oh quite a while now. I do like to travel some, but I feel pretty well settled in these parts.
+earl: Sandwich is a nice town. And Hector is a good neighbor aside from the occasional small explosion.
+
+- Do you know Hector well?
+# requires: asked:lived
+# once
+nate: do you know Hector well?
+earl: I'd say so. Known him through a lot of ups and downs these last few years. He seems to be doin better.
+
+- I couldn't help but notice your ladder...
+# id:ladder
+# once
+nate: That's a mighty nice ladder you have over there.
+earl: Sure is. Top of the line extend-o-matic.
+
+- Can I borrow your ladder?
+# requires: asked:ladder
+# id: borrow
+# once
+nate: Do you think I could borrow your ladder?
+earl: Oh I can't loan out old stretch. 
+earl: Hector borrowed my grill claws three years ago and never returned them.
+earl: Sorry, but I've been burned too many times. Figuratively and literally.
+
+- What did Hector borrow?
+# requires: asked:borrow
+nate: Can you tell me what Hector borrowed that he never returned again?
+earl: My grill claws! 
+earl: A battle tested heirloom. 
+earl: Grandpa's grabbers.
+earl: A perfect pair of pinchers.
+
+- Would you trade for the ladder?
+# requires: asked:borrow
+nate: If I got Hector to return the grill claws would you let me borrow the ladder?
+earl: If you could get the old trusty rusty grill claws back to me I'll let you borrow anything you want!
 
 - Good talk! I gotta go.
 nate: Good talk! I gotta go.
@@ -30,50 +76,22 @@ earl: Stop by any time!
 === bigfoot ===
 
 - What's that like?
-# once
 nate: What's it like being a bigfoot? Do you have to hide in caves?
 earl: Naw nothing like that. Mostly I keep to myself in this cozy little sanctuary.
 earl: Sometimes Hector comes over and we play dominoes. Doesn't get much better than that.
 
 - Do you have a lot of relatives?
-# once
 nate: Are you one of a kind? Do you have a lot of relatives?
 earl: We're all one of a kind, but there are a lot of other bigfoots out there just like me.
 earl: All told, I'd say I have about 32 first cousins in this wood. We're close too!
 
 - Why can no one seem to get a good photo of you?
-# once
 nate: Why can no one seem to get a good photo of you?
 earl: I'm just not very photogenic, no need to rub it in.
 
 - This is blowing my mind, can we talk about something normal?
 nate: This is blowing my mind, can we talk about something normal?
 earl: Of course! I'm happy to chat about any old thing.
-> main
+> start
 
-=== main ===
-# default
-# requires: asked:met_earl
-
-# requires: asked:met_earl
-nate: Hey Earl.
-earl: Howdy Nate, how's it hanging?
-
-- How long have you lived here?
-nate: So how long have you lived here?
-earl: Oh quite a while now. I do like to travel some, but I feel pretty well settled in these parts.
-earl: Sandwich is a nice town. And Hector is a good neighbor aside from the occasional small explosion.
-
-- Do you know Hector well?
-nate: do you know Hector well?
-earl: I'd say so. Known him through a lot of ups and downs these last few years. He seems to be doin better.
-
-- I couldn't help but notice your ladder...
-nate: That's a mighty nice ladder you have over there.
-earl: Sure is. Top of the line extend-o-matic.
-
-- Good talk! I gotta go.
-nate: Good talk! I gotta go.
-earl: Stop by any time!
-> END
 
