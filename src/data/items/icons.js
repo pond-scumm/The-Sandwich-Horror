@@ -755,6 +755,76 @@
                     pixel(g, px, py - 1, METAL_LIGHT, baseX, baseY);
                 }
             }
+        },
+
+        // ── Clock ──────────────────────────────────────────────────────────
+        // Wall clock with brass frame and clock hands
+        clock: function(graphics, x, y, size) {
+            const g = graphics;
+            // Center the icon (14x14 pixels = 56x56 at p=4)
+            const baseX = x - 7 * p;
+            const baseY = y - 7 * p;
+
+            // Colors
+            const FRAME_DARK = 0x6a5530;
+            const FRAME_BRASS = 0x9a8540;
+            const FACE_CREAM = 0xd8d0b8;
+            const FACE_LIGHT = 0xe8e0c8;
+            const HAND_DARK = 0x1a1a1a;
+            const MARKER = 0x2a2a2a;
+
+            // Outer brass frame (14x14)
+            for (let py = 0; py < 14; py++) {
+                for (let px = 0; px < 14; px++) {
+                    // Round corners (approximately)
+                    if ((px <= 1 || px >= 12) && (py <= 1 || py >= 12)) continue;
+                    pixel(g, px, py, FRAME_DARK, baseX, baseY);
+                }
+            }
+
+            // Brass frame highlights
+            for (let py = 1; py < 13; py++) {
+                for (let px = 1; px < 13; px++) {
+                    if ((px <= 2 || px >= 11) && (py <= 2 || py >= 11)) continue;
+                    if (px === 1 || py === 1) {
+                        pixel(g, px, py, FRAME_BRASS, baseX, baseY);
+                    }
+                }
+            }
+
+            // Clock face (10x10 inner area)
+            for (let py = 2; py < 12; py++) {
+                for (let px = 2; px < 12; px++) {
+                    pixel(g, px, py, FACE_CREAM, baseX, baseY);
+                }
+            }
+
+            // Clock face inner detail (lighter center)
+            for (let py = 4; py < 10; py++) {
+                for (let px = 4; px < 10; px++) {
+                    pixel(g, px, py, FACE_LIGHT, baseX, baseY);
+                }
+            }
+
+            // Hour markers (12, 3, 6, 9 positions)
+            pixel(g, 7, 3, MARKER, baseX, baseY);   // 12 o'clock
+            pixel(g, 10, 7, MARKER, baseX, baseY);  // 3 o'clock
+            pixel(g, 7, 10, MARKER, baseX, baseY);  // 6 o'clock
+            pixel(g, 4, 7, MARKER, baseX, baseY);   // 9 o'clock
+
+            // Clock hands (showing 10:10 - classic clock display time)
+            // Hour hand (short, pointing to 10)
+            pixel(g, 7, 7, HAND_DARK, baseX, baseY);  // Center
+            pixel(g, 6, 7, HAND_DARK, baseX, baseY);
+            pixel(g, 5, 6, HAND_DARK, baseX, baseY);
+
+            // Minute hand (long, pointing to 2)
+            pixel(g, 7, 7, HAND_DARK, baseX, baseY);  // Center
+            pixel(g, 8, 6, HAND_DARK, baseX, baseY);
+            pixel(g, 9, 5, HAND_DARK, baseX, baseY);
+
+            // Center pin
+            pixel(g, 7, 7, HAND_DARK, baseX, baseY);
         }
 
     };

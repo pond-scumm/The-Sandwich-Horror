@@ -157,18 +157,6 @@
                 }
             },
             {
-                id: 'clock_wall',
-                ...LAYOUT.clock,
-                interactX: LAYOUT.clock.x, interactY: 0.82,
-                name: 'Wall Clock',
-                verbs: { action: 'Reach for', look: 'Examine' },
-                responses: {
-                    look: "An old clock mounted WAY up on the exterior wall. Why would anyone put a clock there? It's like 15 feet up!",
-                    action: "I can't reach that. I'd need... I don't know, a ladder? Spring-loaded shoes? A really tall friend?"
-                }
-                // TODO: State-driven - after clock falls, this hotspot changes position
-            },
-            {
                 id: 'back_door',
                 ...LAYOUT.back_door,
                 interactX: LAYOUT.back_door.x, interactY: 0.82,
@@ -344,6 +332,21 @@
 
             // === CONDITIONAL HOTSPOTS (based on game state) ===
 
+            // Clock on wall (only if not taken yet)
+            if (!TSH.State.getFlag('clock.has_clock')) {
+                hotspots.push({
+                    id: 'clock_wall',
+                    ...LAYOUT.clock,
+                    interactX: LAYOUT.clock.x, interactY: 0.82,
+                    name: 'Wall Clock',
+                    verbs: { action: 'Reach for', look: 'Examine' },
+                    responses: {
+                        look: "An old clock mounted WAY up on the exterior wall. Why would anyone put a clock there? It's like 15 feet up!",
+                        action: "I can't reach that. I'd need... I don't know, a ladder? Spring-loaded shoes? A really tall friend?"
+                    }
+                });
+            }
+
             // Deployed ladder (appears after using ladder on clock)
             if (TSH.State.getFlag('clock.ladder_deployed')) {
                 hotspots.push({
@@ -372,7 +375,7 @@
         // RELEVANT FLAGS (triggers automatic hotspot refresh)
         // =====================================================================
 
-        relevantFlags: ['clock.ladder_deployed'],
+        relevantFlags: ['clock.ladder_deployed', 'clock.has_clock'],
 
         // =====================================================================
         // ITEM INTERACTIONS
@@ -387,6 +390,14 @@
                 },
                 moon_shoes: "The shoes give me some bounce, but I can't reach it from down here.",
                 ladder_shoes: "I climb the ladder, put on the moon shoes, and JUMP! Whoa— *CRASH* I hit the ceiling! But hey, the clock fell off the wall. Newton would be furious."
+            },
+            ladder_deployed: {
+                moon_shoes: {
+                    dialogue: "I climb the ladder, put on the moon shoes, and JUMP! *CRASH* I grab the clock as I bounce off the wall. Success!",
+                    consumeItem: true,
+                    giveItem: "clock",
+                    setFlag: "clock.has_clock"
+                }
             },
             fence_earl: {
                 default: "I don't think waving my {item} at the fence will help."
@@ -1139,8 +1150,10 @@
         const windowY = height * LAYOUT.window.y - windowH / 2;
         drawWindow(g, windowX, windowY, windowW, windowH);
 
-        // Clock HIGH on wall (just above window)
-        drawClock(g, LAYOUT.clock.x, height * LAYOUT.clock.y);
+        // Clock on wall (only if not taken yet)
+        if (!TSH.State.getFlag('clock.has_clock')) {
+            drawClock(g, LAYOUT.clock.x, height * LAYOUT.clock.y);
+        }
 
         // Deployed ladder (conditional - only when flag is set)
         if (TSH.State.getFlag('clock.ladder_deployed')) {
