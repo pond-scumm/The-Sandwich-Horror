@@ -30,15 +30,16 @@ These sections are foundational — every task depends on them:
 ### Read When Relevant
 | Task | Also Read |
 |------|-----------|
-| Building or modifying a room | §3.2 NPC Drawing, §3.3 Transition Cleanup, §8 Audio, §12 Tech Specs. Also read ROOM_DESIGN_BIBLE.md |
+| Building or modifying a room | §3.3 NPC Drawing, §3.4 Transition Cleanup, §8 Audio, §12 Tech Specs. Also read ROOM_DESIGN_BIBLE.md |
+| Building conditional hotspots/pickups | §3.2 Decision Tree, §3.1 State-Driven Hotspots |
 | Writing dialogue or hotspot responses | §5 Item Combinations (for combination dialogue), §16 Conversation Mode, §23 Dialogue Editing System, §24 Plain Text Dialogue System. Also read CREATIVE_BIBLE.md for Nate's voice |
 | Editing the dialogue spreadsheet | §23 Dialogue Editing System |
 | Working on audio | §8 Audio System (full section) |
-| Implementing puzzle logic | §4 Async/Await, §5 Item Combinations, §9 Entity States |
+| Implementing puzzle logic | §3.2 Decision Tree, §4 Async/Await, §5 Item Combinations, §9 Entity States |
 | Working on inventory or items | §5 Item Combinations, §6 Item Icons, §15 Interaction Systems |
 | Mobile or UX work | §15 Interaction Systems, §17 Mobile Optimization, §18 Settings Menu, §19 Hotspot Highlighting |
 | Modifying UI elements | §2 UIScene subsection, §18 Settings Menu, §19 Hotspot Highlighting |
-| Scene transitions | §3.3 Transition Cleanup |
+| Scene transitions | §3.4 Transition Cleanup |
 | Debugging or testing | §20 Debug Overlay, §21 Testing Checklist |
 | Save/Load work | §7 Save/Load |
 
@@ -445,6 +446,8 @@ itemInteractions: {
 
 **Action Functions:** For complex multi-step sequences, define functions in `src/data/actions/*.js`:
 
+> **⚠️ Before Creating Custom Actions:** Check if state-driven hotspots (`getHotspotData()`) can handle the behavior first. Custom action functions should only be used for sequences requiring multiple steps, delays, animations, or system coordination. Conditional pickup behavior (e.g., "item available after flag is set") should use state-driven hotspots, not custom actions. See §3.2 for the decision tree.
+
 ```javascript
 TSH.Actions.get_clock = function(scene, hotspot, item) {
     scene.showDialog("I climb up and grab the clock!");
@@ -569,7 +572,109 @@ All responses should follow Nate's conversational voice. See CREATIVE_BIBLE.md f
 
 ---
 
-## 3.2 NPC Sprites
+## 3.2 When to Use Each Pattern (Decision Tree)
+
+Before implementing hotspot behavior, choose the right approach based on what needs to change:
+
+### Use State-Driven Hotspots (`getHotspotData()`) When:
+
+✅ **Hotspot needs different properties based on game state**
+- Pickup items should only be available after certain conditions
+- Different verbs/interactions available in different states
+- Hotspot name, position, or available actions change
+
+✅ **Hotspot should appear/disappear based on flags**
+- Spring only visible when electrical panel is open
+- Ladder only available after returning borrowed item
+- TV hotspot removed after player takes it
+
+✅ **Same hotspot ID, different behavior**
+- "Teleporter" becomes "Cloning Device" after learning truth
+- Clock on wall vs. clock on floor after falling
+- Door locked vs. unlocked based on keycard
+
+**Example:**
+```javascript
+getHotspotData(height) {
+    const hotspots = [ /* static hotspots */ ];
+
+    // Conditional pickup - only available after flag is set
+    if (TSH.State.getFlag('clock.returned_borrowed_item')) {
+        hotspots.push({
+            id: 'ladder',
+            giveItem: 'ladder',
+            pickupFlag: 'clock.has_ladder',
+            removeAfterPickup: true
+        });
+    } else {
+        hotspots.push({
+            id: 'ladder',
+            responses: { action: "Earl won't let me borrow it yet." }
+        });
+    }
+
+    return hotspots;
+}
+```
+
+### Use State-Based Dialogue (`@state` annotations) When:
+
+✅ **Only dialogue text changes, not the hotspot behavior**
+- Same hotspot, same action, different response text
+- Multiple dialogue variants based on inventory or flags
+- "I'll take one" vs. "One is enough" (before/after taking scalpel)
+
+**Example:**
+```javascript
+// @state knife_block: default, has:scalpel
+{
+    id: 'knife_block',
+    responses: {
+        action: "I'll just take one."  // Becomes variant array after import
+    }
+}
+```
+
+### Use Custom Action Functions When:
+
+✅ **Multi-step sequences with delays/animations**
+- Character walks, speaks, plays animation, sets flag
+- Cutscenes that require temporal coordination
+- Async/await sequences (when system supports it)
+
+✅ **Complex logic that can't be expressed declaratively**
+- Calculations or conditional branching mid-sequence
+- Dynamic dialogue based on multiple state checks
+- Logic that requires reading multiple flags/items
+
+✅ **Need to coordinate multiple systems**
+- NPC movement + dialogue + audio + scene changes
+- Physics interactions or tween sequences
+- Complex puzzle mechanics spanning multiple hotspots
+
+**Example:**
+```javascript
+TSH.Actions.complex_sequence = async function(scene, hotspot, item) {
+    await scene.walkTo(300);
+    await scene.showDialog("Let me try this...");
+    await scene.playAnimation('use_item');
+    TSH.State.setFlag('puzzle.sequence_triggered', true);
+    scene.removeHotspot(hotspot.id);
+};
+```
+
+### ❌ DO NOT Use Custom Action Functions When:
+
+- State-driven hotspots can handle it (conditional properties)
+- You're just checking a flag to decide pickup behavior
+- The behavior can be expressed as room data
+- Only dialogue changes, not the action itself
+
+**Rule of Thumb:** If you can describe the behavior as "if flag X, hotspot has properties Y, else properties Z" → use `getHotspotData()`, not custom actions.
+
+---
+
+## 3.3 NPC Sprites
 
 All NPCs use custom sprite artwork loaded from PNG files.
 
@@ -607,7 +712,7 @@ NPCs defined in the `npcs` array are automatically interactive. For additional h
 
 ---
 
-## 3.2A Player Direction and Sprite Flipping
+## 3.3A Player Direction and Sprite Flipping
 
 **Critical:** Player direction must be controlled using `playerSprite.setFlipX()` consistently across both spawn and movement systems.
 
@@ -645,7 +750,7 @@ if (targetX < this.player.x) {
 
 ---
 
-## 3.3 Scene Transition Cleanup (Critical)
+## 3.4 Scene Transition Cleanup (Critical)
 
 **Problem:** When using `scene.start()` to transition between rooms, Phaser reuses the same scene instance. Interactive objects (hotspot zones, exit zones) and pending callbacks from the previous room can persist, causing:
 - Old hotspots remaining clickable in the new room
