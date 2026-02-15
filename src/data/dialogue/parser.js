@@ -50,29 +50,20 @@ TSH.DialogueParser = {
         let i = 0;
 
         // Parse node-level annotations at start of node
+        // Only handle # id: — all other annotations (# requires:, etc.) are intro-level
         while (i < lines.length && lines[i].startsWith('#')) {
             const line = lines[i];
 
-            if (line.startsWith('# npc_state:')) {
-                const stateMatch = line.match(/^# npc_state:\s*(\w+)$/);
-                if (stateMatch) {
-                    node.npcState = stateMatch[1];
-                }
-            } else if (line === '# default') {
-                node.isDefault = true;
-            } else if (line.startsWith('# id:')) {
+            if (line.startsWith('# id:')) {
                 const label = line.substring('# id:'.length).trim();
                 if (label) {
                     node.id = label;
                 }
-            } else if (line.startsWith('# requires:')) {
-                const requiresText = line.substring('# requires:'.length).trim();
-                if (requiresText) {
-                    node.condition = this._parseCondition(requiresText);
-                }
+                i++;
+            } else {
+                // Non-node-level annotation (intro-level) - break so intro parser handles it
+                break;
             }
-
-            i++;
         }
 
         // Parse intro blocks (conditional groups before first option)
@@ -89,13 +80,16 @@ TSH.DialogueParser = {
             if (line.startsWith('# requires:')) {
                 // Save previous block if it has lines
                 if (currentBlock.lines.length > 0) {
+                    console.log('[DialogueParser] Saving previous intro block with', currentBlock.lines.length, 'lines, condition:', !!currentBlock.condition);
                     introBlocks.push(currentBlock);
                 }
 
                 // Start new block with condition
                 const requiresText = line.substring('# requires:'.length).trim();
+                const conditionFn = this._parseCondition(requiresText);
+                console.log('[DialogueParser] Creating intro block for:', requiresText, 'condition fn:', !!conditionFn);
                 currentBlock = {
-                    condition: this._parseCondition(requiresText),
+                    condition: conditionFn,
                     lines: []
                 };
                 i++;
@@ -125,11 +119,16 @@ TSH.DialogueParser = {
 
         // Save final block if it has lines
         if (currentBlock.lines.length > 0) {
+            console.log('[DialogueParser] Saving final intro block with', currentBlock.lines.length, 'lines, condition:', !!currentBlock.condition);
             introBlocks.push(currentBlock);
         }
 
         // Store intro blocks or set to null for backward compatibility
         if (introBlocks.length > 0) {
+            console.log('[DialogueParser] Total intro blocks created:', introBlocks.length);
+            introBlocks.forEach((block, idx) => {
+                console.log(`[DialogueParser] Block ${idx}: hasCondition=${!!block.condition}, lines=${block.lines.length}`);
+            });
             node.intros = introBlocks;
         } else {
             node.intros = null;

@@ -2045,7 +2045,7 @@
                 this.settingsReturnBtnHovered = false;
 
                 // Version number above Return button
-                const versionText = this.add.text(0, btnY - 45, 'v0.1.20', {
+                const versionText = this.add.text(0, btnY - 45, 'v0.1.21', {
                     fontFamily: '"Press Start 2P", cursive',
                     fontSize: '14px',
                     color: '#ffffff'
@@ -3286,13 +3286,20 @@
 
                 // If node has conditional intros array, select first matching one
                 if (node.intros && node.intros.length > 0) {
+                    console.log('[Conversation] Selecting intro from', node.intros.length, 'blocks');
+                    console.log('[Conversation] Current askedLabels:', TSH.State._state.askedLabels);
                     for (const introBlock of node.intros) {
                         // No condition = default (always matches)
+                        const hasCondition = !!introBlock.condition;
+                        const conditionResult = hasCondition ? introBlock.condition(this) : true;
+                        console.log('[Conversation] Intro block - hasCondition:', hasCondition, 'result:', conditionResult);
                         if (!introBlock.condition || introBlock.condition(this)) {
+                            console.log('[Conversation] Selected intro block');
                             return introBlock.lines;
                         }
                     }
                     // No intro matched conditions
+                    console.log('[Conversation] No intro matched conditions');
                     return null;
                 }
 
@@ -3301,45 +3308,16 @@
             }
 
             _selectStartingNode(dialogueTree, npcId) {
-                const npcState = npcId ? TSH.State.getNPCState(npcId) : null;
-                const entries = Object.entries(dialogueTree);
+                // Use first node in file (insertion order)
+                const firstNode = Object.keys(dialogueTree)[0];
 
-                // Filter by npc_state if applicable
-                const stateMatches = npcState
-                    ? entries.filter(([_, node]) => node.npcState === npcState)
-                    : entries;
-
-                // If NPC has a state but no nodes match, fall back to all nodes (forgiving behavior)
-                const nodesToCheck = (stateMatches.length > 0) ? stateMatches : entries;
-
-                if (nodesToCheck.length > 0) {
-                    // Check # default nodes first (in file order)
-                    for (const [key, node] of nodesToCheck) {
-                        if (node.isDefault) {
-                            // Evaluate requires condition if present
-                            if (!node.condition || node.condition(this)) {
-                                console.log('[Conversation] Selected default node:', key);
-                                return key;
-                            }
-                        }
-                    }
-                    // No default passed — use first non-default node for this state
-                    for (const [key, node] of nodesToCheck) {
-                        if (!node.isDefault) {
-                            console.log('[Conversation] Selected starting node:', key, npcState ? 'for state: ' + npcState : '');
-                            return key;
-                        }
-                    }
-                    // All nodes are default and none passed — use first one anyway
-                    console.log('[Conversation] Falling back to first node:', nodesToCheck[0][0]);
-                    return nodesToCheck[0][0];
+                if (!firstNode) {
+                    console.error('[Conversation] No nodes found in dialogue tree');
+                    return 'start'; // Fallback
                 }
 
-                // No nodes found — try "start"
-                if (dialogueTree['start']) return 'start';
-
-                // Last resort — first node in file
-                return entries[0]?.[0] || 'start';
+                console.log('[Conversation] Selected starting node:', firstNode);
+                return firstNode;
             }
 
             exitConversation() {
@@ -3557,6 +3535,15 @@
                     this._processDialogueActions(option.actions, currentNode, option);
                 }
 
+                // Mark asked label independently (works even without actions)
+                if (option.id) {
+                    console.log('[Conversation] Marking asked label:', option.id);
+                    TSH.State.markAskedLabel(option.id);
+                    console.log('[Conversation] askedLabels after marking:', TSH.State._state.askedLabels);
+                } else {
+                    console.log('[Conversation] Option has no id property:', option);
+                }
+
                 // BACKWARDS COMPATIBILITY: Keep setFlag support
                 if (option.setFlag) {
                     this.setFlag(option.setFlag, true);
@@ -3628,11 +3615,6 @@
                 if (actions.once && this.conversationNPCId) {
                     const optionIndex = this.conversationData[currentNode].options.indexOf(option);
                     TSH.State.markOnceChosen(this.conversationNPCId, currentNode, optionIndex);
-                }
-
-                // Mark option id as visited when chosen
-                if (option.id) {
-                    TSH.State.markAskedLabel(option.id);
                 }
             }
 
