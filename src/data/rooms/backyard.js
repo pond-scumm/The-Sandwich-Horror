@@ -21,9 +21,10 @@
     const LAYOUT = {
         // House elements (positioned relative to house structure)
         back_door:   { x: 120, y: 0.51, w: 160, h: 0.42 },     // Door spans 0.30 to 0.72
-        window:      { x: 340, y: 0.335, w: 120, h: 0.12 },    // Visual center of window
-        clock:       { x: 340, y: 0.18, w: 80, h: 0.12 },      // Just above window
-        bulkhead:    { x: 380, y: 0.65, w: 220, h: 0.16 },     // On house, shifted left
+        window:      { x: 430, y: 0.370, w: 123, h: 0.139 },   // Visual center of window
+        clock:       { x: 340, y: 0.06, w: 80, h: 0.12 },      // High on wall near roof
+        bulkhead:    { x: 446, y: 0.65, w: 220, h: 0.16 },     // Flush with right side of house
+        ladder:      { x: 270, y: 0.575, w: 40, h: 0.30 },     // Deployed ladder below clock
 
         // Yard items (hotspot y = visual center of each object)
         clothesline: { x: 770, y: 0.55, w: 180, h: 0.34 },     // Center of coat/line area
@@ -138,10 +139,11 @@
         npcs: [],
 
         // =====================================================================
-        // HOTSPOTS
+        // HOTSPOTS (State-Driven)
         // =====================================================================
 
-        hotspots: [
+        getHotspotData(height) {
+            const hotspots = [
             // === HOUSE EXTERIOR (left side - fills full height) ===
             {
                 id: 'window_house',
@@ -338,7 +340,27 @@
                     action: "Hi moon! ...The moon did not wave back."
                 }
             }
-        ],
+            ];
+
+            // === CONDITIONAL HOTSPOTS (based on game state) ===
+
+            // Deployed ladder (appears after using ladder on clock)
+            if (TSH.State.getFlag('clock.ladder_deployed')) {
+                hotspots.push({
+                    id: 'ladder_deployed',
+                    ...LAYOUT.ladder,
+                    interactX: LAYOUT.ladder.x, interactY: 0.82,
+                    name: 'Ladder',
+                    verbs: { action: 'Take', look: 'Examine' },
+                    responses: {
+                        look: "The ladder I placed here. Still not tall enough to reach the clock.",
+                        action: "I should leave it here for now. Might need it for something."
+                    }
+                });
+            }
+
+            return hotspots;
+        },
 
         // =====================================================================
         // PICKUP OVERLAYS
@@ -347,12 +369,22 @@
         pickupOverlays: [],
 
         // =====================================================================
+        // RELEVANT FLAGS (triggers automatic hotspot refresh)
+        // =====================================================================
+
+        relevantFlags: ['clock.ladder_deployed'],
+
+        // =====================================================================
         // ITEM INTERACTIONS
         // =====================================================================
 
         itemInteractions: {
             clock_wall: {
-                ladder: "The ladder helps, but it's not tall enough to reach the clock.",
+                ladder: {
+                    dialogue: "The ladder helps, but it's not tall enough to reach the clock.",
+                    consumeItem: true,
+                    setFlag: "clock.ladder_deployed"
+                },
                 moon_shoes: "The shoes give me some bounce, but I can't reach it from down here.",
                 ladder_shoes: "I climb the ladder, put on the moon shoes, and JUMP! Whoa— *CRASH* I hit the ceiling! But hey, the clock fell off the wall. Newton would be furious."
             },
@@ -1006,6 +1038,44 @@
         g.fillRect(x + width - p*42, floorY - p*32, p*16, p*7);
     }
 
+    function drawLadder(g, x, bottomY, height) {
+        const railWidth = p * 5;      // Thicker rails (was p * 3)
+        const rungWidth = p * 20;     // Wider overall (was p * 12)
+        const rungHeight = p * 3;     // Thicker rungs (was p * 2)
+        const rungSpacing = p * 14;
+
+        // Silver/metal colors
+        const SILVER_DARK = 0x6a6a6a;
+        const SILVER_MID = 0x9a9a9a;
+        const SILVER_LIGHT = 0xc0c0c0;
+
+        // Left rail
+        g.fillStyle(SILVER_MID);
+        g.fillRect(x - rungWidth/2, bottomY - height, railWidth, height);
+
+        // Right rail
+        g.fillRect(x + rungWidth/2 - railWidth, bottomY - height, railWidth, height);
+
+        // Rail highlights
+        g.fillStyle(SILVER_LIGHT);
+        g.fillRect(x - rungWidth/2, bottomY - height, p, height);
+        g.fillRect(x + rungWidth/2 - railWidth, bottomY - height, p, height);
+
+        // Rail shadows
+        g.fillStyle(SILVER_DARK);
+        g.fillRect(x - rungWidth/2 + railWidth - p, bottomY - height, p, height);
+        g.fillRect(x + rungWidth/2 - p, bottomY - height, p, height);
+
+        // Rungs
+        g.fillStyle(SILVER_DARK);
+        for (let ry = bottomY - rungSpacing; ry > bottomY - height; ry -= rungSpacing) {
+            g.fillRect(x - rungWidth/2, ry, rungWidth, rungHeight);
+            g.fillStyle(SILVER_LIGHT);
+            g.fillRect(x - rungWidth/2 + p, ry + p/2, rungWidth - p*2, p);
+            g.fillStyle(SILVER_DARK);
+        }
+    }
+
     // =========================================================================
     // MAIN ROOM DRAWING FUNCTION
     // =========================================================================
@@ -1062,11 +1132,22 @@
         const doorTopY = LAYOUT.back_door.y - LAYOUT.back_door.h / 2; // 0.30
         drawBackDoor(g, LAYOUT.back_door.x, height * doorTopY, floorY);
 
-        // Window on house
-        drawWindow(g, LAYOUT.window.x, height * LAYOUT.window.y, p*50, p*40);
+        // Window on house (convert center to top-left for drawing)
+        const windowW = LAYOUT.window.w;
+        const windowH = height * LAYOUT.window.h;
+        const windowX = LAYOUT.window.x - windowW / 2;
+        const windowY = height * LAYOUT.window.y - windowH / 2;
+        drawWindow(g, windowX, windowY, windowW, windowH);
 
         // Clock HIGH on wall (just above window)
         drawClock(g, LAYOUT.clock.x, height * LAYOUT.clock.y);
+
+        // Deployed ladder (conditional - only when flag is set)
+        if (TSH.State.getFlag('clock.ladder_deployed')) {
+            const ladderHeight = height * LAYOUT.ladder.h;
+            const ladderBottomY = height * (LAYOUT.ladder.y + LAYOUT.ladder.h / 2);
+            drawLadder(g, LAYOUT.ladder.x, ladderBottomY, ladderHeight);
+        }
 
         // === BULKHEAD (on house, below window) ===
         drawBulkhead(g, LAYOUT.bulkhead.x, floorY);
