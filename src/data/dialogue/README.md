@@ -6,10 +6,7 @@ This directory contains NPC dialogue files in plain text format. Each file repre
 
 ```
 === node_name ===
-# npc_state: state_name
 # id: label
-# default
-# requires: condition1, condition2
 
 # requires: asked:greeted
 nate: Hey there.
@@ -38,11 +35,8 @@ nate: Different line
 ## Syntax Reference
 
 ### Node Definition
-- `=== node_name ===` - Defines a conversation node
-- `# npc_state: state_name` - (Optional) Marks this node as the starting node when NPC is in specified state
+- `=== node_name ===` - Defines a conversation node. The first node in the file is used as the starting node (insertion order).
 - `# id: label` - (Optional) Tags this node with a persistent label. The label is marked as visited when the player enters this node. Can be checked with `asked:label` in conditions.
-- `# default` - (Optional) Marks this node as a candidate starting node. The first `# default` node whose `# requires:` condition passes is used as the starting node. If no default passes, the first non-default node is used instead.
-- `# requires: conditions` - (Optional, node-level) Conditions that must pass for this node to be selected as a `# default` starting node.
 
 ### Intro Sequences
 Dialogue lines using `speaker: text` format before the first option (`-`) are intro sequences. They play automatically when the node loads, before showing the player any choices.
@@ -170,29 +164,9 @@ nate: See you later.
 > END
 ```
 
-### State-Based Starting Nodes
+### Conditional Intros
 ```
 === start ===
-# npc_state: behind_fence
-
-- Talk over fence
-nate: Hey Earl!
-earl: Can't talk long, got work to do.
-> END
-
-=== after_fence_down ===
-# npc_state: at_barn
-
-- Approach Earl
-nate: Got a minute now?
-earl: Sure thing, come on over!
-> main_conversation
-```
-
-### Default Nodes with Conditional Intros
-```
-=== start ===
-# default
 
 # requires: asked:met_earl
 nate: Hey Earl.
@@ -213,6 +187,8 @@ nate: Good talk! I gotta go.
 earl: Stop by any time!
 > END
 ```
+
+Intro sequences can change based on game state using `# requires:` conditions. Multiple intro blocks can exist — the first matching block plays before showing options.
 
 On first visit, the `!asked:met_earl` intro block matches → Earl's formal greeting plays. When the player chooses the first option, `met_earl` gets marked. On subsequent visits, the `asked:met_earl` intro block matches → casual greeting plays instead. Same options both times, just different intro.
 

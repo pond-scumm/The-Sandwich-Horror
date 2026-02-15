@@ -1687,7 +1687,7 @@ this.enterConversation(npcData, dialogue);
 |---------|-------------|---------|
 | Multi-line NPC responses | NPC speaks multiple consecutive lines | `earl: First line\nearl: Second line` |
 | Once-choices | Options disappear after selection | `# once` annotation |
-| NPC state nodes | Starting node changes based on NPC state | `# npc_state: behind_fence` |
+| Conditional intros | Intro sequences change based on game state | `# requires: asked:met_earl` |
 | Item actions | Add/remove items on dialogue choice | `# add: key`, `# remove: ladder` |
 | Conditions | Show options based on flags/items | `# requires: story.found_hector, has:ladder` |
 
@@ -1699,7 +1699,7 @@ this.enterConversation(npcData, dialogue);
 
 **Once-choice tracking** — Persists in GameState under `onceChoices` object. Survives save/load cycles. Tracks by `npcId:nodeKey:optionIndex`.
 
-**Starting node selection** — Automatic based on NPC state. When entering conversation, checks for nodes marked with `# npc_state: state_name` matching the NPC's current state. Falls back to `start` node if no match.
+**Starting node selection** — Uses the first node in the dialogue file (insertion order). The calling code is responsible for loading the appropriate dialogue file based on NPC state if needed (e.g., different files for different NPC states).
 
 ### Backwards Compatibility
 
