@@ -716,6 +716,45 @@
         // Alias for spring_2 (same visual)
         spring_2: function(graphics, x, y, size) {
             TSH.ItemIcons.spring_1(graphics, x, y, size);
+        },
+
+        // ── Ladder ─────────────────────────────────────────────────────────
+        // Aluminum ladder with rungs
+        ladder: function(graphics, x, y, size) {
+            const g = graphics;
+            // Center the icon (roughly 7x16 pixels - tall and narrow)
+            const baseX = x - 3.5 * p;
+            const baseY = y - 8 * p;
+
+            // Colors
+            const METAL_LIGHT = 0xcccccc;
+            const METAL_MID = 0xaaaaaa;
+            const METAL_DARK = 0x888888;
+
+            // === LEFT RAIL (vertical) ===
+            for (let py = 0; py < 16; py++) {
+                pixel(g, 0, py, METAL_DARK, baseX, baseY);
+                pixel(g, 1, py, METAL_MID, baseX, baseY);
+            }
+
+            // === RIGHT RAIL (vertical) ===
+            for (let py = 0; py < 16; py++) {
+                pixel(g, 5, py, METAL_MID, baseX, baseY);
+                pixel(g, 6, py, METAL_LIGHT, baseX, baseY);
+            }
+
+            // === RUNGS (horizontal) ===
+            const rungPositions = [2, 5, 8, 11, 14];
+            for (const py of rungPositions) {
+                // Rung spans between rails
+                for (let px = 2; px <= 4; px++) {
+                    pixel(g, px, py, METAL_MID, baseX, baseY);
+                }
+                // Highlight on top of rung
+                for (let px = 2; px <= 4; px++) {
+                    pixel(g, px, py - 1, METAL_LIGHT, baseX, baseY);
+                }
+            }
         }
 
     };
