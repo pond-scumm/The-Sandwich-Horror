@@ -159,167 +159,191 @@
         // HOTSPOTS
         // =====================================================================
 
-        hotspots: [
-            // === BACKGROUND (lowest priority — must be first in array) ===
-            {
-                id: 'woods_background',
-                ...LAYOUT.woods,
-                interactX: LAYOUT.woods.x, interactY: 0.82,
-                name: 'Dark Woods',
-                verbs: { action: 'Walk into', look: 'Peer into' },
-                responses: {
-                    look: "Dense, dark woods surround this cozy clearing. Pretty sure I'd get lost immediately.",
-                    action: "No thanks. I like it here where there's light and burgers."
-                }
-            },
-
-            // === AIRSTREAM (large fallback — created first, sits underneath) ===
-            {
-                id: 'airstream_home',
-                ...LAYOUT.airstream,
-                interactX: LAYOUT.airstream.x, interactY: 0.82,
-                name: "Earl's Airstream",
-                verbs: { action: 'Knock', look: 'Examine' },
-                responses: {
-                    look: "This thing is a classic!",
-                    action: "I'd love to hit the road in this thing."
-                }
-            },
-
-            // === SPECIFIC HOTSPOTS (created after backgrounds — sit on top) ===
-            {
-                id: 'tree_left',
-                ...LAYOUT.tree_left,
-                interactX: LAYOUT.tree_left.x, interactY: 0.82,
-                name: 'Large Tree',
-                verbs: { action: 'Climb', look: 'Examine' },
-                responses: {
-                    look: "A big old oak tree. Probably provides nice shade during the day.",
-                    action: "Tree climbing was never my strong suit."
-                }
-            },
-            {
-                id: 'tree_right',
-                ...LAYOUT.tree_right,
-                interactX: LAYOUT.tree_right.x, interactY: 0.82,
-                name: 'Large Tree',
-                verbs: { action: 'Climb', look: 'Examine' },
-                responses: {
-                    look: "Another big tree. This place is framed beautifully.",
-                    action: "Still a no on the tree climbing."
-                }
-            },
-            {
-                id: 'string_lights',
-                ...LAYOUT.string_lights,
-                interactX: LAYOUT.string_lights.x, interactY: 0.82,
-                name: 'String Lights',
-                verbs: { action: 'Admire', look: 'Look at' },
-                responses: {
-                    look: "These lights really create a vibe!",
-                    action: "I'm not going to steal a man's vibe. "
-                }
-            },
-            {
-                id: 'airstream_door',
-                ...LAYOUT.airstream_door,
-                interactX: LAYOUT.airstream_door.x, interactY: 0.82,
-                name: 'Airstream Door',
-                verbs: { action: 'Knock', look: 'Examine' },
-                responses: {
-                    look: "It's the door to the Airstream.",
-                    action: "I'm not going to barge in. "
-                }
-            },
-            {
-                id: 'airstream_window',
-                ...LAYOUT.airstream_window,
-                interactX: LAYOUT.airstream_window.x, interactY: 0.82,
-                name: 'Airstream Window',
-                verbs: { action: 'Peek', look: 'Look at' },
-                responses: {
-                    look: "Looks cozy in there. ",
-                    action: "If I want to go inside, i'll just use the door."
-                }
-            },
-
-            // === LAWN ITEMS ===
-            {
-                id: 'flamingo_pink',
-                ...LAYOUT.flamingo,
-                interactX: LAYOUT.flamingo.x, interactY: 0.82,
-                name: 'Pink Flamingo',
-                verbs: { action: 'Pat', look: 'Examine' },
-                responses: {
-                    look: "A bright pink plastic lawn flamingo. Tacky, beloved, and absolutely perfect.",
-                    action: "Hey there, flamingo!"
-                }
-            },
-
-            // === GRILL AREA ===
-            {
-                id: 'cooler_green',
-                ...LAYOUT.cooler,
-                interactX: LAYOUT.cooler.x, interactY: 0.82,
-                name: 'Cooler',
-                verbs: { action: 'Open', look: 'Examine' },
-                responses: {
-                    look: "It's a green cooler full of drinks.",
-                    action: "Hey, a root beer!"
-                }
-            },
-            {
-                id: 'radio_table',
-                ...LAYOUT.radio,
-                interactX: LAYOUT.radio.x, interactY: 0.82,
-                name: 'Old Radio',
-                verbs: { action: 'Listen', look: 'Examine' },
-                responses: {
-                    look: "It's a old tube radio with great reception.",
-                    action: ""
+        getHotspotData(height) {
+            const hotspots = [
+                // === BACKGROUND (lowest priority — must be first in array) ===
+                {
+                    id: 'woods_background',
+                    ...LAYOUT.woods,
+                    interactX: LAYOUT.woods.x, interactY: 0.82,
+                    name: 'Dark Woods',
+                    verbs: { action: 'Walk into', look: 'Peer into' },
+                    responses: {
+                        look: "Dense, dark woods surround this cozy clearing. Pretty sure I'd get lost immediately.",
+                        action: "No thanks. I like it here where there's light and burgers."
+                    }
                 },
-                actionTrigger: { type: 'action', action: 'cycle_radio_station' }
-            },
-            {
-                id: 'grill_charcoal',
-                ...LAYOUT.grill,
-                interactX: LAYOUT.grill.x, interactY: 0.82,
-                name: 'Charcoal Grill',
-                verbs: { action: 'Check', look: 'Examine' },
-                responses: {
-                    look: "That smells AMAZING. Burgers are definitely happening.",
-                    action: "YEEEOUCH. Why'd I do that?"
-                }
-            },
-            {
-                id: 'ladder_earl',
-                ...LAYOUT.ladder,
-                interactX: LAYOUT.ladder.x, interactY: 0.82,
-                name: "Earl's Ladder",
-                verbs: { action: 'Take', look: 'Examine' },
-                responses: {
-                    look: "A sturdy aluminum ladder. That would be really useful for reaching high places...",
-                    action: "earl: Hang on there, neighbor! | earl: I can't let old stretch out of my sight. | I should really ask permission before stea- er, borrowing the ladder."
-                }
-                // TODO: Once player returns Earl's item, this becomes available to take
-            },
 
-            // === EARL ===
-            {
-                id: 'earl_npc',
-                ...LAYOUT.earl,
-                interactX: 744, interactY: 0.828,
-                interactFacing: 'right',  // Force Nate to face right (toward Earl)
-                name: 'Earl',
-                type: 'npc',
-                verbs: { action: 'Talk to', look: 'Look at' },
-                responses: {
-                    look: "A large, friendly-looking fellow in a chef's hat. He's got an easy smile and smells faintly of charcoal and pine.",
-                    action: null
+                // === AIRSTREAM (large fallback — created first, sits underneath) ===
+                {
+                    id: 'airstream_home',
+                    ...LAYOUT.airstream,
+                    interactX: LAYOUT.airstream.x, interactY: 0.82,
+                    name: "Earl's Airstream",
+                    verbs: { action: 'Knock', look: 'Examine' },
+                    responses: {
+                        look: "This thing is a classic!",
+                        action: "I'd love to hit the road in this thing."
+                    }
+                },
+
+                // === SPECIFIC HOTSPOTS (created after backgrounds — sit on top) ===
+                {
+                    id: 'tree_left',
+                    ...LAYOUT.tree_left,
+                    interactX: LAYOUT.tree_left.x, interactY: 0.82,
+                    name: 'Large Tree',
+                    verbs: { action: 'Climb', look: 'Examine' },
+                    responses: {
+                        look: "A big old oak tree. Probably provides nice shade during the day.",
+                        action: "Tree climbing was never my strong suit."
+                    }
+                },
+                {
+                    id: 'tree_right',
+                    ...LAYOUT.tree_right,
+                    interactX: LAYOUT.tree_right.x, interactY: 0.82,
+                    name: 'Large Tree',
+                    verbs: { action: 'Climb', look: 'Examine' },
+                    responses: {
+                        look: "Another big tree. This place is framed beautifully.",
+                        action: "Still a no on the tree climbing."
+                    }
+                },
+                {
+                    id: 'string_lights',
+                    ...LAYOUT.string_lights,
+                    interactX: LAYOUT.string_lights.x, interactY: 0.82,
+                    name: 'String Lights',
+                    verbs: { action: 'Admire', look: 'Look at' },
+                    responses: {
+                        look: "These lights really create a vibe!",
+                        action: "I'm not going to steal a man's vibe. "
+                    }
+                },
+                {
+                    id: 'airstream_door',
+                    ...LAYOUT.airstream_door,
+                    interactX: LAYOUT.airstream_door.x, interactY: 0.82,
+                    name: 'Airstream Door',
+                    verbs: { action: 'Knock', look: 'Examine' },
+                    responses: {
+                        look: "It's the door to the Airstream.",
+                        action: "I'm not going to barge in. "
+                    }
+                },
+                {
+                    id: 'airstream_window',
+                    ...LAYOUT.airstream_window,
+                    interactX: LAYOUT.airstream_window.x, interactY: 0.82,
+                    name: 'Airstream Window',
+                    verbs: { action: 'Peek', look: 'Look at' },
+                    responses: {
+                        look: "Looks cozy in there. ",
+                        action: "If I want to go inside, i'll just use the door."
+                    }
+                },
+
+                // === LAWN ITEMS ===
+                {
+                    id: 'flamingo_pink',
+                    ...LAYOUT.flamingo,
+                    interactX: LAYOUT.flamingo.x, interactY: 0.82,
+                    name: 'Pink Flamingo',
+                    verbs: { action: 'Pat', look: 'Examine' },
+                    responses: {
+                        look: "A bright pink plastic lawn flamingo. Tacky, beloved, and absolutely perfect.",
+                        action: "Hey there, flamingo!"
+                    }
+                },
+
+                // === GRILL AREA ===
+                {
+                    id: 'cooler_green',
+                    ...LAYOUT.cooler,
+                    interactX: LAYOUT.cooler.x, interactY: 0.82,
+                    name: 'Cooler',
+                    verbs: { action: 'Open', look: 'Examine' },
+                    responses: {
+                        look: "It's a green cooler full of drinks.",
+                        action: "Hey, a root beer!"
+                    }
+                },
+                {
+                    id: 'radio_table',
+                    ...LAYOUT.radio,
+                    interactX: LAYOUT.radio.x, interactY: 0.82,
+                    name: 'Old Radio',
+                    verbs: { action: 'Listen', look: 'Examine' },
+                    responses: {
+                        look: "It's a old tube radio with great reception.",
+                        action: ""
+                    },
+                    actionTrigger: { type: 'action', action: 'cycle_radio_station' }
+                },
+                {
+                    id: 'grill_charcoal',
+                    ...LAYOUT.grill,
+                    interactX: LAYOUT.grill.x, interactY: 0.82,
+                    name: 'Charcoal Grill',
+                    verbs: { action: 'Check', look: 'Examine' },
+                    responses: {
+                        look: "That smells AMAZING. Burgers are definitely happening.",
+                        action: "YEEEOUCH. Why'd I do that?"
+                    }
+                },
+
+                // === EARL ===
+                {
+                    id: 'earl_npc',
+                    ...LAYOUT.earl,
+                    interactX: 744, interactY: 0.828,
+                    interactFacing: 'right',  // Force Nate to face right (toward Earl)
+                    name: 'Earl',
+                    type: 'npc',
+                    verbs: { action: 'Talk to', look: 'Look at' },
+                    responses: {
+                        look: "A large, friendly-looking fellow in a chef's hat. He's got an easy smile and smells faintly of charcoal and pine.",
+                        action: null
+                    }
+                    // TODO: Wire up Earl's conversation tree
                 }
-                // TODO: Wire up Earl's conversation tree
+            ];
+
+            // === LADDER (conditional based on whether tongs were returned) ===
+            if (TSH.State.getFlag('clock.returned_borrowed_item')) {
+                // After returning tongs - ladder is pickupable
+                hotspots.push({
+                    id: 'ladder_earl',
+                    ...LAYOUT.ladder,
+                    interactX: LAYOUT.ladder.x, interactY: 0.82,
+                    name: "Earl's Ladder",
+                    verbs: { action: 'Take', look: 'Examine' },
+                    responses: {
+                        look: "A sturdy aluminum ladder. That would be really useful for reaching high places...",
+                        action: ""  // Success dialogue from spreadsheet
+                    },
+                    giveItem: 'ladder',
+                    pickupFlag: 'clock.has_ladder',
+                    removeAfterPickup: true
+                });
+            } else {
+                // Before returning tongs - ladder visible but not pickupable
+                hotspots.push({
+                    id: 'ladder_earl',
+                    ...LAYOUT.ladder,
+                    interactX: LAYOUT.ladder.x, interactY: 0.82,
+                    name: "Earl's Ladder",
+                    verbs: { action: 'Take', look: 'Examine' },
+                    responses: {
+                        look: "A sturdy aluminum ladder. That would be really useful for reaching high places...",
+                        action: "earl: Hang on there, neighbor! | earl: I can't let old stretch out of my sight. | I should really ask permission before stea- er, borrowing the ladder."
+                    }
+                });
             }
-        ],
+
+            return hotspots;
+        },
 
         // =====================================================================
         // PICKUP OVERLAYS
@@ -368,6 +392,9 @@
                 }
 },
 },
+
+        // Flags that trigger automatic hotspot refresh
+        relevantFlags: ['clock.returned_borrowed_item'],
 
         firstVisit: {
             delay: 600,
