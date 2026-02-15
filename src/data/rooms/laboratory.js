@@ -223,18 +223,7 @@
                 }
             },
 
-            // === FOUR COMPONENTS ===
-            {
-                id: 'component_clock',
-                x: 2137, y: 0.544, w: 60, h: 0.110,
-                interactX: 2137, interactY: 0.82,
-                name: 'Temporal Synchronizer',
-                verbs: { action: 'Touch', look: 'Examine' },
-                responses: {
-                    look: "A sophisticated mechanism integrated into the portal frame. It's ticking away steadily, keeping perfect time. The label reads 'TEMPORAL SYNCHRONIZER' which sounds way cooler than 'fancy clock.'",
-                    action: "It's humming along perfectly. Probably best not to mess with something that has 'temporal' in the name."
-                }
-            },
+            // === FOUR COMPONENTS (clock is conditional, see bottom of function) ===
             {
                 id: 'component_screen',
                 x: 2228, y: 0.544, w: 59, h: 0.110,
@@ -394,6 +383,33 @@
                 });
             }
 
+            // Temporal Synchronizer component (broken/fixed states)
+            if (!TSH.State.getFlag('clock.fixed')) {
+                hotspots.push({
+                    id: 'component_clock',
+                    x: 2137, y: 0.544, w: 60, h: 0.110,
+                    interactX: 2137, interactY: 0.82,
+                    name: 'Broken Temporal Synchronizer',
+                    verbs: { action: 'Touch', look: 'Examine' },
+                    responses: {
+                        look: "The Temporal Synchronizer slot is cracked and dark. Looks like it took some damage. The label is partially burned: 'TEM...AL SYNC...NIZER'",
+                        action: "It's completely non-functional. I'd need to install a working clock mechanism to fix it."
+                    }
+                });
+            } else {
+                hotspots.push({
+                    id: 'component_clock',
+                    x: 2137, y: 0.544, w: 60, h: 0.110,
+                    interactX: 2137, interactY: 0.82,
+                    name: 'Fixed Temporal Synchronizer',
+                    verbs: { action: 'Touch', look: 'Examine' },
+                    responses: {
+                        look: "The clock is now installed and ticking perfectly. The Temporal Synchronizer is operational again!",
+                        action: "It's working perfectly now. Best not to mess with it."
+                    }
+                });
+            }
+
             return hotspots;
         },
 
@@ -502,13 +518,22 @@
         ],
 
         // Flags that trigger hotspot refresh when changed
-        relevantFlags: ['lab.panel_open'],
+        relevantFlags: ['lab.panel_open', 'clock.fixed'],
 
         // =====================================================================
         // ITEM INTERACTIONS
         // =====================================================================
 
         itemInteractions: {
+            component_clock: {
+                clock: {
+                    condition: () => !TSH.State.getFlag('clock.fixed'),
+                    failDialogue: "The clock is already installed.",
+                    dialogue: "I carefully install the clock into the Temporal Synchronizer slot. It clicks into place and starts ticking immediately. Perfect!",
+                    consumeItem: true,
+                    setFlag: "clock.fixed"
+                }
+            },
             device_portal: {
                 default: "I'm not putting my {item} anywhere near that thing. I've seen what happens when you mix random objects with portals."
             },
@@ -923,6 +948,89 @@
         g.fillRect(x + slotW/2 - p*3, y + slotH - p*6, p*6, p*4);
     }
 
+    function drawBrokenComponent(g, x, y) {
+        const p = 2;
+        const slotW = p*35;
+        const slotH = p*45;
+
+        // Slot housing (same as normal)
+        g.fillStyle(COLORS.METAL_DARK);
+        g.fillRect(x, y, slotW, slotH);
+        g.fillStyle(COLORS.METAL_MID);
+        g.fillRect(x + p*2, y + p*2, slotW - p*4, slotH - p*4);
+
+        // Broken/cracked panel (dark, damaged)
+        g.fillStyle(0x1a1a1a);
+        g.fillRect(x + p*4, y + p*4, slotW - p*8, slotH - p*12);
+
+        // Cracks/damage
+        g.fillStyle(0x3a2a2a);
+        // Diagonal crack
+        for (let i = 0; i < 15; i++) {
+            g.fillRect(x + p*6 + i*p, y + p*6 + i*p, p*2, p);
+        }
+        // Another crack
+        for (let i = 0; i < 10; i++) {
+            g.fillRect(x + p*20 - i*p, y + p*8 + i*p*2, p*2, p);
+        }
+
+        // Burn marks
+        g.fillStyle(0x2a2020);
+        g.fillRect(x + p*8, y + p*12, p*6, p*8);
+        g.fillRect(x + p*18, y + p*20, p*8, p*6);
+
+        // Dead status light (dark red)
+        g.fillStyle(0x442222);
+        g.fillRect(x + slotW/2 - p*3, y + slotH - p*6, p*6, p*4);
+    }
+
+    function drawClockInSlot(g, x, y) {
+        const p = 2;
+        const slotW = p*35;
+        const slotH = p*45;
+
+        // Slot housing (same as normal)
+        g.fillStyle(COLORS.METAL_DARK);
+        g.fillRect(x, y, slotW, slotH);
+        g.fillStyle(COLORS.METAL_MID);
+        g.fillRect(x + p*2, y + p*2, slotW - p*4, slotH - p*4);
+
+        // Clock face (cream colored, centered in slot)
+        const clockSize = p*20;
+        const clockX = x + slotW/2 - clockSize/2;
+        const clockY = y + p*8;
+
+        // Clock backing (dark wood)
+        g.fillStyle(0x6a5530);
+        g.fillRect(clockX - p, clockY - p, clockSize + p*2, clockSize + p*2);
+
+        // Clock face
+        g.fillStyle(0xd8d0b8);
+        g.fillRect(clockX, clockY, clockSize, clockSize);
+
+        // Inner ring
+        g.fillStyle(0xc8c0a8);
+        g.fillRect(clockX + p*2, clockY + p*2, clockSize - p*4, clockSize - p*4);
+
+        // Clock hands (simple cross shape)
+        g.fillStyle(0x1a1a1a);
+        // Hour hand (short, vertical)
+        g.fillRect(clockX + clockSize/2 - p, clockY + clockSize/2 - p*4, p*2, p*4);
+        // Minute hand (long, horizontal)
+        g.fillRect(clockX + clockSize/2 - p*6, clockY + clockSize/2 - p, p*6, p*2);
+
+        // Hour markers at 12, 3, 6, 9
+        g.fillStyle(0x2a2a2a);
+        g.fillRect(clockX + clockSize/2 - p/2, clockY + p*2, p, p);           // 12
+        g.fillRect(clockX + clockSize - p*3, clockY + clockSize/2 - p/2, p, p); // 3
+        g.fillRect(clockX + clockSize/2 - p/2, clockY + clockSize - p*3, p, p); // 6
+        g.fillRect(clockX + p*2, clockY + clockSize/2 - p/2, p, p);             // 9
+
+        // Active status light (bright green)
+        g.fillStyle(COLORS.LAB_BRIGHT);
+        g.fillRect(x + slotW/2 - p*3, y + slotH - p*6, p*6, p*4);
+    }
+
     function drawComputerTerminal(g, x, y, floorY) {
         const p = 2;
         const termW = p*100;
@@ -1106,7 +1214,14 @@
         const slotStartX = 2100;
         const slotY = height * 0.48;
         const slotSpacing = p*45;
-        drawComponentSlot(g, slotStartX, slotY, 'clock', true);
+
+        // Clock component (conditional - broken or fixed)
+        if (!TSH.State.getFlag('clock.fixed')) {
+            drawBrokenComponent(g, slotStartX, slotY);
+        } else {
+            drawClockInSlot(g, slotStartX, slotY);
+        }
+
         drawComponentSlot(g, slotStartX + slotSpacing, slotY, 'screen', true);
         drawComponentSlot(g, slotStartX + slotSpacing*2, slotY, 'power', true);
         drawComponentSlot(g, slotStartX + slotSpacing*3, slotY, 'brain', true);
