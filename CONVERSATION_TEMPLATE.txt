@@ -24,23 +24,12 @@ NODES
 === node_name ===           Start of a conversation node.
                             node_name is a short lowercase label.
                             A file can have many nodes.
-
-# npc_state: state_name    This node loads when the NPC is in this
-                            game state (e.g., behind_fence, visible).
-                            Use for major NPC changes only.
-
-# default                   This node is a candidate for the starting
-                            node. The game checks default nodes in
-                            order — first one whose conditions pass
-                            wins. Use with # requires: asked: to
-                            skip intros on repeat visits.
+                            The first node in the file is used as the
+                            starting node (insertion order).
 
 # id: label                 Tags this node with an ID. Can be checked
                             with asked:label on other nodes/options.
                             Persists between conversations.
-
-# requires: conditions      Node-level conditions. If these fail, this
-                            node is skipped when selecting the start.
 
 
 INTRO SEQUENCES (before options)
@@ -117,30 +106,6 @@ Combine with commas (ALL must be true):
 
 
 ================================================================================
-HOW NODE SELECTION WORKS
-================================================================================
-
-When the player clicks Talk To on an NPC, the game picks a starting
-node using this priority:
-
-1. Check # npc_state: nodes — find all nodes matching the NPC's
-   current state (e.g., behind_fence)
-
-2. Among matching nodes, check # default nodes first — evaluate
-   their # requires: conditions. First one that passes wins.
-
-3. If no # default node passes, use the first non-default node
-   for that state.
-
-4. If no npc_state matches, use the node named "start" or the
-   first node in the file.
-
-Example flow for Earl (behind_fence state):
-  First visit:  intro wins (no requires, loads first)
-  Later visits: main wins (# default + asked:met_earl is true)
-
-
-================================================================================
 FEATURES & EXAMPLES
 ================================================================================
 
@@ -210,16 +175,12 @@ The player sees "Ask about the strange noises" in the menu.
 When selected, Nate says the full sentence.
 
 
-FEATURE 4: SKIPPING THE INTRO ON REPEAT VISITS
+FEATURE 4: CHANGING GREETINGS ON REPEAT VISITS
 -----------------------------------------------
-There are two ways to change greetings after the first meeting.
-
-OPTION A: Conditional intro sequences (recommended for simple cases)
-Use # requires: before intro dialogue to show different greetings
-based on game state. Same options both times, just different greetings.
+Use conditional intro sequences to show different greetings based on
+game state. Same options both times, just different greetings.
 
     === start ===
-    # default
 
     # requires: asked:met_earl
     nate: Hey Earl.
@@ -252,49 +213,9 @@ How it works:
 - Second visit: asked:met_earl passes → casual greeting plays
 - Same options appear both times, just different intro
 
-
-OPTION B: Separate nodes (use when options need to be different)
-Use # id: on a node and # default + # requires: asked: on another
-when first meeting and returning visitor need completely different options.
-
-    === intro ===
-    # id: met_earl
-
-    - Who's there?
-        nate: Hello? Somebody back there?
-        earl: Who's asking?
-        nate: I'm Nathaniel. I'm working with Hector.
-        earl: Name's Earl. Welcome to the neighborhood.
-        > intro
-
-    - I should get back to work
-        nate: Nice meeting you, Earl.
-        earl: Later, neighbor.
-        > END
-
-
-    === main ===
-    # default
-    # requires: asked:met_earl
-
-    - How's it going?
-        nate: Hey Earl.
-        earl: Hey neighbor.
-        > main
-
-    - See you later
-        earl: Later.
-        > END
-
-How it works:
-- First visit: intro loads (no default nodes pass yet)
-- Entering intro node tracks met_earl
-- Second visit: main is # default, asked:met_earl passes
-- Player gets completely different options in main node
-
-When to use which:
-- Conditional intros (A): Same options, different greetings
-- Separate nodes (B): Different options for first vs. repeat visits
+Note: If you need completely different options for first vs. repeat
+visits (not just different greetings), use separate nodes and route
+between them with > navigation.
 
 
 FEATURE 5: UNLOCKING NEW OPTIONS AFTER ASKING SOMETHING
@@ -528,53 +449,7 @@ How it works:
 - Player can bounce between nodes freely
 
 
-FEATURE 13: NPC STATE CHANGES
------------------------------
-Use # npc_state: for completely different conversations when an NPC
-fundamentally changes (moves to a new location, changes behavior).
-
-    === fence_main ===
-    # npc_state: behind_fence
-    # default
-
-    - Hey Earl
-        earl: Hey neighbor.
-        > fence_main
-
-    - See you later
-        > END
-
-
-    === yard_intro ===
-    # npc_state: visible
-    # id: entered_yard
-
-    - Wow, nice place
-        nate: This yard is amazing.
-        earl: Thanks! Built it myself.
-        > yard_main
-
-
-    === yard_main ===
-    # npc_state: visible
-    # default
-    # requires: asked:entered_yard
-
-    - What are you grilling?
-        earl: Nice try, neighbor.
-        > yard_main
-
-    - I should head back
-        > END
-
-How it works:
-- When Earl is in "behind_fence" state — fence nodes load
-- When Earl changes to "visible" state — yard nodes load
-- State changes happen through game logic (not in dialogue files)
-- Each state can have its own intro/main pattern
-
-
-FEATURE 14: CHECKING OTHER GAME CONDITIONS
+FEATURE 13: CHECKING OTHER GAME CONDITIONS
 -------------------------------------------
 Use has:, npc_state:, and visited: to check things beyond flags.
 
@@ -706,10 +581,7 @@ earl: Text          (use speaker: format before first -)
 
 NODE TAGS           WHAT IT DOES
 ---------           ------------
-# npc_state: x      Load this node when NPC is in state x
-# default           Try this node first as starting point
 # id: label         Track when this node is visited
-# requires: cond    Only use this node if conditions pass
 
 OPTION TAGS         WHAT IT DOES
 -----------         ------------
