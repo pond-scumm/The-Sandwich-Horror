@@ -12,19 +12,11 @@ earl: It was a Tuesday, I think.
 earl: Found a UFO in my barn!
 > END
 
-- Conditional option with flag
-# requires: story.found_hector, !story.talked_to_earl
-nate: Have you seen Hector?
-earl: Can't say I have.
-# set: story.talked_to_earl
-> start
-
 - Item requirement test
 # requires: has:ladder
 nate: I have your ladder.
 earl: Thanks for bringing that back!
 # remove: ladder
-# add: wrench
 > start
 
 - Once option test
@@ -32,17 +24,6 @@ earl: Thanks for bringing that back!
 nate: Nice weather today.
 earl: Sure is! Perfect for farming.
 > start
-
-- Multiple flags and actions
-# requires: story.found_hector, has:wrench
-# set: story.gave_wrench_to_earl
-# set: story.earl_helped
-# remove: wrench
-# add: key
-nate: Here's that wrench you needed.
-earl: Much appreciated!
-earl: Here, take this key as thanks.
-> grateful
 
 === grateful ===
 

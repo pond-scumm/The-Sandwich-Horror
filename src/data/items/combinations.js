@@ -37,37 +37,6 @@
     };
 
     // ── Clock Puzzle Combinations ────────────────────────────────────────
-    
-    // Springs + Satellite Shoes → Repaired Shoes
-    // (Need both springs, done in two steps)
-    combinations[makeKey('spring_1', 'satellite_shoes')] = {
-        consumes: ['spring_1', 'satellite_shoes'],
-        produces: 'shoes_one_spring',
-        dialogue: "I put one spring in. Still need another one.",
-        setFlags: {}
-    };
-    
-    combinations[makeKey('spring_2', 'shoes_one_spring')] = {
-        consumes: ['spring_2', 'shoes_one_spring'],
-        produces: 'repaired_shoes',
-        dialogue: "Both springs are in! These satellite shoes are ready for action.",
-        setFlags: { 'clock.shoes_repaired': true }
-    };
-    
-    // Also handle if player finds springs in opposite order
-    combinations[makeKey('spring_2', 'satellite_shoes')] = {
-        consumes: ['spring_2', 'satellite_shoes'],
-        produces: 'shoes_one_spring',
-        dialogue: "I put one spring in. Still need another one.",
-        setFlags: {}
-    };
-    
-    combinations[makeKey('spring_1', 'shoes_one_spring')] = {
-        consumes: ['spring_1', 'shoes_one_spring'],
-        produces: 'repaired_shoes',
-        dialogue: "Both springs are in! These satellite shoes are ready for action.",
-        setFlags: { 'clock.shoes_repaired': true }
-    };
 
     // Broken Moon Shoes + Spring → Half-Broken Moon Shoes
     combinations[makeKey('spring_1', 'broken_moon_shoes')] = {
@@ -99,44 +68,6 @@
         setFlags: {}
     };
 
-    // ── Brain Puzzle Combinations ────────────────────────────────────────
-    
-    // Trophy parts → Assembled trophy
-    combinations[makeKey('trophy_item_1', 'trophy_item_2')] = {
-        consumes: ['trophy_item_1', 'trophy_item_2'],
-        produces: 'trophy_assembled',
-        dialogue: "I taped them together. It's... trophy-shaped. Ish. Needs paint.",
-        setFlags: { 'brain.trophy_built': true }
-    };
-    
-    // Assembled trophy + spray paint → Gold trophy
-    combinations[makeKey('spray_paint', 'trophy_assembled')] = {
-        consumes: ['trophy_assembled'],  // Keep spray paint
-        produces: 'trophy_painted',
-        dialogue: "A few coats of gold spray paint and... magnificent. Just needs a name.",
-        setFlags: { 'brain.trophy_painted': true }
-    };
-    
-    // Gold trophy + sharpie → Fake trophy with name
-    combinations[makeKey('sharpie', 'trophy_painted')] = {
-        consumes: ['trophy_painted'],  // Keep sharpie
-        produces: 'fake_trophy',
-        dialogue: "I write 'VICTOR' on the plaque in my best formal Sharpie handwriting. Perfect.",
-        setFlags: { 'brain.trophy_named': true }
-    };
-    
-    // Lab coat + goggles → Hector disguise
-    combinations[makeKey('goggles', 'lab_coat')] = {
-        // Only works if player also has sharpie (for mustache)
-        condition: () => TSH.State.hasItem('sharpie'),
-        consumes: ['goggles', 'lab_coat'],
-        produces: 'hector_disguise',
-        dialogue: "Lab coat, goggles, and a Sharpie mustache. I am Hector Manzana. Fear my science.",
-        setFlags: { 'brain.has_disguise': true },
-        failDialogue: "I have the coat and goggles but I need something for the mustache..."
-    };
-    
-    
     // Dialogue-only (no recipe)
     combinations[makeKey('help_wanted_ad', 'lit_candle')] = {
         dialogue: 'I don\'t want to burn it! I\'m trying to get a job.'

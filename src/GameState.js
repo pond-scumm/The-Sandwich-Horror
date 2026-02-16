@@ -65,122 +65,20 @@
             // something that has happened. Not an intention or plan.
             
             flags: {
-                // Story progression
-                story: {
-                    entered_house: false,
-                    hired_by_hector: false,
-                    experiment_failed: false,
-                    title_card_shown: false,
-                    found_hector: false,
-                    damage_report_printed: false,
-                    lab_unlocked: false,
-                    all_components_installed: false,
-                    polarity_reversed: false,
-                    clone_created: false,
-                    experiment_rerun: false,
-                    game_complete: false
-                },
-                
-                // Hector's body/coat/keycard puzzle chain
-                hector: {
-                    head_found: false,
-                    body_running: false,
-                    locker_closed: false,        // Player closed locker to sneak past
-                    sneezed_on_book: false,
-                    coat_dropped: false,
-                    body_captured: false,
-                    has_keycard: false,
-                    has_lab_coat: false
-                },
-
                 // Laboratory (Main Lab) items and interactions
                 lab: {
                     panel_open: false            // Electrical panel state
                 },
 
-                // Computer / password puzzle
-                computer: {
-                    tried_login: false,
-                    security_q1_found: false,
-                    security_q2_found: false,
-                    security_q3_found: false,
-                    password_reset: false,
-                    logged_in: false
-                },
-                
                 // Clock puzzle chain (Temporal Synchronizer)
                 clock: {
                     has_spring_1: false,         // From lab cabinet
-                    has_spring_2: false,         // From Frank's mattress
-                    has_shoes: false,            // Satellite shoes
-                    shoes_repaired: false,       // Springs + shoes
-                    met_earl: false,
-                    earl_invited: false,          // Got invite to yard
+                    fixed: false,                // Clock installed in synchronizer
+                    earl_invited: false,         // Got invite to yard
                     returned_borrowed_item: false,
                     has_ladder: false,
-                    has_clock: false              // Got the clock!
-                },
-                
-                // Power puzzle chain (Nuclear Energy Resonator)
-                power: {
-                    found_generator: false,
-                    generator_unplugged: false,
-                    has_padlock: false,
-                    robot_locked_in: false,      // Padlocked charging station
-                    monkey_placed: false,        // Monkey in storage room
-                    robot_unlocked: false,       // Let robot out to chase monkey
-                    robot_locked_out: false,     // Locked station while robot is out
-                    generator_plugged_back: false,
-                    robot_bumping: false,        // Robot trying to return
-                    has_fuse: false              // Pulled fuse from robot
-                },
-                
-                // Screen puzzle chain (Interdimensional Relay)
-                screen: {
-                    met_alien: false,
-                    knows_hated_channel: false,
-                    has_tv_guide: false,
-                    found_satellite: false,
-                    channel_changed: false,
-                    satellite_sabotaged: false,  // Wrench in satellite
-                    correct_channel_set: false,
-                    alien_on_roof: false,
-                    window_locked: false,        // Trapped alien outside
-                    has_tv: false                // Got the TV!
-                },
-                
-                // Brain puzzle chain (Stabilizer Cortex)
-                brain: {
-                    found_brain: false,
-                    tried_brain_in_machine: false,
-                    knows_about_victor: false,
-                    met_frank: false,
-                    frank_offered_swap: false,
-                    brains_swapped_to_victor: false,
-                    talked_to_rival: false,
-                    rival_demands_known: false,
-                    has_trophy_item_1: false,
-                    has_trophy_item_2: false,
-                    trophy_built: false,
-                    has_spray_paint: false,
-                    trophy_painted: false,
-                    trophy_named: false,         // Wrote name with sharpie
-                    has_goggles: false,
-                    has_sharpie: false,
-                    has_disguise: false,          // Lab coat + goggles + mustache
-                    glasses_removed: false,       // Frank's glasses off
-                    brains_swapped_back: false,   // Swapped back to get glasses off
-                    brains_swapped_final: false,  // Swapped to Victor for presentation
-                    rival_convinced: false        // Victor bought it!
-                },
-                
-                // Clone / finale
-                finale: {
-                    found_teleporter: false,
-                    knows_teleporter_truth: false,
-                    has_mirror: false,
-                    death_ray_disabled: false,
-                    clone_created: false
+                    ladder_deployed: false,      // Ladder placed under clock
+                    has_clock: false             // Got the clock!
                 },
 
                 // Miscellaneous flags (for backwards compatibility with flat flag names)

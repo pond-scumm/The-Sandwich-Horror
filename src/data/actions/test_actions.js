@@ -8,11 +8,10 @@
 (function() {
     'use strict';
 
-    // Simple test action - just shows dialogue and sets a flag
+    // Simple test action - just shows dialogue
     TSH.Actions.test_sequence = function(scene, hotspot, item) {
         console.log('[TestActions] test_sequence called with:', { scene: scene.roomId, hotspot: hotspot.name, item: item.name });
         scene.showDialog("Action function works! You used " + item.name + " on " + hotspot.name + ".");
-        TSH.State.setFlag('story.action_test', true);
     };
 
     // Example: Multi-step action with delays (for future use)
@@ -21,7 +20,6 @@
 
         scene.time.delayedCall(1000, () => {
             scene.showDialog("Step 2 of delayed action!");
-            TSH.State.setFlag('story.delayed_test', true);
         });
     };
 

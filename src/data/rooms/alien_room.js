@@ -97,9 +97,6 @@
 
         exits: [],
 
-        // Flags that trigger hotspot refresh when changed (for Step 3 test)
-        relevantFlags: ['story.test_action_complete'],
-
         npcs: [
             {
                 id: 'alien_harry',
@@ -119,25 +116,7 @@
 
         // Dynamic hotspot function for conditional hotspots (Step 2 test)
         getHotspotData(height) {
-            const hotspots = [];
-
-            // TEST: Conditional hotspot - only appears if flag is not set
-            if (!TSH.State.getFlag('story.test_action_complete')) {
-                hotspots.push({
-                    id: 'test_conditional',
-                    x: 640, y: 0.50, w: 40, h: 0.10,
-                    interactX: 640, interactY: 0.85,
-                    name: 'Test Hotspot',
-                    verbs: { action: 'Touch', look: 'Look at' },
-                    responses: {
-                        look: "A test hotspot that disappears when you use the candle on the lava lamp.",
-                        action: "It's just a test!"
-                    }
-                });
-            }
-
-            // All static hotspots (unchanged)
-            const staticHotspots = [
+            const hotspots = [
             // === ENTRANCE/DOORWAY ===
             {
                 id: 'doorway_exit',
@@ -300,9 +279,6 @@
             }
             ];
 
-            // Add all static hotspots to the dynamic array
-            hotspots.push(...staticHotspots);
-
             return hotspots;
         },
 
@@ -321,8 +297,7 @@
             lamp_lava: {
                 candle: {
                     dialogue: "I hold the candle up to the lava lamp. They glow in harmony for a moment. Very zen.",
-                    giveItem: "spring",  // Test item pickup
-                    setFlag: "story.test_action_complete"  // Test flag setting
+                    giveItem: "spring"  // Test item pickup
                 }
             },
             // TEST ACTION FUNCTION (Step 4 implementation test)
