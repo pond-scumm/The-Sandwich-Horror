@@ -75,7 +75,8 @@
                     fixed: false,                // Clock installed in synchronizer
                     earl_invited: false,         // Got invite to yard
                     returned_borrowed_item: false,
-                    ladder_deployed: false       // Ladder placed under clock
+                    ladder_deployed: false,      // Ladder placed under clock
+                    obtained: false              // Clock obtained (triggers room refresh)
                 },
 
                 // Miscellaneous flags (for backwards compatibility with flat flag names)

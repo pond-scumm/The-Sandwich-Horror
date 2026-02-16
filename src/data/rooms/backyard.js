@@ -417,7 +417,7 @@
         // RELEVANT FLAGS (triggers automatic hotspot refresh)
         // =====================================================================
 
-        relevantFlags: ['clock.ladder_deployed', 'clock.earl_invited'],
+        relevantFlags: ['clock.ladder_deployed', 'clock.earl_invited', 'clock.obtained'],
 
         // =====================================================================
         // ITEM INTERACTIONS
@@ -442,7 +442,8 @@
                 moon_shoes: {
                     dialogue: "I climb the ladder, put on the moon shoes, and JUMP! *CRASH* I grab the clock as I bounce off the wall. Success!",
                     consumeItem: true,
-                    giveItem: "clock"
+                    giveItem: "clock",
+                    setFlag: "clock.obtained"
                 }
             },
             fence_earl: {
