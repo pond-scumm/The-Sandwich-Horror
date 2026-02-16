@@ -337,7 +337,7 @@
             // Fence gate - locked (before invitation)
             if (!TSH.State.getFlag('clock.earl_invited')) {
                 hotspots.push({
-                    id: 'fence_gate',
+                    id: 'fence_gate_locked',
                     ...LAYOUT.fence_gate,
                     interactX: LAYOUT.fence_gate.x, interactY: 0.82,
                     name: 'Fence Gate',
@@ -357,7 +357,7 @@
             // Fence gate - open (after invitation)
             if (TSH.State.getFlag('clock.earl_invited')) {
                 hotspots.push({
-                    id: 'fence_gate',
+                    id: 'fence_gate_unlocked',
                     ...LAYOUT.fence_gate,
                     interactX: LAYOUT.fence_gate.x, interactY: 0.82,
                     name: 'Fence Gate',

@@ -544,6 +544,31 @@ getHotspotData(height) {
 
 **For rooms where puzzles aren't implemented yet**, hotspots can start simple with no conditionals. Add state conditionals when wiring up the puzzle logic for that room. Don't add speculative conditionals for puzzles that aren't built yet.
 
+**CRITICAL: Conditional hotspots must have unique IDs.** When `getHotspotData()` creates multiple variants of the same hotspot based on game state, each variant MUST have a unique `id` to prevent the dialogue import script from confusing them. Use descriptive suffixes:
+
+```javascript
+// WRONG - duplicate IDs confuse import script
+if (!TSH.State.getFlag('clock.returned_borrowed_item')) {
+    hotspots.push({ id: 'ladder', /* locked state */ });
+} else {
+    hotspots.push({ id: 'ladder', /* unlocked state */ });
+}
+
+// CORRECT - unique IDs with descriptive suffixes
+if (!TSH.State.getFlag('clock.returned_borrowed_item')) {
+    hotspots.push({ id: 'ladder_locked', /* locked state */ });
+} else {
+    hotspots.push({ id: 'ladder_unlocked', /* unlocked state */ });
+}
+```
+
+**Common suffix patterns:**
+- State transitions: `_locked` / `_unlocked`, `_closed` / `_open`
+- Object states: `_broken` / `_fixed`, `_on` / `_off`
+- Presence: `_deployed` / `_stowed`, `_visible` / `_hidden`
+
+**Why this matters:** The dialogue export/import scripts use hotspot IDs to map spreadsheet rows to code. When two conditional hotspots share the same ID, the import script cannot tell them apart and may write the wrong dialogue to the wrong variant. Always use unique IDs for conditional variants.
+
 **Mid-visit hotspot updates:** Rooms where state changes while the player is present (e.g., deploying a ladder, catching Hector's body) should declare `relevantFlags` in their room data. RoomScene automatically sets up listeners and calls `refreshHotspots()` when these flags change:
 
 ```javascript

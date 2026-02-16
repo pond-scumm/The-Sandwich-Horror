@@ -1,28 +1,18 @@
 === start ===
 
-earl: Hey there!
-earl: You Hector's new assistant?
-
-- Yeah, I'm Nate. Nice to meet you!
-# id: met_earl
-nate: Yeah, I'm Nate. Nice to meet you!
-earl: Name's Earl. Welcome to the neighborhood!
-earl: You picked quite a mentor there. Things are always interesting next door.
+earl: Hey there neighbor! What can I do ya for?
 
 - What's that smell?
 # once
 nate: Something smells amazing! What are you cooking?
-earl: Just throwing some burgers on the grill. Nothing fancy.
-earl: The secret is in the seasoning!
+earl: Just smoking some meat on the grill. Nothing fancy.
 
-- Are those... tiki torches?
+- Are those... tiki lights?
 # once
-nate: Are those tiki torches I see back there?
-earl: Sure are! I like to keep the ambiance nice, you know?
-earl: Good music, good food, good vibes.
+nate: Are those tiki lights I see back there?
+earl: Sure are! I like to keep a good ambiance, you know?
 
 - Mind if I come over?
-# requires: asked:met_earl
 # set: clock.earl_invited
 nate: This party looks great! Mind if I come over?
 earl: Of course! The gate's always open for neighbors.

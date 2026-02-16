@@ -42,12 +42,13 @@ earl: I'd say so. Known him through a lot of ups and downs these last few years.
 
 - I couldn't help but notice your ladder...
 # id:ladder
+# requires: !clock.returned_borrowed_item
 # once
 nate: That's a mighty nice ladder you have over there.
 earl: Sure is. Top of the line extend-o-matic.
 
 - Can I borrow your ladder?
-# requires: asked:ladder
+# requires: asked:ladder, !clock.returned_borrowed_item
 # id: borrow
 # once
 nate: Do you think I could borrow your ladder?
@@ -56,7 +57,7 @@ earl: Hector borrowed my grill claws three years ago and never returned them.
 earl: Sorry, but I've been burned too many times. Figuratively and literally.
 
 - What did Hector borrow?
-# requires: asked:borrow
+# requires: asked:borrow, !clock.returned_borrowed_item
 nate: Can you tell me what Hector borrowed that he never returned again?
 earl: My grill claws! 
 earl: A battle tested heirloom. 
@@ -64,9 +65,14 @@ earl: Grandpa's grabbers.
 earl: A perfect pair of pinchers.
 
 - Would you trade for the ladder?
-# requires: asked:borrow
+# requires: asked:borrow, !clock.returned_borrowed_item
 nate: If I got Hector to return the grill claws would you let me borrow the ladder?
 earl: If you could get the old trusty rusty grill claws back to me I'll let you borrow anything you want!
+
+- Mind if I borrow your ladder now?
+# requires: clock.returned_borrowed_item, !clock.has_ladder
+nate: Now that you have your grill claws back, do you mind if I borrow your ladder?
+earl: Sure thing! Just promise you won't do anything crazy with it. 
 
 - Good talk! I gotta go.
 nate: Good talk! I gotta go.

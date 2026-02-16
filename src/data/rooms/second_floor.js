@@ -114,7 +114,7 @@
                 name: 'Bedroom Door',
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
-                    look: "Something's off about this door. There are scorch marks around the frame, and I can see a faint green glow from underneath. Is that... humming? Or beeping? It's definitely not silence.",
+                    look: "Something's off about this door. There are scorch marks around the frame, and I can see a faint glow from underneath. Sounds like people arguing on the other side.",
                     action: null
                 },
                 actionTrigger: {
@@ -150,7 +150,7 @@
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
                     look: "A bathroom door. Plain, unassuming, currently representing my only hope of relief.",
-                    action: "Locked! Of course it's locked. I really need to use this bathroom and it's LOCKED. This is a nightmare."
+                    action: "It's locked. I'm not even sure why this door exists."
                 }
             },
 
@@ -179,8 +179,8 @@
                 name: 'Attic Pull-String',
                 verbs: { action: 'Pull', look: 'Look at' },
                 responses: {
-                    look: "A pull-string dangling from a ceiling hatch. I can hear faint sounds from above... scratching? Footsteps? TV static? Something's up there.",
-                    action: "Hmm... maybe later. I've got enough going on down here without adding 'mysterious attic' to my to-do list."
+                    look: "A pull-string dangling from a ceiling hatch. I can hear faint sounds from above... scratching? Footsteps? Static? Something's up there.",
+                    action: "I can't reach it."
                 }
                 // TODO: Eventually transitions to attic
             },
@@ -229,7 +229,7 @@
                 verbs: { action: 'Adjust', look: 'Check' },
                 responses: {
                     look: "An old dial thermostat. It's set to... 147 degrees?! No wonder Hector wears that lab coat everywhere. He's acclimated to the surface of the sun.",
-                    action: "I try to turn it down but it's stuck. Or maybe welded in place? Someone REALLY likes it hot in here."
+                    action: "It's stuck. Or maybe welded in place? Someone REALLY likes it hot in here."
                 }
             },
 
@@ -242,7 +242,7 @@
                 verbs: { action: 'Touch', look: 'Examine' },
                 responses: {
                     look: "A brass wall sconce with a flickering electric bulb. Very period-appropriate. The glow is warm but dim.",
-                    action: "Still warm. The bulb flickers when I touch it but stays on. These things have been burning for who knows how long."
+                    action: "The bulb flickers when I touch it but stays on. These things have been burning for who knows how long."
                 }
             }
         ],

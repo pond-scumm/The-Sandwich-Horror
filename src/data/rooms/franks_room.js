@@ -150,7 +150,7 @@
                 verbs: { action: 'Take', look: 'Examine' },
                 responses: {
                     look: "A framed botanical illustration. Hand-drawn, detailed. It's a tomato plant at various stages - seedling, flowering, fruiting. Someone spent a lot of time on this.",
-                    action: "It's not mine to take. But it's really well done. Frank has talent."
+                    action: "It's not mine to take. But it's really well done."
                 }
             },
 
@@ -162,8 +162,8 @@
                 name: 'Lumpy Bed',
                 verbs: { action: 'Lie down', look: 'Examine' },
                 responses: {
-                    look: "A simple twin bed with a patchwork quilt. It's made up neatly - hospital corners and everything. The pillow has a faint green stain on it. Grass? Fertilizer? Something plant-related.",
-                    action: "Not my bed. I'm not that tired yet."
+                    look: "This is a REALLY lumpy bed. I can see the springs practically bursting through.",
+                    action: "I'm not tired enough to use someone else's bed yet."
                 }
             },
             // Spring on bed - only appears after cutting bed and before picking up
@@ -188,7 +188,7 @@
                 name: 'Nightstand',
                 verbs: { action: 'Search', look: 'Examine' },
                 responses: {
-                    look: "A small wooden nightstand with a reading lamp. There's a well-worn gardening book, a mug with cold tea, and a pencil. The book is bristling with bookmarks.",
+                    look: "A small wooden nightstand with a reading lamp. There's a well-worn gardening book and a mug with cold tea.",
                     action: "The book is 'Companion Planting for the Home Gardener.' Every page has notes in the margins. 'Basil next to tomatoes - yes!' 'Tried this - works!' This person really loves their plants."
                 }
             },

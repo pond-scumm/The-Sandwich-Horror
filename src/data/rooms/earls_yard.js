@@ -317,14 +317,14 @@
             } else if (TSH.State.getFlag('clock.returned_borrowed_item')) {
                 // After returning tongs but before pickup - ladder is pickupable
                 hotspots.push({
-                    id: 'ladder_earl',
+                    id: 'ladder_earl_unlocked',
                     ...LAYOUT.ladder,
                     interactX: LAYOUT.ladder.x, interactY: 0.82,
                     name: "Earl's Ladder",
                     verbs: { action: 'Take', look: 'Examine' },
                     responses: {
                         look: "A sturdy aluminum ladder. That would be really useful for reaching high places...",
-                        action: ""  // Success dialogue from spreadsheet
+                        action: "I'll grab this and bring it right back!"  // Success - Earl gave permission
                     },
                     giveItem: 'ladder',
                     pickupFlag: 'clock.has_ladder',
@@ -333,7 +333,7 @@
             } else {
                 // Before returning tongs - ladder visible but not pickupable
                 hotspots.push({
-                    id: 'ladder_earl',
+                    id: 'ladder_earl_locked',
                     ...LAYOUT.ladder,
                     interactX: LAYOUT.ladder.x, interactY: 0.82,
                     name: "Earl's Ladder",

@@ -148,6 +148,12 @@
         dialogue: 'It\'s already lit.'
     };
 
+    
+    // Dialogue-only (no recipe)
+    combinations[makeKey('ladder', 'moon_shoes')] = {
+        dialogue: 'Here goes nothing...'
+    };
+
     // ── Expose to namespace ─────────────────────────────────────────────
     
     TSH.Combinations = {

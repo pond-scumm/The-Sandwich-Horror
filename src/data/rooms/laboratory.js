@@ -386,19 +386,25 @@
             // Temporal Synchronizer component (broken/fixed states)
             if (!TSH.State.getFlag('clock.fixed')) {
                 hotspots.push({
-                    id: 'component_clock',
+                    id: 'component_clock_broken',
                     x: 2137, y: 0.544, w: 60, h: 0.110,
                     interactX: 2137, interactY: 0.82,
                     name: 'Broken Temporal Synchronizer',
                     verbs: { action: 'Touch', look: 'Examine' },
                     responses: {
-                        look: "The Temporal Synchronizer slot is cracked and dark. Looks like it took some damage. The label is partially burned: 'TEM...AL SYNC...NIZER'",
-                        action: "It's completely non-functional. I'd need to install a working clock mechanism to fix it."
+                        look: [
+                    { text: "A sophisticated mechanism integrated into the portal frame. It's ticking away steadily, keeping perfect time. The label reads 'TEMPORAL SYNCHRONIZER' which sounds way cooler than 'fancy clock.'" },
+                    { text: "The clock is now installed and ticking perfectly. The Temporal Synchronizer is operational again!" }
+                ],
+                        action: [
+                    { text: "It's humming along perfectly. Probably best not to mess with something that has 'temporal' in the name." },
+                    { text: "It's working perfectly now. Best not to mess with it." }
+                ]
                     }
                 });
             } else {
                 hotspots.push({
-                    id: 'component_clock',
+                    id: 'component_clock_fixed',
                     x: 2137, y: 0.544, w: 60, h: 0.110,
                     interactX: 2137, interactY: 0.82,
                     name: 'Fixed Temporal Synchronizer',
