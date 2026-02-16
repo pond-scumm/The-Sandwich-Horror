@@ -115,12 +115,7 @@
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
                     look: "Something's off about this door. There are scorch marks around the frame, and I can see a faint glow from underneath. Sounds like people arguing on the other side.",
-                    action: null
-                },
-                actionTrigger: {
-                    type: 'transition',
-                    target: 'alien_room',
-                    spawnPoint: 'from_hallway'
+                    action: ""
                 }
             },
 
@@ -162,12 +157,8 @@
                 name: "Hector's Room",
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
-                    look: "Hector's bedroom door. Looks like a pretty standard door, but knowing this house, who knows what's behind it."
-                },
-                actionTrigger: {
-                    type: 'transition',
-                    target: 'hectors_room',
-                    spawnPoint: 'from_second_floor'
+                    look: "Hector's bedroom door. Looks like a pretty standard door, but knowing this house, who knows what's behind it.",
+                    action: ""
                 }
             },
 

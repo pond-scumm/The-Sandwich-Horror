@@ -134,12 +134,8 @@
                 name: 'Window',
                 verbs: { action: 'Climb out', look: 'Look through' },
                 responses: {
-                    look: "A window overlooking the roof. The moonlight's coming in through here. I can see the shingles, a chimney... and is that a SATELLITE DISH? A huge one. What is Hector using that for?"
-                },
-                actionTrigger: {
-                    type: 'transition',
-                    target: 'roof',
-                    spawnPoint: 'from_franks_room'
+                    look: "A window overlooking the roof. The moonlight's coming in through here. I can see the shingles, a chimney... and is that a SATELLITE DISH? A huge one. What is Hector using that for?",
+                    action: ""
                 }
             },
             {

@@ -117,12 +117,8 @@
                 name: 'Front Door',
                 verbs: { action: 'Exit', look: 'Examine' },
                 responses: {
-                    look: ""
-                },
-                actionTrigger: {
-                    type: 'transition',
-                    target: 'front_of_house',
-                    spawnPoint: 'from_interior'
+                    look: "",
+                    action: ""
                 }
             },
             {

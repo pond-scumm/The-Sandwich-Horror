@@ -142,12 +142,8 @@
                 name: 'Side Room Door',
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
-                    look: "Another door. This one has a small window. Looks like a storage area back there."
-                },
-                actionTrigger: {
-                    type: 'transition',
-                    target: 'back_lab',
-                    spawnPoint: 'from_laboratory'
+                    look: "Another door. This one has a small window. Looks like a storage area back there.",
+                    action: ""
                 }
             },
 
