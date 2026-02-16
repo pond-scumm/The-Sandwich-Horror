@@ -136,7 +136,7 @@
                 name: 'Satellite Dish',
                 verbs: { action: 'Examine', look: 'Look at' },
                 responses: {
-                    look: "This thing is MASSIVE. It's pointed at the sky, tracking something - or broadcasting? The dish itself is at least 12 feet across, covered in metal panels and rivets. This is serious custom equipment. Way beyond consumer grade.",
+                    look: "This is serious custom equipment. Way beyond consumer grade.",
                     action: "I run my hand along the dish's surface. Cold metal, precision engineering. There are markings I don't recognize - coordinates? Frequencies? Whatever this is picking up, it's not your standard satellite TV."
                 }
             },
@@ -147,8 +147,8 @@
                 name: 'Control Panel',
                 verbs: { action: 'Use', look: 'Examine' },
                 responses: {
-                    look: "The control panel. There's a small screen showing current coordinates, a numeric keypad for input, and a big 'ADJUST DISH' button. The screen reads 'CURRENT: 42.3601° N, 71.0589° W - CHANNEL: 847.3 MHz'. A piece of duct tape on the side says 'DO NOT TOUCH - H.M.'",
-                    action: "The keypad is responsive. I could enter new coordinates if I knew where to point this thing. There's also a manual that's been duct-taped to the panel. The cover says 'INTERDIMENSIONAL RELAY CALIBRATION GUIDE' in Hector's handwriting."
+                    look: "The control panel. There's a small screen showing current coordinates, a numeric keypad for input. The screen reads 'CURRENT: 42.3601° N, 71.0589° W - CHANNEL: 847.3 MHz'.",
+                    action: "The keypad is responsive. I could enter new coordinates if I knew where to point this thing. "
                 }
                 // TODO: When player enters coordinates, trigger satellite movement and change alien's TV
             },

@@ -124,7 +124,7 @@
                 verbs: { action: 'Search', look: 'Examine' },
                 responses: {
                     look: "A large metal workbench covered in colorful beakers, test tubes, papers, and equipment. The organized chaos of active research.",
-                    action: "I carefully look through the clutter. Lots of interesting chemistry happening here, but nothing I can use right now."
+                    action: "Lots of interesting chemistry happening here, but nothing I can use right now."
                 }
             },
             // Beaker holder - only show if not already taken
@@ -135,8 +135,8 @@
                 name: 'Beaker Holder',
                 verbs: { action: 'Take', look: 'Examine' },
                 responses: {
-                    look: "",
-                    action: ""
+                    look: "This looks like a pair of tongs taped to a metal stand.",
+                    action: "I'll just take the tongs."
                 },
                 giveItem: 'tongs',
                 removeAfterPickup: true,
@@ -162,8 +162,8 @@
                 name: 'Laser Grid',
                 verbs: { action: 'Touch', look: 'Look at' },
                 responses: {
-                    look: "Red laser beams crisscrossing the doorway. They hum ominously. Probably the kind that vaporize things. Or at minimum, really hurt.",
-                    action: "I hold my hand near one of the beams. The air gets warm. Yeah, I'm not testing that theory."
+                    look: "Red laser beams. Probably the kind that vaporize things. Or at minimum, really hurt.",
+                    action: "I'm not gonna risk it."
                 }
             },
 

@@ -127,7 +127,7 @@
                 name: 'Back Lab Door',
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
-                    look: "Heavy security door. There's a keypad and what looks like a retina scanner. Behind it is the secure storage area with laser grids."
+                    look: "Heavy security door on this one. Must be something valuable back there."
                 },
                 actionTrigger: {
                     type: 'transition',
@@ -143,7 +143,7 @@
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
                     look: "Another door. This one has a small window. Looks like a storage area back there.",
-                    action: ""
+                    action: "It's locked. Must not be implemented yet."
                 }
             },
 
@@ -352,7 +352,10 @@
                 name: 'Electrical Panel',
                 verbs: { action: 'Use', look: 'Examine' },
                 responses: {
-                    look: "It's a spring loaded electrical panel.",
+                    look: [
+                    { condition: () => TSH.State.getFlag('lab.panel_open'), text: "There are broken parts sticking out everywhere." },
+                    { text: "Hmm what's inside this panel? It looks broken too." }
+                ],
                     action: ""
                 },
                 actionTrigger: {
@@ -370,8 +373,8 @@
                     name: 'Spring',
                     verbs: { action: 'Take', look: 'Examine' },
                     responses: {
-                        look: "",
-                        action: ""
+                        look: "It's a big spring popping out of the panel. ",
+                        action: "I think I can pull it out."
                     },
                     giveItem: 'spring_1',
                     removeAfterPickup: true
@@ -387,14 +390,8 @@
                     name: 'Broken Temporal Synchronizer',
                     verbs: { action: 'Touch', look: 'Examine' },
                     responses: {
-                        look: [
-                    { text: "A sophisticated mechanism integrated into the portal frame. It's ticking away steadily, keeping perfect time. The label reads 'TEMPORAL SYNCHRONIZER' which sounds way cooler than 'fancy clock.'" },
-                    { text: "The clock is now installed and ticking perfectly. The Temporal Synchronizer is operational again!" }
-                ],
-                        action: [
-                    { text: "It's humming along perfectly. Probably best not to mess with something that has 'temporal' in the name." },
-                    { text: "It's working perfectly now. Best not to mess with it." }
-                ]
+                        look: "It's supposed to be a highly-calibrated time keeping system, but it's broken.",
+                        action: "It's totally broken. I'll need to find a replacement."
                     }
                 });
             } else {
@@ -405,7 +402,7 @@
                     name: 'Fixed Temporal Synchronizer',
                     verbs: { action: 'Touch', look: 'Examine' },
                     responses: {
-                        look: "The clock is now installed and ticking perfectly. The Temporal Synchronizer is operational again!",
+                        look: "The clock is installed and ticking perfectly. The Temporal Synchronizer is operational again!",
                         action: "It's working perfectly now. Best not to mess with it."
                     }
                 });

@@ -957,25 +957,26 @@ function processRoomFile(roomId, sheetData, codeRoom) {
     for (const [key, variants] of Object.entries(variantGroups)) {
         const [hotspotId, verb] = key.split(':');
 
-        // Check if hotspot exists in code
-        if (!codeHotspots[hotspotId]) {
-            console.warn(`  Warning: Hotspot '${hotspotId}' in spreadsheet but not in ${roomId}.js — skipping`);
-            continue;
+        // Get hotspot info if available (may be null for conditional hotspots not in current state)
+        const codeHotspot = codeHotspots[hotspotId] || null;
+
+        // Optional validation based on hotspot type (if known)
+        if (codeHotspot) {
+            const isNPC = codeHotspot.type === 'npc' || codeHotspot.isNPC;
+            const isTransition = !!codeHotspot.actionTrigger;
+
+            // Skip action for transition hotspots that have no dialogue
+            const hasActionDialogue = variants.some(v => v.text && v.text.trim() !== '');
+            if (verb === 'action' && isTransition && !hasActionDialogue) continue;
+
+            // Skip talk for non-NPCs
+            if (verb === 'talk' && !isNPC) {
+                console.warn(`  Warning: TalkTo text for non-NPC '${hotspotId}' in ${roomId} — skipping`);
+                continue;
+            }
         }
-
-        const codeHotspot = codeHotspots[hotspotId];
-        const isNPC = codeHotspot.type === 'npc' || codeHotspot.isNPC;
-        const isTransition = !!codeHotspot.actionTrigger;
-
-        // Skip action for transition hotspots that have no dialogue
-        const hasActionDialogue = variants.some(v => v.text && v.text.trim() !== '');
-        if (verb === 'action' && isTransition && !hasActionDialogue) continue;
-
-        // Skip talk for non-NPCs
-        if (verb === 'talk' && !isNPC) {
-            console.warn(`  Warning: TalkTo text for non-NPC '${hotspotId}' in ${roomId} — skipping`);
-            continue;
-        }
+        // If codeHotspot is null (conditional hotspot), attempt replacement anyway
+        // The replacement will fail gracefully if the hotspot doesn't exist in source
 
         // Determine if this should be a variant array or simple string
         let value;
@@ -1007,8 +1008,8 @@ function processRoomFile(roomId, sheetData, codeRoom) {
 
         if (!itemInteractions || Object.keys(itemInteractions).length === 0) continue;
 
-        // Check if hotspot exists in code
-        if (!codeHotspots[hotspotId]) continue;
+        // Get hotspot info if available (may be null for conditional hotspots)
+        const codeHotspot = codeHotspots[hotspotId] || null;
 
         // Replace or insert item interaction strings
         const codeInteractions = (codeRoom.itemInteractions || {})[hotspotId] || {};

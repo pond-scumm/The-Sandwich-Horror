@@ -134,8 +134,8 @@
                 name: 'Window',
                 verbs: { action: 'Climb out', look: 'Look through' },
                 responses: {
-                    look: "A window overlooking the roof. The moonlight's coming in through here. I can see the shingles, a chimney... and is that a SATELLITE DISH? A huge one. What is Hector using that for?",
-                    action: ""
+                    look: "There's a HUGE satellite dish on the roof outside.",
+                    action: "It's locked. Must not be implemented yet."
                 }
             },
             {

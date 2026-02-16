@@ -42,14 +42,14 @@
     combinations[makeKey('spring_1', 'broken_moon_shoes')] = {
         consumes: ['spring_1', 'broken_moon_shoes'],
         produces: 'half_broken_moon_shoes',
-        dialogue: "",  // Dialogue from spreadsheet
+        dialogue: "It fits! Just needs one more spring.",  // Dialogue from spreadsheet
         setFlags: {}
     };
 
     combinations[makeKey('spring_2', 'broken_moon_shoes')] = {
         consumes: ['spring_2', 'broken_moon_shoes'],
         produces: 'half_broken_moon_shoes',
-        dialogue: "",  // Dialogue from spreadsheet
+        dialogue: "It fits! Just needs one more spring.",  // Dialogue from spreadsheet
         setFlags: {}
     };
 
@@ -57,14 +57,14 @@
     combinations[makeKey('spring_1', 'half_broken_moon_shoes')] = {
         consumes: ['spring_1', 'half_broken_moon_shoes'],
         produces: 'moon_shoes',
-        dialogue: "",  // Dialogue from spreadsheet
+        dialogue: "They're fully repaired now. Time to get bouncing!",  // Dialogue from spreadsheet
         setFlags: {}
     };
 
     combinations[makeKey('spring_2', 'half_broken_moon_shoes')] = {
         consumes: ['spring_2', 'half_broken_moon_shoes'],
         produces: 'moon_shoes',
-        dialogue: "",  // Dialogue from spreadsheet
+        dialogue: "They're fully repaired now. Time to get bouncing!",  // Dialogue from spreadsheet
         setFlags: {}
     };
 

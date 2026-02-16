@@ -115,7 +115,7 @@
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
                     look: "Something's off about this door. There are scorch marks around the frame, and I can see a faint glow from underneath. Sounds like people arguing on the other side.",
-                    action: ""
+                    action: "It's locked. Must not be implemented yet."
                 }
             },
 
@@ -127,7 +127,7 @@
                 name: 'Stairwell',
                 verbs: { action: 'Go down', look: 'Look at' },
                 responses: {
-                    look: "Stairs leading down to the foyer. Warm light spills up from below. The banister is polished smooth from decades of use."
+                    look: "Stairs leading down to the foyer. The banister is polished smooth from decades of use."
                 },
                 actionTrigger: {
                     type: 'transition',
@@ -144,7 +144,7 @@
                 name: 'Bathroom',
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
-                    look: "A bathroom door. Plain, unassuming, currently representing my only hope of relief.",
+                    look: "A bathroom door. Plain, unassuming.",
                     action: "It's locked. I'm not even sure why this door exists."
                 }
             },
@@ -158,7 +158,7 @@
                 verbs: { action: 'Open', look: 'Examine' },
                 responses: {
                     look: "Hector's bedroom door. Looks like a pretty standard door, but knowing this house, who knows what's behind it.",
-                    action: ""
+                    action: "It's locked. Must not be implemented yet."
                 }
             },
 
@@ -171,7 +171,7 @@
                 verbs: { action: 'Pull', look: 'Look at' },
                 responses: {
                     look: "A pull-string dangling from a ceiling hatch. I can hear faint sounds from above... scratching? Footsteps? Static? Something's up there.",
-                    action: "I can't reach it."
+                    action: "I can't reach it. Must not be implemented yet."
                 }
                 // TODO: Eventually transitions to attic
             },

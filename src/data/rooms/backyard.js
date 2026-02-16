@@ -218,7 +218,7 @@
                 verbs: { action: 'Search', look: 'Examine' },
                 responses: {
                     look: "An old clothesline. There's a lab coat hanging on it, flapping in the breeze. Been here a while.",
-                    action: "A spare lab coat! Hector must have forgotten about it. Could come in handy..."
+                    action: "This coat is soaking wet. "
                 }
                 // TODO: May be a way to get a lab coat for the disguise puzzle
             },
@@ -240,8 +240,8 @@
                 name: 'Doghouse',
                 verbs: { action: 'Look inside', look: 'Examine' },
                 responses: {
-                    look: "FLUFFY' is painted on the side. Where's Fluffy?",
-                    action: "Empty. Just some old dog toys and... is that a tiny lab coat? What happened to Fluffy?"
+                    look: "Where's Fluffy?",
+                    action: "Empty. Just some old dog toys and... is that a tiny lab coat? "
                 }
             },
             {
@@ -274,7 +274,7 @@
                 verbs: { action: 'Search', look: 'Examine' },
                 responses: {
                     look: "Standard garbage cans. One's overflowing with failed experiment notes.",
-                    action: "Let's see... old coffee filters, some kind of glowing residue, and... oh! Is that a trophy?"
+                    action: "Let's see... old coffee filters and some kind of glowing residue."
                 }
                 // TODO: This is where Hector threw the rival's trophy - puzzle item
             },
@@ -314,7 +314,7 @@
                 verbs: { action: 'Enter', look: 'Examine' },
                 responses: {
                     look: "A rickety old shed. The door faces this way. Smells like fertilizer and regret.",
-                    action: "The door's stuck. Or maybe locked? Either way, I've got bigger problems than whatever's in this shed."
+                    action: "The door's stuck. Must not be implemented yet."
                 }
             },
 
@@ -363,7 +363,7 @@
                     name: 'Fence Gate',
                     verbs: { action: 'Open', look: 'Examine' },
                     responses: {
-                        look: "The gate to Earl's yard. He said I'm welcome anytime.",
+                        look: "The gate to the neighbor's yard. He said I'm welcome any time. ",
                         action: null
                     },
                     actionTrigger: {
@@ -399,7 +399,7 @@
                     verbs: { action: 'Take', look: 'Examine' },
                     responses: {
                         look: "The ladder I placed here. Still not tall enough to reach the clock.",
-                        action: "I should leave it here for now. Might need it for something."
+                        action: "I should leave it here for now. I think I'm onto something."
                     }
                 });
             }
@@ -444,8 +444,12 @@
                     consumeItem: true,
                     giveItem: "clock",
                     setFlag: "clock.obtained"
-                }
-            },
+                },
+                broken_moon_shoes: "{\"dialogue\":\"I climb the ladder, put on the moon shoes, and JUMP! *CRASH* I grab the clock as I bounce off the wall. Success!\",\"consumeItem\":true,\"giveItem\":\"clock\",\"setFlag\":\"clock.obtained\"}",
+                half_broken_moon_shoes: "Not a bad idea... IF the shoes weren't still broken.",
+                spring_1: "I don't think the spring alone is enough to help here.",
+                spring_2: "I don't think the spring alone is enough to help here.",
+},
             fence_earl: {
                 default: "I don't think waving my {item} at the fence will help."
             },

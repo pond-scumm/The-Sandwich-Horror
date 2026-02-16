@@ -117,8 +117,8 @@
                 name: 'Front Door',
                 verbs: { action: 'Exit', look: 'Examine' },
                 responses: {
-                    look: "",
-                    action: ""
+                    look: "It's front door to the house.",
+                    action: "No going back now, I've come too far!"
                 }
             },
             {
@@ -128,8 +128,8 @@
                 name: 'Window',
                 verbs: { action: 'Open', look: 'Look through' },
                 responses: {
-                    look: "",
-                    action: ""
+                    look: "It's dark out there tonight. How did I make it through the woods?",
+                    action: "Painted shut. These old houses are always like that."
                 }
             },
             {
@@ -139,7 +139,7 @@
                 name: 'Coat Rack',
                 verbs: { action: 'Search', look: 'Examine' },
                 responses: {
-                    look: "Ooh, vintage! The moths think so too, apparently.",
+                    look: "It's an olied canvas lab coat. Practical for science in bad weather.",
                     action: "I found a receipt: 'eggs, milk, assorted beakers.' That's a grocery list I can respect."
                 }
             },
@@ -150,8 +150,8 @@
                 name: 'Small Table',
                 verbs: { action: 'Search', look: 'Examine' },
                 responses: {
-                    look: "That's not a table, that's a mail fort. Years of 'Science Monthly'! Jealous.",
-                    action: "All addressed to 'H. Manzana.' Someone's popular with the post office."
+                    look: "It's overflowing with junk mail.",
+                    action: "Nothing addressed to me. "
                 }
             },
             {
@@ -161,7 +161,7 @@
                 name: 'Grandfather Clock',
                 verbs: { action: 'Check time', look: 'Examine' },
                 responses: {
-                    look: "Almost midnight. Maybe we'll get a visit from Father Midnight!",
+                    look: "Almost midnight. Maybe if we perform the ritual correctly we'll get a visit from Father Midnight!",
                     action: "No secret lab hidden behind it. Missed opportunity."
                 }
             },
@@ -173,7 +173,7 @@
                 verbs: { action: 'Warm hands', look: 'Examine' },
                 responses: {
                     look: "Now THAT'S a fireplace. Mantle's got all sorts of stuff on it.",
-                    action: "Ohhh yes. Toasty. My fingers were basically icicles."
+                    action: "Wish I had some s'mores right about now."
                 }
             },
             {
@@ -184,7 +184,7 @@
                 verbs: { action: 'Pick up', look: 'Examine' },
                 responses: {
                     look: "It's a photo of a young scientist with a woman and a dog. ",
-                    action: "Nah, those are someone else's precious memories."
+                    action: "Nah, those are someone else's memories."
                 }
             },
             {
@@ -244,8 +244,8 @@
                 name: 'Right Window',
                 verbs: { action: 'Open', look: 'Look through' },
                 responses: {
-                    look: "I can see Sandwich from here. Just a few twinkling lights.",
-                    action: "Also broken. This guy really hates fresh air, huh."
+                    look: "I can see the town of Sandwich from here. Just a few twinkling lights.",
+                    action: "Also painted shut. This guy really hates fresh air."
                 }
             },
             {

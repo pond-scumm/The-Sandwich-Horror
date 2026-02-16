@@ -183,7 +183,7 @@
                     verbs: { action: 'Knock', look: 'Examine' },
                     responses: {
                         look: "This thing is a classic!",
-                        action: "I'd love to hit the road in this thing."
+                        action: "I'd love to hit the road in this."
                     }
                 },
 
@@ -229,7 +229,7 @@
                     verbs: { action: 'Knock', look: 'Examine' },
                     responses: {
                         look: "It's the door to the Airstream.",
-                        action: "I'm not going to barge in. "
+                        action: "No reason to go inside, everyone is out here."
                     }
                 },
                 {
@@ -277,7 +277,7 @@
                     verbs: { action: 'Listen', look: 'Examine' },
                     responses: {
                         look: "It's a old tube radio with great reception.",
-                        action: ""
+                        action: "I'll change the station."
                     },
                     actionTrigger: { type: 'action', action: 'cycle_radio_station' }
                 },
@@ -303,7 +303,7 @@
                     type: 'npc',
                     verbs: { action: 'Talk to', look: 'Look at' },
                     responses: {
-                        look: "A large, friendly-looking fellow in a chef's hat. He's got an easy smile and smells faintly of charcoal and pine.",
+                        look: "A large, friendly-looking sasquatch in a chef's hat. He's smells faintly of charcoal and pine.",
                         action: null
                     }
                     // TODO: Wire up Earl's conversation tree
@@ -324,7 +324,7 @@
                     verbs: { action: 'Take', look: 'Examine' },
                     responses: {
                         look: "A sturdy aluminum ladder. That would be really useful for reaching high places...",
-                        action: "I'll grab this and bring it right back!"  // Success - Earl gave permission
+                        action: "Thanks again for the ladder! | earl: No problemo!"  // Success - Earl gave permission
                     },
                     giveItem: 'ladder',
                     removeAfterPickup: true

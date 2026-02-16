@@ -32,8 +32,8 @@
         broken_moon_shoes: {
             id: 'broken_moon_shoes',
             name: 'Broken Moon Shoes',
-            description: "",
-            failDefault: "",
+            description: "These moon shoes would be fun if they weren't broken.",
+            failDefault: "I don't think broken moon shoes will help there.",
             consumable: false,
             combinable: ['spring_1', 'spring_2']
         },
@@ -41,8 +41,8 @@
         half_broken_moon_shoes: {
             id: 'half_broken_moon_shoes',
             name: 'Half-Broken Moon Shoes',
-            description: "",
-            failDefault: "",
+            description: "They're almost fixed, just need another spring. ",
+            failDefault: "I don't think half-broken moon shoes will help here.",
             consumable: false,
             combinable: ['spring_1', 'spring_2']
         },
@@ -50,8 +50,8 @@
         moon_shoes: {
             id: 'moon_shoes',
             name: 'Moon Shoes',
-            description: "",
-            failDefault: "",
+            description: "The moon shoes are fully functional!",
+            failDefault: "I don't think jumping higher will help there.",
             consumable: false,
             combinable: []
         },
@@ -70,7 +70,7 @@
             id: 'candle',
             name: 'Candle',
             description: "An unlit candle. I forgot I had this!",
-            failDefault: "",
+            failDefault: "Nah.",
             consumable: false,
             combinable: ['matches'],
             color: 0xffdd44
@@ -91,8 +91,8 @@
         spring_1: {
             id: 'spring_1',
             name: 'Spring 1',
-            description: "",
-            failDefault: "",
+            description: "It's a spare spring I found in the lab.",
+            failDefault: "Some extra bounce won't help here.",
             consumable: false,
             combinable: ['broken_moon_shoes']
         },
@@ -100,8 +100,8 @@
         spring_2: {
             id: 'spring_2',
             name: 'Spring 2',
-            description: "",
-            failDefault: "",
+            description: "It's a spring I pulled from a bed.",
+            failDefault: "Some extra bounce won't help here.",
             consumable: false,
             combinable: ['broken_moon_shoes']
         },
@@ -109,8 +109,8 @@
         ladder: {
             id: 'ladder',
             name: 'Ladder',
-            description: "",
-            failDefault: "",
+            description: "It's not the tallest ladder...",
+            failDefault: "Nah.",
             consumable: false,
             combinable: []
         },
@@ -119,7 +119,7 @@
             id: 'scalpel',
             name: 'Scalpel',
             description: "As sharp as the devil himself.",
-            failDefault: "",
+            failDefault: "I don't want to go around threatening everyone.",
             consumable: false,
             combinable: []
         },
@@ -127,8 +127,8 @@
         tongs: {
             id: 'tongs',
             name: 'Tongs',
-            description: "",
-            failDefault: "",
+            description: "These were holding up a beaker in the lab.",
+            failDefault: "I don't need help grabbing that.",
             consumable: false,
             combinable: []
         },
@@ -136,8 +136,8 @@
         clock: {
             id: 'clock',
             name: 'Clock',
-            description: "",
-            failDefault: "",
+            description: "It's the clock I pulled off a wall. ",
+            failDefault: "Time keeping isn't going to help here.",
             consumable: true,
             combinable: []
         }

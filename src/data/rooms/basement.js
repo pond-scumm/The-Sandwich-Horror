@@ -122,8 +122,8 @@
                 name: 'Nuclear Generator',
                 verbs: { action: 'Examine', look: 'Look at' },
                 responses: {
-                    look: "A large nuclear generator humming with ominous power. Green lights pulse through viewing windows. The control panel has switches for 'Lab 1' and 'Lab 2'. There's a power outlet at the base.",
-                    action: "The generator powers parts of the lab. Lab 1 seems inactive - the fuse looks blown. Lab 2 is still running. There's a power cord I could unplug..."
+                    look: "A large nuclear generator humming with ominous power. The control panel has switches for 'Lab 1' and 'Lab 2'. ",
+                    action: "Lab 1 seems inactive - the fuse looks blown. Lab 2 is still running though."
                 }
                 // TODO: State-driven - can unplug/plug generator, affects security systems
             },
@@ -136,7 +136,7 @@
                 name: 'Stairs to Backyard',
                 verbs: { action: 'Climb', look: 'Look at' },
                 responses: {
-                    look: "Wooden stairs leading up to the outside. Light filters down from above. I can see each step descending from the open bulkhead doors.",
+                    look: "Wooden stairs leading up to the backyard.",
                     action: null
                 },
                 actionTrigger: {
@@ -155,7 +155,7 @@
                 type: 'npc',
                 verbs: { action: 'Talk to', look: 'Look at' },
                 responses: {
-                    look: "A gentle giant in a black suit. Frank has green skin and distinctive neck bolts. He's standing quietly, looking friendly despite his imposing appearance.",
+                    look: "A gentle giant with distinctive neck bolts.",
                     action: null
                 }
                 // TODO: Conversation system - Frank can loan TV Guide, swap brains, needs to be strapped down
@@ -169,8 +169,8 @@
                 name: 'Brain in Jar',
                 verbs: { action: 'Take', look: 'Examine' },
                 responses: {
-                    look: "A human brain floating in glowing green liquid. The jar is labeled 'ABNORMAL' in classic horror movie fashion. That's not ominous at all.",
-                    action: "I... probably shouldn't just grab someone's brain without asking. Even if it IS labeled 'abnormal'."
+                    look: "The jar is labeled 'ABNORMAL'.",
+                    action: "I probably shouldn't grab someone's brain without asking."
                 }
                 // TODO: State-driven - can take after talking to Hector, needed for stabilizer core puzzle
             },
@@ -181,7 +181,7 @@
                 name: 'Specimen Jars',
                 verbs: { action: 'Examine', look: 'Look at' },
                 responses: {
-                    look: "Various jars with mysterious contents. Some glow faintly. Labels include 'DO NOT OPEN' and 'PROPERTY OF DR. M.'",
+                    look: "Various jars with mysterious contents.",
                     action: "Better not. These look like the kind of things that end badly when touched."
                 }
             },
@@ -194,7 +194,7 @@
                 removeAfterPickup: true,
                 verbs: { action: 'Take', look: 'Examine' },
                 responses: {
-                    look: "",
+                    look: "Moon shoes! These were banned in six states!",
                     action: ""
                 }
             },
@@ -207,8 +207,8 @@
                 name: 'Cobwebs',
                 verbs: { action: 'Clear away', look: 'Look at' },
                 responses: {
-                    look: "Thick cobwebs in the corner. How long has it been since anyone cleaned down here?",
-                    action: "Nope. I'm not touching those. If there's a spider the size of my hand in there, I don't want to know."
+                    look: "How long has it been since anyone cleaned down here?",
+                    action: "If there's a radioactive spider in there, I don't want to know."
                 }
             },
             {
@@ -218,7 +218,7 @@
                 name: 'Old Workbench',
                 verbs: { action: 'Search', look: 'Examine' },
                 responses: {
-                    look: "A dusty workbench covered in tools and parts. Looks like Frank might use this for... something.",
+                    look: "A dusty workbench covered in tools and parts.",
                     action: "Tools, bolts, screws, random metal pieces... nothing immediately useful."
                 }
             },
@@ -229,7 +229,7 @@
                 name: 'Task Lamp',
                 verbs: { action: 'Turn off', look: 'Look at' },
                 responses: {
-                    look: "An old task lamp with a dented metal shade. The bulb flickers occasionally.",
+                    look: "An old task lamp with a dented metal shade. ",
                     action: "I'd rather leave it on. The basement is dark enough as it is."
                 }
             },
@@ -240,8 +240,8 @@
                 name: 'Bare Bulb',
                 verbs: { action: 'Touch', look: 'Look at' },
                 responses: {
-                    look: "A single bare lightbulb hanging from the ceiling. It casts harsh shadows everywhere.",
-                    action: "Still hot. And I just made everything sway. Great lighting design there, Hector."
+                    look: "A single bare lightbulb hanging from the ceiling.",
+                    action: "I'd rather leave it on. The basement is dark enough as it is."
                 }
             },
             {
@@ -320,8 +320,12 @@
                 fuse: "I insert the fuse into the Lab 1 slot. The indicator light flickers on. Lab 1 is back online!",
                 default: "The {item} doesn't fit anywhere on the generator."
             },
-            _default: "I don't think the {item} works with the {hotspot}."
-        },
+            _default: "I don't think the {item} works with the {hotspot}.",
+            broken_moon_shoes: {
+                spring_1: "I should pick them up first.",
+                            spring_2: "I should pick them up first.",
+},
+},
 
         firstVisit: {
             delay: 800,
