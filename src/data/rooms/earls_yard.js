@@ -311,9 +311,9 @@
             ];
 
             // === LADDER (conditional based on tongs returned AND not yet picked up) ===
-            if (TSH.State.getFlag('clock.has_ladder')) {
+            if (TSH.State.hasItem('ladder')) {
                 // Ladder already picked up - don't show hotspot at all
-                // (visual is also hidden by drawing function checking same flag)
+                // (visual is also hidden by drawing function checking same item)
             } else if (TSH.State.getFlag('clock.returned_borrowed_item')) {
                 // After returning tongs but before pickup - ladder is pickupable
                 hotspots.push({
@@ -327,7 +327,6 @@
                         action: "I'll grab this and bring it right back!"  // Success - Earl gave permission
                     },
                     giveItem: 'ladder',
-                    pickupFlag: 'clock.has_ladder',
                     removeAfterPickup: true
                 });
             } else {
@@ -397,7 +396,7 @@
 },
 
         // Flags that trigger automatic hotspot refresh
-        relevantFlags: ['clock.returned_borrowed_item', 'clock.has_ladder'],
+        relevantFlags: ['clock.returned_borrowed_item'],
 
         firstVisit: {
             delay: 600,
@@ -1024,7 +1023,7 @@
 
         // === LADDER (in front of right tree, base below tree line) ===
         // Only draw if player hasn't picked it up yet
-        if (!TSH.State.getFlag('clock.has_ladder')) {
+        if (!TSH.State.hasItem('ladder')) {
             drawLadder(g, LAYOUT.ladder.x, treeFloorY, p*120);
         }
     }

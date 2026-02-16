@@ -72,13 +72,10 @@
 
                 // Clock puzzle chain (Temporal Synchronizer)
                 clock: {
-                    has_spring_1: false,         // From lab cabinet
                     fixed: false,                // Clock installed in synchronizer
                     earl_invited: false,         // Got invite to yard
                     returned_borrowed_item: false,
-                    has_ladder: false,
-                    ladder_deployed: false,      // Ladder placed under clock
-                    has_clock: false             // Got the clock!
+                    ladder_deployed: false       // Ladder placed under clock
                 },
 
                 // Miscellaneous flags (for backwards compatibility with flat flag names)

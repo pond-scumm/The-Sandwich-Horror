@@ -70,7 +70,7 @@ nate: If I got Hector to return the grill claws would you let me borrow the ladd
 earl: If you could get the old trusty rusty grill claws back to me I'll let you borrow anything you want!
 
 - Mind if I borrow your ladder now?
-# requires: clock.returned_borrowed_item, !clock.has_ladder
+# requires: clock.returned_borrowed_item, !has:ladder
 nate: Now that you have your grill claws back, do you mind if I borrow your ladder?
 earl: Sure thing! Just promise you won't do anything crazy with it. 
 

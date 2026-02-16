@@ -51,7 +51,8 @@
       "Bash(ffmpeg:*)",
       "Bash(move:*)",
       "Bash(exit:*)",
-      "Bash(cmd /c \"npm start\")"
+      "Bash(cmd /c \"npm start\")",
+      "Bash(git diff:*)"
     ]
   }
 }

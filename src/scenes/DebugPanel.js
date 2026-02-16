@@ -28,13 +28,13 @@
 
     // ── Inventory item groups ────────────────────────────────────────────
     const ITEM_GROUPS = {
-        'General': ['help_wanted_ad', 'crowbar', 'matches', 'candle', 'lit_candle', 'damage_report'],
-        'Lab / Hector': ['keycard', 'lab_coat', 'dusty_book'],
-        'Clock': ['broken_moon_shoes', 'half_broken_moon_shoes', 'moon_shoes', 'spring_1', 'spring_2', 'ladder', 'borrowed_item', 'scalpel', 'tongs', 'clock'],
-        'Power': ['padlock', 'monkey', 'fuse'],
-        'Screen': ['tv_guide', 'wrench', 'tv'],
-        'Brain': ['brain', 'trophy_item_1', 'trophy_item_2', 'trophy_assembled', 'spray_paint', 'trophy_painted', 'sharpie', 'fake_trophy', 'goggles', 'hector_disguise'],
-        'Finale': ['mirror']
+        'General': ['help_wanted_ad', 'matches', 'candle', 'lit_candle'],
+        'Lab / Hector': [],
+        'Clock': ['broken_moon_shoes', 'half_broken_moon_shoes', 'moon_shoes', 'spring_1', 'spring_2', 'ladder', 'scalpel', 'tongs', 'clock'],
+        'Power': [],
+        'Screen': [],
+        'Brain': [],
+        'Finale': []
     };
 
     // ── Layout constants ─────────────────────────────────────────────────

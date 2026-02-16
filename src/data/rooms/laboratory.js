@@ -378,7 +378,6 @@
                         action: ""
                     },
                     giveItem: 'spring_1',
-                    pickupFlag: 'clock.has_spring_1',
                     removeAfterPickup: true
                 });
             }

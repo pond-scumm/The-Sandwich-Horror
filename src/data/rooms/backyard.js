@@ -375,7 +375,7 @@
             }
 
             // Clock on wall (only if not taken yet)
-            if (!TSH.State.getFlag('clock.has_clock')) {
+            if (!TSH.State.hasItem('clock')) {
                 hotspots.push({
                     id: 'clock_wall',
                     ...LAYOUT.clock,
@@ -417,7 +417,7 @@
         // RELEVANT FLAGS (triggers automatic hotspot refresh)
         // =====================================================================
 
-        relevantFlags: ['clock.ladder_deployed', 'clock.has_clock', 'clock.earl_invited'],
+        relevantFlags: ['clock.ladder_deployed', 'clock.earl_invited'],
 
         // =====================================================================
         // ITEM INTERACTIONS
@@ -442,8 +442,7 @@
                 moon_shoes: {
                     dialogue: "I climb the ladder, put on the moon shoes, and JUMP! *CRASH* I grab the clock as I bounce off the wall. Success!",
                     consumeItem: true,
-                    giveItem: "clock",
-                    setFlag: "clock.has_clock"
+                    giveItem: "clock"
                 }
             },
             fence_earl: {
@@ -1206,7 +1205,7 @@
         drawWindow(g, windowX, windowY, windowW, windowH);
 
         // Clock on wall (only if not taken yet)
-        if (!TSH.State.getFlag('clock.has_clock')) {
+        if (!TSH.State.hasItem('clock')) {
             drawClock(g, LAYOUT.clock.x, height * LAYOUT.clock.y);
         }
 
@@ -1296,7 +1295,7 @@
         drawWindow(g, windowX, windowY, windowW, windowH);
 
         // Clock on wall (only if not taken yet)
-        if (!TSH.State.getFlag('clock.has_clock')) {
+        if (!TSH.State.hasItem('clock')) {
             drawClock(g, LAYOUT.clock.x, height * LAYOUT.clock.y);
         }
 
