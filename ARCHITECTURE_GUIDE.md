@@ -317,6 +317,24 @@ TSH.Rooms.laboratory = {
             actionTrigger: { type: 'action', action: 'talk_to_earl' }
         },
         {
+            id: 'fence_gate',
+            x: 500, y: 0.75, w: 80, h: 0.20,
+            interactX: 500, interactY: 0.82,
+            name: 'Fence Gate',
+            verbs: { action: 'Open', look: 'Examine' },
+            responses: {
+                look: "Gate to the neighbor's yard.",
+                action: "Hello? Is anyone over there?"     // Nate's dialogue before NPC appears
+            },
+            actionTrigger: {
+                type: 'npc_conversation',                   // Shows hidden NPC and starts dialogue
+                npcId: 'earl_at_fence',                     // ID of NPC to show
+                dialogue: 'earl_fence'                      // Dialogue file from src/data/dialogue/
+            }
+            // Behavior: (1) Shows useResponse if present, (2) Makes NPC visible,
+            // (3) Loads and starts dialogue, (4) Hides NPC when conversation ends
+        },
+        {
             id: 'pickup_example',
             x: 200, y: 0.65, w: 30, h: 0.05,
             interactX: 200, interactY: 0.82,
@@ -394,17 +412,38 @@ TSH.Rooms.laboratory = {
         pauseIn: ['interior']
     },
 
-    // Procedural drawing via layers array (supports parallax)
+    // Procedural drawing via layers array (supports parallax and depth-based layering)
     layers: [
         {
             type: 'procedural',
             name: 'background',
-            depth: 0,
+            depth: 40,                      // Lower depth = renders first (further back)
             scrollFactor: 1.0,
-            draw: (g, scene, worldWidth, height) => { /* drawing code */ }
+            draw: (g, scene, worldWidth, height) => { /* sky, stars, distant elements */ }
+        },
+        {
+            type: 'procedural',
+            name: 'foreground',
+            depth: 50,                      // Higher depth = renders last (in front)
+            scrollFactor: 1.0,
+            draw: (g, scene, worldWidth, height) => { /* fence, grass, occluding elements */ }
+        }
+    ],
+
+    // NPCs can be positioned between layers using depth values
+    npcs: [
+        {
+            id: 'earl_at_fence',
+            depth: 45,                      // Between background (40) and foreground (50)
+            // Earl renders behind fence but in front of sky
+            position: { x: 500, y: 0.85 },
+            hidden: true
         }
     ]
-    // OR legacy single-function alternative (no parallax):
+    // Depth-based rendering: Lower values render first. Use layer depths to control
+    // what appears in front/behind NPCs. Example: background(40) < NPC(45) < foreground(50)
+
+    // OR legacy single-function alternative (no parallax or depth control):
     // drawRoom: (g, scene, worldWidth, height) => { /* drawing code */ }
 }
 ```
@@ -712,6 +751,8 @@ npcs: [
         sprite: 'earl_placeholder',      // Loaded from assets/sprites/
         position: { x: 920, y: 0.82 },
         heightRatio: 1.15,                // Relative to Nate's height
+        depth: 45,                        // Optional: explicit depth for layering
+        hidden: true,                     // Optional: starts invisible
         interactX: 920,
         interactY: 0.82
     }
@@ -721,7 +762,8 @@ npcs: [
 **Key Points:**
 - Sprites are loaded in `BaseScene.js` during preload
 - `heightRatio` scales the sprite relative to Nate's height (camera zoom adjusted)
-- Sprite depth is controlled by `depth` property or auto-calculated from Y position
+- `depth` — Optional explicit depth value for z-ordering. Lower values render first (further back). Use to position NPCs between room layers (e.g., depth: 45 renders between background layer at 40 and foreground at 50). If omitted, depth is auto-calculated from Y position.
+- `hidden` — Optional boolean. If true, NPC starts invisible and must be shown via `showNPC()` method (typically by npc_conversation trigger). If omitted or false, NPC is visible on room load.
 - Add lighting sources in room's `lighting.sources[]` to illuminate NPCs
 
 **NPCs with Sprite Artwork:**
