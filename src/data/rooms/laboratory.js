@@ -531,7 +531,7 @@
         // =====================================================================
 
         itemInteractions: {
-            component_clock: {
+            component_clock_broken: {
                 clock: {
                     condition: () => !TSH.State.getFlag('clock.fixed'),
                     failDialogue: "The clock is already installed.",
