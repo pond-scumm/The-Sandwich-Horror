@@ -90,7 +90,7 @@
                 id: 'hector',
                 position: { x: 2700, y: 0.82 },
                 sprite: 'hector_placeholder',
-                dialogue: 'hector_lab',
+                dialogue: 'hector',
                 name: 'Hector',
                 lookResponse: "A composed man in a pristine lab coat. Slick dark hair, goggles on his forehead, a meticulous mustache. He's focused on the terminal, completely in his element."
             }
@@ -311,13 +311,12 @@
                 interactX: 2432, interactY: 0.828,
                 interactFacing: 'right',  // Force Nate to face right (toward Hector)
                 name: 'Hector',
-                isNPC: true,
-                verbs: { action: 'Approach', look: 'Examine', talk: 'Talk to' },
+                type: 'npc',
+                verbs: { action: 'Talk to', look: 'Look at' },
                 responses: {
                     look: "That must be Hector. It's go time. ",
-                    action: ""
+                    action: null
                 }
-                // Talk will trigger conversation via NPC system
             }
             ];
 

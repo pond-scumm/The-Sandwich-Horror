@@ -1,0 +1,41 @@
+=== start ===
+
+nate: Hey Hector.
+hector: Hello Nathaniel. How's your progress?
+
+- What am I supposed to be doing again?
+# id: remind_goal
+nate: What am I supposed to be doing again?
+hector: The Temporal Synchronizer is broken, Nathaniel.
+hector: We need a replacement clock mechanism to get it operational.
+hector: Without it, the experiment cannot proceed.
+
+- What's this big experiment for?
+# once
+nate: So what's this big experiment actually for?
+hector: Ah, an excellent question!
+hector: We're attempting to create a stable temporal-spatial gateway.
+hector: Think of it as a doorway through time and space, but with significantly less screaming than usual.
+hector: Well, theoretically less screaming.
+
+- Is what we're doing dangerous?
+# once
+nate: Is what we're doing dangerous?
+hector: Dangerous? No, no, no.
+hector: Well... perhaps mildly hazardous.
+hector: Possibly moderately perilous.
+hector: Let's just say the safety protocols are more like "safety suggestions."
+hector: But don't worry! I've only had to evacuate the lab twice this month.
+
+- What do you do for fun around here?
+# once
+nate: What do you do for fun around here in the middle of nowhere?
+hector: Fun? Nathaniel, I conduct SCIENCE.
+hector: Although... Earl and I do play dominoes on Thursdays.
+hector: He's surprisingly strategic for someone with such large fingers.
+hector: Last week he beat me three games in a row. I suspect foul play.
+
+- I should get back to work.
+nate: I should get back to work.
+hector: Excellent initiative, Nathaniel. The synchronizer won't fix itself!
+> END
