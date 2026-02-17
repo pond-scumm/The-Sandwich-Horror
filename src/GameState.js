@@ -79,6 +79,17 @@
                     obtained: false              // Clock obtained (triggers room refresh)
                 },
 
+                // Frank's Room items and interactions
+                franks_room: {
+                    bed_cut: false,              // Bed mattress cut with scalpel
+                    spring_taken: false          // Spring picked up from bed
+                },
+
+                // Secure Storage items and interactions
+                storage: {
+                    beaker_holder_taken: false   // Beaker holder picked up
+                },
+
                 // Miscellaneous flags (for backwards compatibility with flat flag names)
                 // Scenes using flat names like setFlag('alien_talked') will store here
                 misc: {}

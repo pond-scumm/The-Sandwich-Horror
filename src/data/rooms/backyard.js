@@ -355,6 +355,7 @@
             }
 
             // Fence gate - open (after invitation)
+            // @state fence_gate_unlocked: flag:clock.earl_invited
             if (TSH.State.getFlag('clock.earl_invited')) {
                 hotspots.push({
                     id: 'fence_gate_unlocked',
@@ -390,6 +391,7 @@
             }
 
             // Deployed ladder (appears after using ladder on clock)
+            // @state ladder_deployed: flag:clock.ladder_deployed
             if (TSH.State.getFlag('clock.ladder_deployed')) {
                 hotspots.push({
                     id: 'ladder_deployed',

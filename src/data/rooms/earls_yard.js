@@ -316,6 +316,7 @@
                 // (visual is also hidden by drawing function checking same item)
             } else if (TSH.State.getFlag('clock.returned_borrowed_item')) {
                 // After returning tongs but before pickup - ladder is pickupable
+                // @state ladder_earl_unlocked: flag:clock.returned_borrowed_item
                 hotspots.push({
                     id: 'ladder_earl_unlocked',
                     ...LAYOUT.ladder,
@@ -331,6 +332,7 @@
                 });
             } else {
                 // Before returning tongs - ladder visible but not pickupable
+                // @state ladder_earl_locked: default
                 hotspots.push({
                     id: 'ladder_earl_locked',
                     ...LAYOUT.ladder,

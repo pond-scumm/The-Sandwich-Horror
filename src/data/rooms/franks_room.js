@@ -163,6 +163,7 @@
                 }
             },
             // Spring on bed - only appears after cutting bed and before picking up
+            // @state spring_bed: flag:franks_room.bed_cut
             ...(TSH.State.getFlag('franks_room.bed_cut') && !TSH.State.getFlag('franks_room.spring_taken') ? [{
                 id: 'spring_bed',
                 ...LAYOUT.spring_bed,

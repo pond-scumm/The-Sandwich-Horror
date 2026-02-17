@@ -472,6 +472,60 @@ function createItemCombinationsSheet(wb, items, combinations, existingLines) {
 // ── Room Sheets ─────────────────────────────────────────────────────────────
 
 /**
+ * Parse all hotspot IDs from room source code
+ * Returns a Set of hotspot IDs found in the source
+ */
+function parseHotspotIdsFromSource(roomSource) {
+    const hotspotIds = new Set();
+    // Match: id: 'something' or id: "something"
+    const regex = /\bid:\s*['"](\w+)['"]/g;
+    let match;
+    while ((match = regex.exec(roomSource)) !== null) {
+        hotspotIds.add(match[1]);
+    }
+    return hotspotIds;
+}
+
+/**
+ * Create a targeted mock state function for a given state specification
+ * @param {string} stateSpec - e.g., "flag:franks_room.bed_cut" or "has:scalpel" or "default"
+ * @returns {Object} - { getFlag: fn, hasItem: fn }
+ */
+function createTargetedMockState(stateSpec) {
+    if (stateSpec === 'default') {
+        // Default state: all flags false, no items
+        return {
+            getFlag: () => false,
+            hasItem: () => false
+        };
+    }
+
+    if (stateSpec.startsWith('flag:')) {
+        // Specific flag is true, all others false
+        const flagName = stateSpec.slice(5); // Remove "flag:" prefix
+        return {
+            getFlag: (flag) => flag === flagName,
+            hasItem: () => false
+        };
+    }
+
+    if (stateSpec.startsWith('has:')) {
+        // Specific item is held, all flags false
+        const itemName = stateSpec.slice(4); // Remove "has:" prefix
+        return {
+            getFlag: () => false,
+            hasItem: (item) => item === itemName
+        };
+    }
+
+    // Unknown state spec, default to all false
+    return {
+        getFlag: () => false,
+        hasItem: () => false
+    };
+}
+
+/**
  * Parse @state annotations from room file source code
  * Returns a map: { hotspot_id: ['state1', 'state2', ...] }
  */
@@ -617,28 +671,36 @@ function createRoomSheet(wb, roomId, room, items, roomSource = '') {
     if (room.hotspots) {
         hotspots = room.hotspots;
     } else if (room.getHotspotData) {
-        // Call getHotspotData multiple times with different mock states to capture
-        // all conditional hotspots (e.g., ladder_deployed that only appears when flag is true)
-        // Use composite key (id + name) to avoid losing variants with different names
+        // Hybrid approach: Parse source to discover ALL hotspot IDs, then execute
+        // getHotspotData() with targeted states based on @state annotations to get dialogue
         const hotspotsMap = new Map();
 
-        // State 1: All flags false, no items
-        globalThis.TSH.State.getFlag = () => false;
-        globalThis.TSH.State.hasItem = () => false;
-        let hotspots1 = room.getHotspotData(800);
-        hotspots1.forEach(h => hotspotsMap.set(`${h.id}_${h.name}`, h));
+        // Parse all hotspot IDs from source code (discovers conditional hotspots)
+        const allHotspotIds = roomSource ? parseHotspotIdsFromSource(roomSource) : new Set();
 
-        // State 2: All flags true, no items
-        globalThis.TSH.State.getFlag = () => true;
-        globalThis.TSH.State.hasItem = () => false;
-        let hotspots2 = room.getHotspotData(800);
-        hotspots2.forEach(h => hotspotsMap.set(`${h.id}_${h.name}`, h));
+        // For each discovered hotspot, test with targeted states to capture it
+        for (const hotspotId of allHotspotIds) {
+            const states = stateAnnotations[hotspotId] || ['default'];
 
-        // State 3: All flags false, all items
-        globalThis.TSH.State.getFlag = () => false;
-        globalThis.TSH.State.hasItem = () => true;
-        let hotspots3 = room.getHotspotData(800);
-        hotspots3.forEach(h => hotspotsMap.set(`${h.id}_${h.name}`, h));
+            // Try each state until we find the hotspot
+            let found = false;
+            for (const stateSpec of states) {
+                if (found) break;
+
+                const mockState = createTargetedMockState(stateSpec);
+                globalThis.TSH.State.getFlag = mockState.getFlag;
+                globalThis.TSH.State.hasItem = mockState.hasItem;
+
+                const hotspotsInThisState = room.getHotspotData(800);
+                const targetHotspot = hotspotsInThisState.find(h => h.id === hotspotId);
+
+                if (targetHotspot) {
+                    // Use composite key (id + name) to deduplicate
+                    hotspotsMap.set(`${targetHotspot.id}_${targetHotspot.name}`, targetHotspot);
+                    found = true;
+                }
+            }
+        }
 
         // Merged list (deduplicated by id+name)
         hotspots = Array.from(hotspotsMap.values());
