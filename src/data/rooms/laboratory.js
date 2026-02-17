@@ -258,7 +258,7 @@
             {
                 id: 'computer_terminal',
                 x: 2651, y: 0.581, w: 192, h: 0.210,
-                interactX: 2651, interactY: 0.82,
+                interactX: 2535, interactY: 0.824,
                 name: 'Computer Terminal',
                 verbs: { action: 'Use', look: 'Examine' },
                 responses: {
@@ -308,8 +308,9 @@
             {
                 id: 'hector',
                 x: 2697, y: 0.604, w: 43, h: 0.395,
-                interactX: 2600, interactY: 0.82,
-                name: 'Scientist',
+                interactX: 2432, interactY: 0.828,
+                interactFacing: 'right',  // Force Nate to face right (toward Hector)
+                name: 'Hector',
                 isNPC: true,
                 verbs: { action: 'Approach', look: 'Examine', talk: 'Talk to' },
                 responses: {
