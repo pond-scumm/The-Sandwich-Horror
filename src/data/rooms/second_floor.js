@@ -209,32 +209,6 @@
                     look: "This one's different. The subject has very large eyes, unusually smooth skin, and... are those ANTENNAE painted over with hair? Someone tried to cover them up with brown paint.",
                     action: "The nameplate just says 'Cousin'. There's no date. The more I look at this portrait, the less human it appears. I'm going to stop looking at it now."
                 }
-            },
-
-            // === THERMOSTAT ===
-            {
-                id: 'thermostat',
-                x: 1150, y: 0.415, w: 40, h: 0.08,
-                interactX: 1170, interactY: 0.82,
-                name: 'Thermostat',
-                verbs: { action: 'Adjust', look: 'Check' },
-                responses: {
-                    look: "An old dial thermostat. It's set to... 147 degrees?! No wonder Hector wears that lab coat everywhere. He's acclimated to the surface of the sun.",
-                    action: "It's stuck. Or maybe welded in place? Someone REALLY likes it hot in here."
-                }
-            },
-
-            // === WALL SCONCE ===
-            {
-                id: 'sconce_wall',
-                x: 1200, y: 0.29, w: 30, h: 0.08,
-                interactX: 1200, interactY: 0.82,
-                name: 'Wall Sconce',
-                verbs: { action: 'Touch', look: 'Examine' },
-                responses: {
-                    look: "A brass wall sconce with a flickering electric bulb. Very period-appropriate. The glow is warm but dim.",
-                    action: "The bulb flickers when I touch it but stays on. These things have been burning for who knows how long."
-                }
             }
         ],
 
@@ -253,10 +227,6 @@
                 key: "Nope, wrong key. This one's definitely for something else.",
                 crowbar: "I'm not breaking down a bathroom door. That's a line I'm not crossing tonight.",
                 default: "I don't think {item} is going to get me into a locked bathroom."
-            },
-            thermostat: {
-                screwdriver: "The cover comes off, but the dial is still stuck. This thing has been welded in place. Hector is COMMITTED to this temperature.",
-                default: "The {item} isn't going to convince this thermostat to cooperate."
             },
             _default: "I don't think the {item} works with the {hotspot}."
         },
@@ -727,28 +697,6 @@
         g.globalAlpha = 1.0;
     }
 
-    function drawThermostat(g, x, y) {
-        // Mounting plate
-        g.fillStyle(0xccccbb);
-        g.fillRect(x - p * 10, y, p * 20, p * 25);
-        g.fillStyle(0xddddcc);
-        g.fillRect(x - p * 8, y + p * 2, p * 16, p * 21);
-
-        // Dial
-        g.fillStyle(0x888888);
-        g.fillRect(x - p * 5, y + p * 6, p * 10, p * 10);
-        g.fillStyle(0xaaaaaa);
-        g.fillRect(x - p * 3, y + p * 8, p * 6, p * 6);
-
-        // Dial indicator (pointing way up - set too high!)
-        g.fillStyle(0xff4444);
-        g.fillRect(x - p, y + p * 8, p * 2, p * 5);
-
-        // Temperature markings
-        g.fillStyle(0x1a1a1a);
-        g.fillRect(x - p * 7, y + p * 18, p * 14, p * 4);
-    }
-
     function drawAtticPullString(g, x, y) {
         // Ceiling hatch outline
         g.fillStyle(COLORS.WOOD_DARK);
@@ -802,11 +750,8 @@
         // === PORTRAITS (raised up, not touching wainscoting) ===
         // Portrait 1 removed - was overlapping with Frank's door
         drawPortrait(g, 720, height * 0.12, 2);   // Between alien door and stairwell, right of sconce
-        drawPortrait(g, 1000, height * 0.12, 3);  // Moved left, away from thermostat
+        drawPortrait(g, 1000, height * 0.12, 3);  // Between stairwell and bathroom
         drawPortrait(g, 1550, height * 0.12, 4);  // Between bathroom door and final sconce
-
-        // === THERMOSTAT ===
-        drawThermostat(g, p * 575, height * 0.38);
 
         // === ATTIC PULL STRING ===
         drawAtticPullString(g, p * 825, height * 0.22);
