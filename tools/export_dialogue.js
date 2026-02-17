@@ -477,8 +477,9 @@ function createItemCombinationsSheet(wb, items, combinations, existingLines) {
  */
 function parseHotspotIdsFromSource(roomSource) {
     const hotspotIds = new Set();
-    // Match: id: 'something' or id: "something"
-    const regex = /\bid:\s*['"](\w+)['"]/g;
+    // Match hotspot objects by looking for id: followed by responses:
+    // responses: is unique to hotspots (lighting sources, NPCs, etc. don't have it)
+    const regex = /\bid:\s*['"](\w+)['"]\s*,[\s\S]{0,800}responses:\s*\{/g;
     let match;
     while ((match = regex.exec(roomSource)) !== null) {
         hotspotIds.add(match[1]);
@@ -677,6 +678,7 @@ function createRoomSheet(wb, roomId, room, items, roomSource = '') {
 
         // Parse all hotspot IDs from source code (discovers conditional hotspots)
         const allHotspotIds = roomSource ? parseHotspotIdsFromSource(roomSource) : new Set();
+        const capturedHotspotIds = new Set();
 
         // For each discovered hotspot, test with targeted states to capture it
         for (const hotspotId of allHotspotIds) {
@@ -697,7 +699,19 @@ function createRoomSheet(wb, roomId, room, items, roomSource = '') {
                 if (targetHotspot) {
                     // Use composite key (id + name) to deduplicate
                     hotspotsMap.set(`${targetHotspot.id}_${targetHotspot.name}`, targetHotspot);
+                    capturedHotspotIds.add(hotspotId);
                     found = true;
+                }
+            }
+        }
+
+        // Warn about hotspots found in source but not captured (likely missing @state annotation)
+        for (const hotspotId of allHotspotIds) {
+            if (!capturedHotspotIds.has(hotspotId)) {
+                // Check if it has an annotation - if not, warn
+                if (!stateAnnotations[hotspotId]) {
+                    console.warn(`    ⚠ Warning: Found '${hotspotId}' in source but never captured during testing`);
+                    console.warn(`      → Likely missing @state annotation for conditional hotspot`);
                 }
             }
         }

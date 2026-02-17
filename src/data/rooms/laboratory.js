@@ -227,7 +227,7 @@
                 name: 'Interdimensional Relay',
                 verbs: { action: 'Touch', look: 'Examine' },
                 responses: {
-                    look: "A display screen showing... wavelengths? Dimensions? Readings I can't begin to interpret. The label says 'INTERDIMENSIONAL RELAY SERVICE.' Fancy TV, got it.",
+                    look: "A display screen showing... wavelengths? Dimensions? Readings I can't begin to interpret. ",
                     action: "The screen flickers through data faster than I can read. Whatever it's doing, it's doing it with confidence."
                 }
             },
@@ -238,8 +238,8 @@
                 name: 'Energy Resonator',
                 verbs: { action: 'Touch', look: 'Examine' },
                 responses: {
-                    look: "A pulsing core of contained energy. I can feel it vibrating from here. 'NUCLEAR ENERGY RESONATOR' says the label. That's not ominous at all.",
-                    action: "It's practically thrumming with power. I think I'll admire it from a safe distance."
+                    look: "A pulsing core of contained energy. I can feel it vibrating from here.",
+                    action: "It's practically bursting with power. I think I'll admire it from a safe distance."
                 }
             },
             {
@@ -249,8 +249,8 @@
                 name: 'Stabilizer Cortex',
                 verbs: { action: 'Touch', look: 'Examine' },
                 responses: {
-                    look: "Looks like an extremely elaborate and over-engineerd CPU. The label says 'STABILIZER CORTEX'.",
-                    action: "That's the brain of this device. I'm not touching the brain. That's a rule I'm making right now. No touching brains."
+                    look: "Looks like an extremely elaborate and over-engineered CPU.",
+                    action: "That's basically the brain of this device. I'm not touching the brain. That's a rule I'm making right now. No touching brains."
                 }
             },
 
@@ -365,6 +365,7 @@
             });
 
             // Spring inside panel - only visible when panel is open
+            // @state spring_panel: flag:lab.panel_open
             if (TSH.State.getFlag('lab.panel_open') && !TSH.State.hasItem('spring_1')) {
                 hotspots.push({
                     id: 'spring_panel',
@@ -382,6 +383,7 @@
             }
 
             // Temporal Synchronizer component (broken/fixed states)
+            // @state component_clock_broken: default
             if (!TSH.State.getFlag('clock.fixed')) {
                 hotspots.push({
                     id: 'component_clock_broken',
@@ -395,6 +397,7 @@
                     }
                 });
             } else {
+                // @state component_clock_fixed: flag:clock.fixed
                 hotspots.push({
                     id: 'component_clock_fixed',
                     x: 2137, y: 0.544, w: 60, h: 0.110,

@@ -108,7 +108,7 @@
                 verbs: { action: 'Uncover', look: 'Look at' },
                 responses: {
                     look: "Something large under a dusty tarp. Could be anything from an old generator to a very committed ghost.",
-                    action: "I lift the edge. Looks like old lab equipment. Definitely not a ghost. Probably."
+                    action: "Looks like old lab equipment. Definitely not a ghost. Probably."
                 }
             },
             {

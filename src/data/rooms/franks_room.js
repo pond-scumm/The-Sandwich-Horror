@@ -171,8 +171,8 @@
                 name: 'Spring',
                 verbs: { action: 'Take', look: 'Examine' },
                 responses: {
-                    look: "",
-                    action: ""
+                    look: "A spring burst out of the mattress where I cut it.",
+                    action: "Yoink."
                 },
                 giveItem: 'spring_2',
                 removeAfterPickup: true,
