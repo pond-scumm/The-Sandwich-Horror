@@ -202,6 +202,9 @@
                 if (!this.textures.exists('hector_placeholder')) {
                     this.load.image('hector_placeholder', 'assets/sprites/hector_placeholder.png');
                 }
+                if (!this.textures.exists('hector_idle')) {
+                    this.load.image('hector_idle', 'assets/sprites/hector/hector_idle.png');
+                }
                 if (!this.textures.exists('earl_idle')) {
                     this.load.image('earl_idle', 'assets/sprites/earl/earl_idle.png');
                 }
@@ -212,6 +215,12 @@
                     this.load.spritesheet('earl_talk', 'assets/sprites/earl/Earl_Talking-Sheet.png', {
                         frameWidth: 180,
                         frameHeight: 700
+                    });
+                }
+                if (!this.textures.exists('hector_talk')) {
+                    this.load.spritesheet('hector_talk', 'assets/sprites/hector/hector_talking-Sheet.png', {
+                        frameWidth: 147,
+                        frameHeight: 589
                     });
                 }
                 if (!this.textures.exists('frank_placeholder')) {
@@ -251,6 +260,15 @@
                     this.anims.create({
                         key: 'earl_talk',
                         frames: this.anims.generateFrameNumbers('earl_talk', { start: 0, end: 3 }),
+                        frameRate: 6,
+                        repeat: -1
+                    });
+                }
+
+                if (!this.anims.exists('hector_talk') && this.textures.exists('hector_talk')) {
+                    this.anims.create({
+                        key: 'hector_talk',
+                        frames: this.anims.generateFrameNumbers('hector_talk', { start: 0, end: 6 }),
                         frameRate: 6,
                         repeat: -1
                     });
@@ -3208,6 +3226,30 @@
                 this.npcSpeechBubble.add(this.npcDialogText);
             }
 
+            // Helper: Get the appropriate idle texture for an NPC
+            getNPCIdleTexture(npcId, inConversation = false) {
+                if (!npcId) return null;
+
+                // Extract base NPC name (strip location suffixes like '_at_fence')
+                const baseNpcId = npcId.split('_at_')[0].split('_in_')[0];
+
+                // If in conversation, check for conversation-specific idle first
+                if (inConversation) {
+                    if (this.textures.exists(`${npcId}_idle_conversation`)) {
+                        return `${npcId}_idle_conversation`;
+                    }
+                    if (this.textures.exists(`${baseNpcId}_idle_conversation`)) {
+                        return `${baseNpcId}_idle_conversation`;
+                    }
+                }
+
+                // Fallback to regular idle (try full ID first, then base ID)
+                if (this.textures.exists(`${npcId}_idle`)) {
+                    return `${npcId}_idle`;
+                }
+                return `${baseNpcId}_idle`;
+            }
+
             enterConversation(npcData, dialogueTree, npcId = null) {
                 console.log('[Conversation] enterConversation called');
                 console.log('[Conversation] npcData:', npcData);
@@ -3224,9 +3266,10 @@
                 this.conversationData = dialogueTree;
                 this.conversationNPCId = npcId; // Store for once-tracking
 
-                // Swap Earl to conversation idle pose
-                if (npcId === 'earl' && this.npcSprites && this.npcSprites['earl']) {
-                    this.npcSprites['earl'].setTexture('earl_idle_conversation');
+                // Swap NPC to conversation idle pose (if they have one)
+                if (npcId && this.npcSprites && this.npcSprites[npcId]) {
+                    const conversationIdle = this.getNPCIdleTexture(npcId, true);
+                    this.npcSprites[npcId].setTexture(conversationIdle);
                 }
 
                 console.log('[Conversation] Step 2: Selecting starting node...');
@@ -3321,10 +3364,12 @@
             }
 
             exitConversation() {
-                // Restore Earl to normal idle pose
-                if (this.conversationNPCId === 'earl' && this.npcSprites && this.npcSprites['earl']) {
-                    this.npcSprites['earl'].stop();
-                    this.npcSprites['earl'].setTexture('earl_idle');
+                // Restore NPC to normal idle pose
+                const npcId = this.conversationNPCId;
+                if (npcId && this.npcSprites && this.npcSprites[npcId]) {
+                    this.npcSprites[npcId].stop();
+                    const normalIdle = this.getNPCIdleTexture(npcId, false);
+                    this.npcSprites[npcId].setTexture(normalIdle);
                 }
 
                 // Set transition guard to prevent immediate re-triggering
@@ -3654,9 +3699,17 @@
                     console.log('[Conversation] Hero speech bubble visible:', this.speechBubble.visible);
                     console.log('[Conversation] Hero speech bubble position:', this.speechBubble.x, this.speechBubble.y);
                 } else {
-                    // Play Earl's talking animation when he's speaking
-                    if (this.conversationNPCId === 'earl' && this.npcSprites && this.npcSprites['earl']) {
-                        this.npcSprites['earl'].play('earl_talk');
+                    // Play NPC's talking animation (if they have one)
+                    const npcId = this.conversationNPCId;
+                    const sprite = this.npcSprites?.[npcId];
+                    if (sprite) {
+                        // Try full NPC ID first, then base ID (strips location suffixes)
+                        const baseNpcId = npcId.split('_at_')[0].split('_in_')[0];
+                        if (this.anims.exists(`${npcId}_talk`)) {
+                            sprite.play(`${npcId}_talk`);
+                        } else if (this.anims.exists(`${baseNpcId}_talk`)) {
+                            sprite.play(`${baseNpcId}_talk`);
+                        }
                     }
 
                     // Use NPC speech bubble
@@ -3697,10 +3750,13 @@
                     }
                     this.speechBubble.setVisible(false);
                 } else {
-                    // Stop Earl's talking animation, return to conversation idle
-                    if (this.conversationNPCId === 'earl' && this.npcSprites && this.npcSprites['earl']) {
-                        this.npcSprites['earl'].stop();
-                        this.npcSprites['earl'].setTexture('earl_idle_conversation');
+                    // Stop NPC's talking animation, return to conversation idle
+                    const npcId = this.conversationNPCId;
+                    const sprite = this.npcSprites?.[npcId];
+                    if (sprite) {
+                        sprite.stop();
+                        const conversationIdle = this.getNPCIdleTexture(npcId, true);
+                        sprite.setTexture(conversationIdle);
                     }
                     this.npcSpeechBubble.setVisible(false);
                 }
