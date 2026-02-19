@@ -464,17 +464,17 @@ class TitleScene extends Phaser.Scene {
     createClickPrompt(W, H) {
         const fontFamily = '"LucasArts SCUMM Solid", "Press Start 2P", cursive';
 
-        this.clickPrompt = this.add.text(W / 2, H - 240, 'CLICK ANYWHERE TO BEGIN', {
+        this.clickPrompt = this.add.text(W / 2, H - 360, 'CLICK ANYWHERE TO BEGIN', {
             fontFamily: fontFamily,
-            fontSize: '13px',
-            color: '#6b5a8a',
+            fontSize: '32px',
+            color: '#ffffff',
             letterSpacing: 4,
         }).setOrigin(0.5, 0.5).setDepth(100);
 
         // Pulsing animation
         this.tweens.add({
             targets: this.clickPrompt,
-            alpha: { from: 0.4, to: 0.9 },
+            alpha: { from: 0.5, to: 1 },
             duration: 2000,
             yoyo: true,
             repeat: -1,
@@ -555,19 +555,15 @@ class TitleScene extends Phaser.Scene {
         this.menuContainer = this.add.container(W / 2, 0).setDepth(80).setAlpha(0);
 
         const fontFamily = '"LucasArts SCUMM Solid", "Press Start 2P", cursive';
-        const menuY = H - 180; // bottom-anchored like mockup
-        const itemSpacing = 40;
-        const items = [
-            { label: 'NEW GAME',   enabled: true,  action: 'newGame' },
-            { label: 'LOAD GAME',  enabled: false, action: 'loadGame' },
-            { label: 'SETTINGS',   enabled: false, action: 'settings' },
-            { label: 'CONTROLS',   enabled: false, action: 'controls' },
-        ];
+        const fontSize = '38px';
+        const itemSpacing = 76;
+        const panelW = 500;
+        const panelPad = 36;
+        const rowGap = 20;
 
-        // Calculate panel dimensions
-        const panelW = 320;
-        const panelH = items.length * itemSpacing + 80 + 50; // extra for fullscreen row + padding
-        const panelY = menuY - panelH / 2 - 20;
+        // Panel holds two rows: FULLSCREEN (top) + NEW GAME (bottom)
+        const panelH = panelPad + itemSpacing + rowGap + itemSpacing + panelPad;
+        const panelY = H - 150 - panelH;
 
         // Dark backdrop panel
         const panel = this.add.graphics();
@@ -577,80 +573,26 @@ class TitleScene extends Phaser.Scene {
         panel.strokeRoundedRect(-panelW / 2, panelY, panelW, panelH, 2);
         this.menuContainer.add(panel);
 
-        // Menu items
-        let currentY = panelY + 28;
+        // === FULLSCREEN (top row) ===
+        // Center the label at x=0, then measure its width to place the checkbox
+        // flush against its left edge so the pair appears visually centered.
+        const fsY = panelY + panelPad + itemSpacing / 2;
 
-        items.forEach((item, index) => {
-            const color = item.enabled ? COLORS.textDim : COLORS.textDisabled;
-
-            // Cursor arrow (hidden by default)
-            const cursor = this.add.text(-110, currentY, '▸', {
-                fontFamily: fontFamily,
-                fontSize: '16px',
-                color: '#39ff7f',
-            }).setOrigin(0, 0.5).setAlpha(0);
-
-            // Label
-            const label = this.add.text(0, currentY, item.label, {
-                fontFamily: fontFamily,
-                fontSize: '16px',
-                color: color,
-                letterSpacing: 2,
-            }).setOrigin(0.5, 0.5);
-
-            this.menuContainer.add(cursor);
-            this.menuContainer.add(label);
-
-            const menuItem = {
-                label: label,
-                cursor: cursor,
-                enabled: item.enabled,
-                action: item.action,
-                baseColor: color,
-            };
-            this.menuItems.push(menuItem);
-
-            // Interactive hit area for enabled items
-            if (item.enabled) {
-                const hitZone = this.add.rectangle(0, currentY, panelW - 20, itemSpacing, 0x000000, 0)
-                    .setInteractive({ useHandCursor: true });
-                this.menuContainer.add(hitZone);
-
-                hitZone.on('pointerover', () => {
-                    this.selectedIndex = index;
-                    this.updateMenuHighlight();
-                });
-                hitZone.on('pointerout', () => {
-                    this.updateMenuHighlight();
-                });
-                hitZone.on('pointerdown', () => {
-                    this.selectMenuItem();
-                });
-            }
-
-            currentY += itemSpacing;
-        });
-
-        // === FULLSCREEN CHECKBOX ===
-        const fsY = currentY + 10;
-
-        // Checkbox box
-        const checkbox = this.add.graphics();
-        this.drawCheckbox(checkbox, false);
-        checkbox.setPosition(-70, fsY);
-        this.menuContainer.add(checkbox);
-
-        // Checkbox label
-        const fsLabel = this.add.text(-48, fsY, 'FULLSCREEN', {
+        const fsLabel = this.add.text(0, fsY, 'FULLSCREEN', {
             fontFamily: fontFamily,
-            fontSize: '12px',
+            fontSize: fontSize,
             color: COLORS.textDim,
             letterSpacing: 2,
-        }).setOrigin(0, 0.5);
+        }).setOrigin(0.5, 0.5);
         this.menuContainer.add(fsLabel);
 
-        // Fullscreen hit area
-        const fsHit = this.add.rectangle(0, fsY, panelW - 20, 36, 0x000000, 0)
+        const checkbox = this.add.graphics();
+        this.drawCheckbox(checkbox, false);
+        // Position checkbox just left of the text's left edge
+        checkbox.setPosition(-fsLabel.width / 2 - 18, fsY);
+        this.menuContainer.add(checkbox);
+
+        const fsHit = this.add.rectangle(0, fsY, panelW - 20, itemSpacing, 0x000000, 0)
             .setInteractive({ useHandCursor: true });
         this.menuContainer.add(fsHit);
 
@@ -658,11 +600,8 @@ class TitleScene extends Phaser.Scene {
         this.fsCheckbox = checkbox;
         this.fsLabel = fsLabel;
 
-        fsHit.on('pointerdown', () => {
-            this.toggleFullscreen();
-        });
+        fsHit.on('pointerdown', () => this.toggleFullscreen());
 
-        // Listen for fullscreen changes (user may press Escape)
         this.scale.on('enterfullscreen', () => {
             this.isFullscreen = true;
             this.drawCheckbox(this.fsCheckbox, true);
@@ -672,6 +611,42 @@ class TitleScene extends Phaser.Scene {
             this.drawCheckbox(this.fsCheckbox, false);
         });
 
+        // === NEW GAME (bottom row) ===
+        const ngY = panelY + panelPad + itemSpacing + rowGap + itemSpacing / 2;
+
+        const label = this.add.text(0, ngY, 'NEW GAME', {
+            fontFamily: fontFamily,
+            fontSize: fontSize,
+            color: COLORS.textDim,
+            letterSpacing: 2,
+        }).setOrigin(0.5, 0.5);
+
+        // Position cursor arrow flush against the text's left edge
+        const cursor = this.add.text(-label.width / 2 - 16, ngY, '▸', {
+            fontFamily: fontFamily,
+            fontSize: '30px',
+            color: '#39ff7f',
+        }).setOrigin(1, 0.5).setAlpha(0);
+
+        this.menuContainer.add(label);
+        this.menuContainer.add(cursor);
+
+        this.menuItems.push({
+            label: label,
+            cursor: cursor,
+            enabled: true,
+            action: 'newGame',
+            baseColor: COLORS.textDim,
+        });
+
+        const hitZone = this.add.rectangle(0, ngY, panelW - 20, itemSpacing, 0x000000, 0)
+            .setInteractive({ useHandCursor: true });
+        this.menuContainer.add(hitZone);
+
+        hitZone.on('pointerover', () => { this.selectedIndex = 0; this.updateMenuHighlight(); });
+        hitZone.on('pointerout', () => { this.updateMenuHighlight(); });
+        hitZone.on('pointerdown', () => { this.selectMenuItem(); });
+
         // Set initial highlight
         this.updateMenuHighlight();
     }
@@ -680,11 +655,11 @@ class TitleScene extends Phaser.Scene {
         gfx.clear();
         // Border
         gfx.lineStyle(2, 0x6b5a8a, 1);
-        gfx.strokeRect(-8, -8, 16, 16);
+        gfx.strokeRect(-11, -11, 22, 22);
         // Check mark
         if (checked) {
             gfx.fillStyle(0x39ff7f, 1);
-            gfx.fillRect(-4, -4, 8, 8);
+            gfx.fillRect(-6, -6, 12, 12);
         }
     }
 
