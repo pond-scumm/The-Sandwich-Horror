@@ -3218,33 +3218,46 @@
                 });
             }
 
+            // Shrink a text object's font size (in steps of 4px) until its rendered
+            // height fits within maxHeight, but never below minFontSize.
+            _adjustFontSizeToFit(textObj, defaultFontSize, minFontSize, maxHeight) {
+                textObj.setFontSize(defaultFontSize);
+                let size = defaultFontSize;
+                while (textObj.height > maxHeight && size > minFontSize) {
+                    size = Math.max(size - 4, minFontSize);
+                    textObj.setFontSize(size);
+                }
+            }
+
             updateSpeechBubblePosition() {
                 if (!this.speechBubble || !this.player) return;
 
                 const { width, height } = this.scale;
                 const scrollX = this.cameras.main.scrollX || 0;
+                const topMargin = 10;
+                const defaultFontSize = this.isMobile ? 60 : 35;
+                const minFontSize = this.isMobile ? 36 : 22;
 
                 // When inventory is open, position text at top of screen above the inventory box
                 if (this.inventoryOpen) {
-                    const textY = 30;  // Near top of screen
-                    const textX = scrollX + width / 2;
-
-                    // Wide word wrap - can extend past inventory box
                     this.dialogText.setWordWrapWidth(width * 0.85);
-                    this.dialogText.setOrigin(0.5, 0);  // Top-center origin so text expands downward
-
-                    this.speechBubble.setPosition(textX, textY);
+                    this.dialogText.setOrigin(0.5, 0);
+                    this.dialogText.setFontSize(defaultFontSize);
+                    this.speechBubble.setPosition(scrollX + width / 2, topMargin);
                     return;
                 }
 
-                // Normal positioning: above the player
-                // Reset word wrap to default
+                // Reset word wrap and font size, then shrink if the block is too tall
                 this.dialogText.setWordWrapWidth(width * 0.85);
                 this.dialogText.setOrigin(0.5, 0);
+                const maxTextHeight = this.player.y - topMargin - 20; // must fit above player
+                this._adjustFontSizeToFit(this.dialogText, defaultFontSize, minFontSize, maxTextHeight);
+
+                // Start above the player, then clamp so the top edge stays on screen
+                let textY = this.player.y - 480;
+                textY = Math.max(textY, topMargin);
 
                 let textX = this.player.x;
-                let textY = this.player.y - 480;
-
                 const halfWidth = this.dialogText.width / 2;
                 const camLeft = scrollX + halfWidth + 10;
                 const camRight = scrollX + width - halfWidth - 10;
@@ -3287,11 +3300,22 @@
 
                 const { width } = this.scale;
                 const scrollX = this.cameras.main.scrollX || 0;
+                const topMargin = 10;
+                const defaultFontSize = this.isMobile ? 60 : 35;
+                const minFontSize = this.isMobile ? 36 : 22;
+
+                // Reset word wrap and font size, then shrink if the block is too tall
+                this.npcDialogText.setWordWrapWidth(width * 0.85);
+                const maxTextHeight = npcPos.y - topMargin - 20;
+                this._adjustFontSizeToFit(this.npcDialogText, defaultFontSize, minFontSize, maxTextHeight);
 
                 let npcX = npcPos.x;
-                let npcY = npcPos.y - 480;  // Same offset as Nate
+                let npcY = npcPos.y - 480;
 
-                // Clamp to screen edges
+                // Clamp top edge on screen (npcDialogText uses center origin, so top = npcY - height/2)
+                npcY = Math.max(npcY, topMargin + this.npcDialogText.height / 2);
+
+                // Clamp to screen edges horizontally
                 const halfWidth = this.npcDialogText.width / 2;
                 const camLeft = scrollX + halfWidth + 10;
                 const camRight = scrollX + width - halfWidth - 10;
@@ -3810,8 +3834,18 @@
                     this.npcDialogText.setText(text);
 
                     // Position above NPC (use conversationNPC position)
+                    const topMargin = 10;
+                    const defaultFontSize = this.isMobile ? 60 : 35;
+                    const minFontSize = this.isMobile ? 36 : 22;
+
+                    this.npcDialogText.setWordWrapWidth(width * 0.85);
+                    const maxTextHeight = this.conversationNPC.y - topMargin - 20;
+                    this._adjustFontSizeToFit(this.npcDialogText, defaultFontSize, minFontSize, maxTextHeight);
+
                     let npcX = this.conversationNPC.x;
-                    let npcY = this.conversationNPC.y - 480;  // Match hero offset (above head)
+                    let npcY = this.conversationNPC.y - 480;
+                    // Clamp top edge on screen (npcDialogText uses center origin, so top = npcY - height/2)
+                    npcY = Math.max(npcY, topMargin + this.npcDialogText.height / 2);
 
                     const halfWidth = this.npcDialogText.width / 2;
                     const camLeft = scrollX + halfWidth + 10;
