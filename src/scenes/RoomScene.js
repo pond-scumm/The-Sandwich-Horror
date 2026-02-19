@@ -1238,6 +1238,22 @@ class RoomScene extends BaseScene {
                 });
             }
 
+            // Smoothly pan the camera back to center on Nate so there's no
+            // jarring jump when the player first moves after the intro.
+            if (this.player && this.worldWidth > this.screenWidth) {
+                const targetScrollX = Phaser.Math.Clamp(
+                    this.player.x - this.screenWidth / 2,
+                    0,
+                    this.worldWidth - this.screenWidth
+                );
+                this.tweens.add({
+                    targets: this.cameras.main,
+                    scrollX: targetScrollX,
+                    duration: 300,
+                    ease: 'Sine.easeInOut'
+                });
+            }
+
             this.introMusicKey = null;
             this.introConversationActive = false;
         }
