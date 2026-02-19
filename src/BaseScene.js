@@ -3557,7 +3557,7 @@
             handleDialogueChoice(option, currentNode) {
                 console.log('[Conversation] handleDialogueChoice called');
                 console.log('[Conversation] option:', option);
-                console.log('[Conversation] option.heroLine:', option.heroLine);
+                console.log('[Conversation] option.lines:', option.lines);
                 console.log('[Conversation] currentNode:', currentNode);
 
                 // Set exit guard immediately if this is an exit option
@@ -3597,21 +3597,9 @@
                 option.used = true;
 
                 // Hero says their line
-                console.log('[Conversation] About to call showConversationLine with heroLine:', option.heroLine);
-                this.showConversationLine(option.heroLine, 'hero', () => {
-                    // Then NPC responds
-                    if (option.npcResponse) {
-                        // Handle npcResponse as array (multi-line support)
-                        const responses = Array.isArray(option.npcResponse)
-                            ? option.npcResponse
-                            : [option.npcResponse]; // Wrap legacy single string
-
-                        this._showNPCResponses(responses, 0, () => {
-                            this._finishDialogueChoice(option, currentNode);
-                        });
-                    } else {
-                        this._finishDialogueChoice(option, currentNode);
-                    }
+                // Play all dialogue lines in document order (interleaved nate/hector supported)
+                this._playOptionLines(option.lines || [], 0, () => {
+                    this._finishDialogueChoice(option, currentNode);
                 });
             }
 
@@ -3629,14 +3617,16 @@
                 }
             }
 
-            _showNPCResponses(responses, index, onComplete) {
-                if (index >= responses.length) {
+            _playOptionLines(lines, index, onComplete) {
+                if (index >= lines.length) {
                     onComplete();
                     return;
                 }
 
-                this.showConversationLine(responses[index], 'npc', () => {
-                    this._showNPCResponses(responses, index + 1, onComplete);
+                const line = lines[index];
+                const speakerType = line.speaker === 'nate' ? 'hero' : 'npc';
+                this.showConversationLine(line.text, speakerType, () => {
+                    this._playOptionLines(lines, index + 1, onComplete);
                 });
             }
 

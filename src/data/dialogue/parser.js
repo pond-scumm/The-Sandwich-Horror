@@ -161,8 +161,7 @@ TSH.DialogueParser = {
         const optionText = lines[startIndex].substring(1).trim(); // Remove '-'
         const option = {
             text: optionText,
-            heroLine: null,
-            npcResponse: [],
+            lines: [],      // Ordered {speaker, text} array — supports interleaved nate/hector dialogue
             nextNode: null,
             exit: false
         };
@@ -211,14 +210,8 @@ TSH.DialogueParser = {
             if (speakerMatch) {
                 const speaker = speakerMatch[1].toLowerCase();
                 const text = speakerMatch[2];
-
-                if (speaker === 'nate') {
-                    option.heroLine = text || '';
-                } else {
-                    // NPC line - skip empty text
-                    if (text) {
-                        option.npcResponse.push(text);
-                    }
+                if (text && text.trim() !== '') {
+                    option.lines.push({ speaker, text });
                 }
                 i++;
                 continue;
@@ -246,11 +239,6 @@ TSH.DialogueParser = {
                 removeItems: annotations.removeItems,
                 once: annotations.once
             };
-        }
-
-        // Convert empty npcResponse array to null for consistency
-        if (option.npcResponse.length === 0) {
-            option.npcResponse = null;
         }
 
         return { option, nextIndex: i };
