@@ -764,41 +764,47 @@ class TitleScene extends Phaser.Scene {
         if (this.isTransitioning) return;
         this.isTransitioning = true;
 
-        // Fade out music
-        if (typeof TSH !== 'undefined' && TSH.Audio && TSH.Audio.stopAllMusic) {
-            TSH.Audio.stopAllMusic({ fade: 2000 });
-        } else if (this.titleMusic) {
-            this.tweens.add({
-                targets: this.titleMusic,
-                volume: 0,
-                duration: 2000,
-                ease: 'Linear',
-                onComplete: () => this.titleMusic.stop(),
-            });
+        // --- Step 1: Immediate button feedback — turn label white ---
+        const selectedItem = this.menuItems[this.selectedIndex];
+        if (selectedItem) {
+            selectedItem.label.setColor('#ffffff');
+            if (selectedItem.cursor) selectedItem.cursor.setAlpha(0);
         }
 
-        // Fade screen to black
-        const blackOverlay = this.add.rectangle(640, 360, 1280, 720, 0x000000, 0).setDepth(200);
+        // --- Step 2: Brief pause, then fade music + camera to black together ---
+        this.time.delayedCall(400, () => {
+            // Fade out music
+            if (typeof TSH !== 'undefined' && TSH.Audio && TSH.Audio.stopAllMusic) {
+                TSH.Audio.stopAllMusic({ fade: 1500 });
+            } else if (this.titleMusic) {
+                this.tweens.add({
+                    targets: this.titleMusic,
+                    volume: 0,
+                    duration: 1500,
+                    ease: 'Linear',
+                    onComplete: () => this.titleMusic.stop(),
+                });
+            }
 
-        this.tweens.add({
-            targets: blackOverlay,
-            alpha: 1,
-            duration: 2000,
-            ease: 'Power2',
-            onComplete: () => {
-                // Clean up particles timer
-                if (this.particleTimer) {
-                    this.particleTimer.destroy();
-                }
+            // Camera fade to black
+            this.cameras.main.fadeOut(1500, 0, 0, 0);
+            this.cameras.main.once('camerafadeoutcomplete', () => {
+                // --- Step 3: Hold black briefly, then hand off to RoomScene ---
+                this.time.delayedCall(300, () => {
+                    if (this.particleTimer) {
+                        this.particleTimer.destroy();
+                    }
 
-                // Reset game state for a clean new game
-                if (typeof TSH !== 'undefined' && TSH.State) {
-                    TSH.State.init();
-                }
+                    // Reset game state for a clean new game
+                    if (typeof TSH !== 'undefined' && TSH.State) {
+                        TSH.State.init();
+                    }
 
-                // Transition to the first room
-                this.scene.start('RoomScene', { roomId: 'laboratory' });
-            },
+                    // Transition to the first room.
+                    // RoomScene.create() calls cameras.main.fadeIn(500) to reveal from black.
+                    this.scene.start('RoomScene', { roomId: 'laboratory' });
+                });
+            });
         });
     }
 
