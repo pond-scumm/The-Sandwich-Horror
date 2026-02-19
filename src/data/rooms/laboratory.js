@@ -92,7 +92,7 @@
         npcs: [
             {
                 id: 'hector',
-                position: { x: 2700, y: 0.77 },
+                position: { x: 2700, y: 0.82 },
                 sprite: 'hector_idle',
                 dialogue: 'hector',
                 name: 'Hector',
@@ -312,7 +312,7 @@
             // === HECTOR NPC ===
             {
                 id: 'hector',
-                x: 2697, y: 0.554, w: 43, h: 0.395,
+                x: 2697, y: 0.604, w: 43, h: 0.395,
                 interactX: 2432, interactY: 0.828,
                 interactFacing: 'right',  // Force Nate to face right (toward Hector)
                 name: 'Hector',
