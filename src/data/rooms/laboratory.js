@@ -34,6 +34,10 @@
                 { x: 1600, y: 0.73 },
                 { x: 2000, y: 0.74 },
                 { x: 2400, y: 0.73 },
+                { x: 2520, y: 0.742 },  // Hector obstacle — approach left
+                { x: 2600, y: 0.778 },  // Hector obstacle — front-left
+                { x: 2760, y: 0.776 },  // Hector obstacle — front-right
+                { x: 2840, y: 0.742 },  // Hector obstacle — approach right
                 { x: 2800, y: 0.74 },
                 { x: 3200, y: 0.73 },
                 { x: 3200, y: 0.92 },
@@ -88,7 +92,7 @@
         npcs: [
             {
                 id: 'hector',
-                position: { x: 2700, y: 0.82 },
+                position: { x: 2700, y: 0.77 },
                 sprite: 'hector_idle',
                 dialogue: 'hector',
                 name: 'Hector',
@@ -308,7 +312,7 @@
             // === HECTOR NPC ===
             {
                 id: 'hector',
-                x: 2697, y: 0.604, w: 43, h: 0.395,
+                x: 2697, y: 0.554, w: 43, h: 0.395,
                 interactX: 2432, interactY: 0.828,
                 interactFacing: 'right',  // Force Nate to face right (toward Hector)
                 name: 'Hector',

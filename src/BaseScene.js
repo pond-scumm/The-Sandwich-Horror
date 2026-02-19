@@ -1338,6 +1338,96 @@
                 }
             }
 
+            // Returns true if two line segments intersect (ignores shared endpoints)
+            segmentsIntersect(ax, ay, bx, by, cx, cy, dx, dy) {
+                const d1x = bx - ax, d1y = by - ay;
+                const d2x = dx - cx, d2y = dy - cy;
+                const denom = d1x * d2y - d1y * d2x;
+                if (Math.abs(denom) < 1e-10) return false; // Parallel / collinear
+                const t = ((cx - ax) * d2y - (cy - ay) * d2x) / denom;
+                const u = ((cx - ax) * d1y - (cy - ay) * d1x) / denom;
+                const eps = 1e-8;
+                return t > eps && t < 1 - eps && u > eps && u < 1 - eps;
+            }
+
+            // Returns true if a line segment crosses any edge of the polygon
+            lineSegmentCrossesPolygonEdge(x1, y1, x2, y2, polygon) {
+                for (let i = 0; i < polygon.length; i++) {
+                    const p1 = polygon[i];
+                    const p2 = polygon[(i + 1) % polygon.length];
+                    if (this.segmentsIntersect(x1, y1, x2, y2, p1.x, p1.y, p2.x, p2.y)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // Pre-calculate a path of {x,y} waypoints (including final destination)
+            // that routes around concave polygon obstacles.
+            // Strategy: try direct → single-vertex detour → two-vertex detour → direct fallback.
+            calculateWalkPath(startX, startY, destX, destY) {
+                if (!this.walkableArea?.polygon || this.walkableArea.polygon.length < 3) {
+                    return [{ x: destX, y: destY }];
+                }
+
+                const { height } = this.scale;
+                const polygon = this.walkableArea.polygon.map(p => ({ x: p.x, y: height * p.y }));
+
+                // Direct path — no polygon edge in the way
+                if (!this.lineSegmentCrossesPolygonEdge(startX, startY, destX, destY, polygon)) {
+                    return [{ x: destX, y: destY }];
+                }
+
+                // Single-vertex detour — try every polygon vertex as a waypoint
+                let bestSingle = null;
+                let bestSingleDist = Infinity;
+                for (const v of polygon) {
+                    if (!this.lineSegmentCrossesPolygonEdge(startX, startY, v.x, v.y, polygon) &&
+                        !this.lineSegmentCrossesPolygonEdge(v.x, v.y, destX, destY, polygon)) {
+                        const dist = Phaser.Math.Distance.Between(startX, startY, v.x, v.y)
+                                   + Phaser.Math.Distance.Between(v.x, v.y, destX, destY);
+                        if (dist < bestSingleDist) {
+                            bestSingleDist = dist;
+                            bestSingle = v;
+                        }
+                    }
+                }
+                if (bestSingle) {
+                    return [{ x: bestSingle.x, y: bestSingle.y }, { x: destX, y: destY }];
+                }
+
+                // Two-vertex detour — try every ordered pair of polygon vertices
+                let bestPair = null;
+                let bestPairDist = Infinity;
+                for (let i = 0; i < polygon.length; i++) {
+                    for (let j = 0; j < polygon.length; j++) {
+                        if (i === j) continue;
+                        const va = polygon[i], vb = polygon[j];
+                        if (!this.lineSegmentCrossesPolygonEdge(startX, startY, va.x, va.y, polygon) &&
+                            !this.lineSegmentCrossesPolygonEdge(va.x, va.y, vb.x, vb.y, polygon) &&
+                            !this.lineSegmentCrossesPolygonEdge(vb.x, vb.y, destX, destY, polygon)) {
+                            const dist = Phaser.Math.Distance.Between(startX, startY, va.x, va.y)
+                                       + Phaser.Math.Distance.Between(va.x, va.y, vb.x, vb.y)
+                                       + Phaser.Math.Distance.Between(vb.x, vb.y, destX, destY);
+                            if (dist < bestPairDist) {
+                                bestPairDist = dist;
+                                bestPair = [va, vb];
+                            }
+                        }
+                    }
+                }
+                if (bestPair) {
+                    return [
+                        { x: bestPair[0].x, y: bestPair[0].y },
+                        { x: bestPair[1].x, y: bestPair[1].y },
+                        { x: destX, y: destY }
+                    ];
+                }
+
+                // Fallback — direct path, per-frame correction handles any edge clipping
+                return [{ x: destX, y: destY }];
+            }
+
             // Find nearest point on a line segment
             nearestPointOnSegment(px, py, x1, y1, x2, y2) {
                 const dx = x2 - x1;
@@ -1371,10 +1461,9 @@
                         return;
                     }
 
-                    const { height } = this.scale;
                     targetX = Phaser.Math.Clamp(targetX, 30, this.worldWidth - 30);
 
-                    // Use polygon-aware movement if available
+                    // Clamp destination to walkable area
                     const walkablePoint = this.getNearestWalkablePoint(targetX, targetY);
                     targetX = walkablePoint.x;
                     targetY = walkablePoint.y;
@@ -1384,7 +1473,6 @@
 
                     const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, targetX, targetY);
                     if (distance < 5) {
-                        // Apply forced facing even if already at destination
                         if (forcedFacing && this.playerSprite && this.playerSprite.setFlipX) {
                             this.playerSprite.setFlipX(forcedFacing === 'left');
                         }
@@ -1392,55 +1480,71 @@
                         return;
                     }
 
-                    // Set facing direction using sprite flip (not container scale)
-                    // Always use natural movement direction for walking
-                    if (this.playerSprite && this.playerSprite.setFlipX) {
-                        const facingLeft = targetX < this.player.x;
-                        this.playerSprite.setFlipX(facingLeft);  // true = flip horizontally
-                    }
+                    // Calculate obstacle-aware path through the walkable polygon
+                    const path = this.calculateWalkPath(this.player.x, this.player.y, targetX, targetY);
+                    const speed = isRunning ? 750 : 450;
 
                     this.isWalking = true;
                     this.startWalkAnimation(isRunning);
 
-                    const speed = isRunning ? 750 : 450;
-                    const duration = (distance / speed) * 1000;
+                    this._walkAlongPath(path, 0, speed, forcedFacing, done);
+                });
+            }
 
-                    this.walkTween = this.tweens.add({
-                        targets: this.player,
-                        x: targetX,
-                        y: targetY,
-                        duration: duration,
-                        ease: 'Linear',
-                        onUpdate: () => {
-                            // Constrain to walkable area every frame
-                            if (!this.isPointInWalkableArea(this.player.x, this.player.y)) {
-                                const corrected = this.getNearestWalkablePoint(this.player.x, this.player.y);
-                                this.player.x = corrected.x;
-                                this.player.y = corrected.y;
-                            }
+            // Chain tweens through a pre-calculated array of waypoints.
+            // Sets facing direction at each leg, stops animation only at the end.
+            _walkAlongPath(path, index, speed, forcedFacing, done) {
+                if (index >= path.length) {
+                    this.isWalking = false;
+                    this.stopWalkAnimation();
+                    if (forcedFacing && this.playerSprite && this.playerSprite.setFlipX) {
+                        this.playerSprite.setFlipX(forcedFacing === 'left');
+                    }
+                    done();
+                    return;
+                }
 
-                            this.player.setDepth(100 + this.player.y);
-                            // Camera follow for wide rooms
-                            if (this.worldWidth > this.screenWidth) {
-                                this.cameras.main.scrollX = Phaser.Math.Clamp(
-                                    this.player.x - this.screenWidth / 2,
-                                    0,
-                                    this.worldWidth - this.screenWidth
-                                );
-                            }
-                        },
-                        onComplete: () => {
-                            this.isWalking = false;
-                            this.stopWalkAnimation();
+                const target = path[index];
+                const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, target.x, target.y);
 
-                            // Apply forced facing after arrival (if specified)
-                            if (forcedFacing && this.playerSprite && this.playerSprite.setFlipX) {
-                                this.playerSprite.setFlipX(forcedFacing === 'left');
-                            }
+                // Skip degenerate legs (waypoint already reached)
+                if (dist < 2) {
+                    this._walkAlongPath(path, index + 1, speed, forcedFacing, done);
+                    return;
+                }
 
-                            done();
+                // Face toward this leg's destination
+                if (this.playerSprite?.setFlipX) {
+                    this.playerSprite.setFlipX(target.x < this.player.x);
+                }
+
+                const duration = (dist / speed) * 1000;
+
+                this.walkTween = this.tweens.add({
+                    targets: this.player,
+                    x: target.x,
+                    y: target.y,
+                    duration,
+                    ease: 'Linear',
+                    onUpdate: () => {
+                        // Safety net: correct if player escapes walkable area
+                        if (!this.isPointInWalkableArea(this.player.x, this.player.y)) {
+                            const corrected = this.getNearestWalkablePoint(this.player.x, this.player.y);
+                            this.player.x = corrected.x;
+                            this.player.y = corrected.y;
                         }
-                    });
+                        this.player.setDepth(100 + this.player.y);
+                        if (this.worldWidth > this.screenWidth) {
+                            this.cameras.main.scrollX = Phaser.Math.Clamp(
+                                this.player.x - this.screenWidth / 2,
+                                0,
+                                this.worldWidth - this.screenWidth
+                            );
+                        }
+                    },
+                    onComplete: () => {
+                        this._walkAlongPath(path, index + 1, speed, forcedFacing, done);
+                    }
                 });
             }
 
