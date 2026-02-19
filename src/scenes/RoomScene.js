@@ -119,6 +119,11 @@ class RoomScene extends BaseScene {
             audioToLoad.push(room.audio.music.key);
         }
 
+        // Intro sequence music (if defined)
+        if (room.intro?.music) {
+            audioToLoad.push(room.intro.music);
+        }
+
         // Additional station tracks (for radio cycling)
         if (room.audio.music?.stations && Array.isArray(room.audio.music.stations)) {
             room.audio.music.stations.forEach(station => {
@@ -314,6 +319,10 @@ class RoomScene extends BaseScene {
         // Handle room audio (music, ambient)
         this.handleRoomAudio();
 
+        // Handle intro sequence (must run after handleRoomAudio so it can
+        // override music, and before fadeIn so the camera is already positioned)
+        this.handleRoomIntro();
+
         // Set footstep surface from room data
         this.setFootstepSurface(this.roomData.footstepSurface || null);
 
@@ -341,6 +350,13 @@ class RoomScene extends BaseScene {
 
         // Fade in
         this.cameras.main.fadeIn(500, 0, 0, 0);
+
+        // Final UI hide for intro sequence — must be last to override any re-shows during setup.
+        // UIScene.create() also checks introConversationActive in case it starts after this.
+        if (this.introConversationActive) {
+            const uiScene = this.scene.get('UIScene');
+            if (uiScene) uiScene.setUIVisible(false);
+        }
     }
 
     // ========== LIGHTING SETUP ==========
@@ -1201,8 +1217,31 @@ class RoomScene extends BaseScene {
         }
     }
 
-    // Override exitConversation to hide NPC if triggered via npc_conversation
+    // Override exitConversation to handle intro music crossfade and NPC cleanup
     exitConversation() {
+        // If the intro conversation just ended, crossfade back to room music.
+        if (this.introMusicKey && TSH.Audio?.isReady()) {
+            const roomMusic = this.roomData?.audio?.music;
+
+            // Fade out intro music
+            TSH.Audio.stopMusic('main', { fade: 500 });
+
+            // Fade room music back in after the outro completes
+            if (roomMusic?.key) {
+                this.time.delayedCall(500, () => {
+                    if (!TSH.Audio?.isReady()) return;
+                    TSH.Audio.playMusic(roomMusic.key, {
+                        channel: 'main',
+                        volume: roomMusic.volume ?? 0.6,
+                        fade: roomMusic.fade ?? 1000
+                    });
+                });
+            }
+
+            this.introMusicKey = null;
+            this.introConversationActive = false;
+        }
+
         // Hide NPC if conversation was triggered via npc_conversation action
         if (this.activeConversationTrigger?.type === 'npc_conversation') {
             this.hideNPC(this.activeConversationTrigger.npcId);
@@ -1288,6 +1327,94 @@ class RoomScene extends BaseScene {
                 });
             }
         }
+    }
+
+    // ========== ROOM INTRO SEQUENCE ==========
+    // Generic handler for one-shot intro conversations defined in room data.
+    // Teleports the player to the NPC, positions the camera, swaps to intro
+    // music, then auto-triggers enterConversation after a short delay.
+    // The intro flag is set immediately so a mid-intro quit won't replay it.
+
+    handleRoomIntro() {
+        const room = this.roomData;
+        if (!room.intro) return;
+
+        const {
+            condition,
+            npcId,
+            playerX,
+            playerY,
+            playerFacing,
+            cameraTargetX,
+            music,
+            setFlag,
+            delay
+        } = room.intro;
+
+        // Bail if condition not met (e.g. flag already set from a previous run)
+        if (condition && !condition()) return;
+
+        const height = this.scale.height;
+
+        // Set flag immediately — if the player quits or reloads mid-intro the
+        // conversation won't fire again on the next visit.
+        if (setFlag) TSH.State.setFlag(setFlag, true);
+
+        // Teleport player to the NPC interact position with no walk animation.
+        const targetY = playerY <= 1 ? height * playerY : playerY;
+        if (this.player) {
+            this.player.setPosition(playerX, targetY);
+        }
+        if (playerFacing && this.playerSprite?.setFlipX) {
+            this.playerSprite.setFlipX(playerFacing === 'left');
+        }
+
+        // Scroll the camera so both Nate and the NPC are in frame.
+        // This runs synchronously before the scene's cameras.main.fadeIn(),
+        // so the correct position is already set when the fade begins.
+        if (cameraTargetX !== undefined) {
+            this.cameras.main.scrollX = Phaser.Math.Clamp(
+                cameraTargetX - this.screenWidth / 2,
+                0,
+                this.worldWidth - this.screenWidth
+            );
+        }
+
+        // Swap to intro music. stopMusic({ fade: 0 }) immediately cancels the
+        // room music that handleRoomAudio() just started (it hasn't had time to
+        // fade in yet, so there's no audible pop). Graceful no-op if the asset
+        // isn't loaded yet.
+        if (music && TSH.Audio?.isReady()) {
+            TSH.Audio.stopMusic('main', { fade: 0 });
+            TSH.Audio.playMusic(music, { channel: 'main', volume: 0.7, fade: 500 });
+            this.introMusicKey = music;
+        }
+
+        // Mark intro as active synchronously so create() can read this flag
+        // at the very end and hide the cursor after all setup is complete.
+        // Also set conversationIntroPlaying now so hotspot pointerover guards
+        // can block label display during the pre-conversation delay.
+        this.introConversationActive = true;
+        TSH.State.setUIState('conversationIntroPlaying', true);
+
+        // After the scene has faded in, auto-trigger the conversation.
+        this.time.delayedCall(delay ?? 800, async () => {
+            const npc = this.roomData.npcs?.find(n => n.id === npcId);
+            if (!npc) {
+                console.warn('[RoomScene] handleRoomIntro: NPC not found in room data:', npcId);
+                return;
+            }
+
+            const dialogue = await TSH.DialogueLoader.load(npc.dialogue || npcId);
+            const npcSceneY = npc.position.y <= 1 ? height * npc.position.y : npc.position.y;
+            const npcData = {
+                name: npc.name || npcId,
+                x: npc.position.x,
+                y: npcSceneY
+            };
+
+            this.enterConversation(npcData, dialogue, npcId);
+        });
     }
 
     // ========== ROOM AUDIO ==========

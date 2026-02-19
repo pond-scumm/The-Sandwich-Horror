@@ -1621,12 +1621,12 @@
                     this.hotspots.push(hotspot);
 
                     zone.on('pointerover', () => {
-                        if (this.inventoryOpen || this.conversationActive || this.settingsMenuOpen) return;
+                        if (this.inventoryOpen || this.conversationActive || this.settingsMenuOpen || TSH.State.getUIState('conversationIntroPlaying')) return;
                         this.setCrosshairHover(hotspot);
                     });
 
                     zone.on('pointerout', () => {
-                        if (this.inventoryOpen || this.conversationActive || this.settingsMenuOpen) return;
+                        if (this.inventoryOpen || this.conversationActive || this.settingsMenuOpen || TSH.State.getUIState('conversationIntroPlaying')) return;
                         this.setCrosshairHover(null);
                     });
 
@@ -3283,20 +3283,20 @@
                 this.stopCharacterMovement();
                 if (this.hotspotLabel) this.hotspotLabel.setText('');
 
-                console.log('[Conversation] Step 4: Setting up cursor...');
-                // Keep crosshair visible during conversation (desktop only)
-                if (this.crosshairCursor && !this.isMobile) {
-                    this.crosshairCursor.setVisible(true);
-                    this.drawCrosshair(0xffffff); // White cursor
-                }
+                console.log('[Conversation] Step 4/5: Checking for intro sequence...');
 
-                // Show initial dialogue options (or play intro sequence first if present)
-                console.log('[Conversation] Step 5: Calling showDialogueOptions with', startNode);
-
-                // Select and play intro sequence (if any match conditions)
+                // Select intro sequence first so cursor visibility can be decided.
+                // UIScene owns the real cursor; we drive it via TSH.State UI state
+                // (same pattern as dialogActive) rather than touching this.crosshairCursor.
                 const selectedIntro = this._selectIntroSequence(this.conversationData[startNode]);
+
                 if (selectedIntro) {
+                    TSH.State.setUIState('conversationIntroPlaying', true);
                     this._playIntroSequence(selectedIntro, () => {
+                        // Restore UI (cursor + buttons if applicable) when options appear
+                        TSH.State.setUIState('conversationIntroPlaying', false);
+                        const uiScene = this.scene.get('UIScene');
+                        if (uiScene) uiScene.setUIVisible(true);
                         this.showDialogueOptions(startNode);
                     });
                 } else {

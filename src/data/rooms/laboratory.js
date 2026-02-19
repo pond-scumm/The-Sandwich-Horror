@@ -558,6 +558,24 @@
         features: {
             tesla_coils: true,
             portal_glow: true
+        },
+
+        // =====================================================================
+        // INTRO SEQUENCE
+        // Fires once on first entry. Teleports Nate to Hector, plays intro
+        // music, auto-triggers the conversation. Flag is set immediately so
+        // quitting mid-intro doesn't replay it on reload.
+        // =====================================================================
+        intro: {
+            condition:    () => !TSH.State.getFlag('story.intro_triggered'),
+            npcId:        'hector',
+            playerX:      2432,     // interactX from Hector's hotspot
+            playerY:      0.828,    // interactY from Hector's hotspot
+            playerFacing: 'right',  // face toward Hector
+            cameraTargetX: 2566,    // midpoint between Nate (2432) and Hector (2700)
+            music:        'intro_theme',
+            setFlag:      'story.intro_triggered',  // separate from intro_complete so the dialogue condition still reads false
+            delay:        800       // ms after scene fade-in before conversation triggers
         }
     };
 

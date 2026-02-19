@@ -51,7 +51,7 @@
     function createDefaultState() {
         return {
             // Current location
-            currentRoom: 'interior',
+            currentRoom: 'laboratory',
             previousRoom: null,
             
             // Player inventory (array of item IDs)
@@ -88,6 +88,12 @@
                 // Secure Storage items and interactions
                 storage: {
                     beaker_holder_taken: false   // Beaker holder picked up
+                },
+
+                // Story progression flags
+                story: {
+                    intro_triggered: false,     // Has the auto-trigger fired? (set immediately, prevents replay)
+                    intro_complete: false       // Has the player finished the intro conversation?
                 },
 
                 // Miscellaneous flags (for backwards compatibility with flat flag names)
@@ -155,8 +161,9 @@
 
                 // Transient UI state (may reset on room change)
                 inventoryOpen: false,    // Is inventory panel expanded?
-                dialogActive: false,     // Is an examine/action dialog showing?
-                conversationActive: false, // Is NPC conversation in progress?
+                dialogActive: false,          // Is an examine/action dialog showing?
+                conversationActive: false,    // Is NPC conversation in progress?
+                conversationIntroPlaying: false, // Are intro lines auto-playing? (hides cursor)
                 settingsOpen: false,     // Is settings menu open?
 
                 // Cursor state (managed by UIScene)
@@ -365,6 +372,7 @@
         resetTransientUIState() {
             this.setUIState('dialogActive', false);
             this.setUIState('conversationActive', false);
+            this.setUIState('conversationIntroPlaying', false);
             this.setUIState('settingsOpen', false);
             // Note: selectedItem and inventoryOpen persist across room changes
         },

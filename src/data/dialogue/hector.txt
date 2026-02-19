@@ -1,41 +1,58 @@
 === start ===
 
-nate: Hey Hector.
-hector: Hello Nathaniel. How's your progress?
+# requires: !story.intro_complete
+hector: Nathaniel! Perfect timing. We are almost ready to kick off the most dangerous experiment of my career. Again.
+hector: There is just one problem. The Temporal Synchronizer is missing its core mechanism, and without it, the portal cannot achieve stable resonance.
+hector: If we fire it up in this condition, we will have a repeat of last Tuesday. And nobody wants that.
+nate: What happened last Tuesday?
+hector: The important thing is that eyebrows grow back. Most of them.
+hector: I need you to find a suitable replacement component while I finish my calculations. Can you do that?
+nate: I... sure. What am I looking for, exactly?
+hector: Something precise. Mechanical. Keeps very accurate time. You will know it when you see it.
 
-- What am I supposed to be doing again?
-# id: remind_goal
-nate: What am I supposed to be doing again?
-hector: The Temporal Synchronizer is broken, Nathaniel.
-hector: We need a replacement clock mechanism to get it operational.
-hector: Without it, the experiment cannot proceed.
+# requires: story.intro_complete
+hector: Nathaniel. Progress report?
+nate: Still looking.
+hector: The portal is not going to stabilize itself.
 
-- What's this big experiment for?
+- What's the Temporal Synchronizer?
+# id: asked_about_synchronizer
+nate: Before I go hunting for mystery components — what exactly is a Temporal Synchronizer? What does it look like?
+hector: Excellent question. The Temporal Synchronizer is a chrono-calibration module responsible for maintaining precise phase alignment across the dimensional resonance array.
+hector: Think of it as the heartbeat of the portal. Without it, the oscillation frequency drifts, the stabilization field collapses, and reality becomes... negotiable.
+nate: So it's a clock?
+hector: It is a HIGHLY SPECIALIZED chronometric interface unit.
+hector: ...that keeps time.
+hector: It is a clock, yes. But a very important one.
+
+- Remind me — what is the Temporal Synchronizer again?
+# requires: asked:asked_about_synchronizer
+nate: Okay, I blanked. The Temporal Synchronizer is...?
+hector: A clock, Nathaniel.
+nate: Right. A clock.
+hector: A highly specialized one.
+nate: Obviously.
+
+- What went wrong with the experiment?
 # once
-nate: So what's this big experiment actually for?
-hector: Ah, an excellent question!
-hector: We're attempting to create a stable temporal-spatial gateway.
-hector: Think of it as a doorway through time and space, but with significantly less screaming than usual.
-hector: Well, theoretically less screaming.
+nate: Last time we ran this experiment — what exactly happened? You mentioned Tuesday.
+hector: There was a minor miscalibration in the resonance frequency.
+nate: Is "minor miscalibration" a euphemism?
+hector: The Temporal Synchronizer exploded. There was some screaming. A localized temporal anomaly formed over my workbench and persisted for approximately forty-five minutes.
+hector: On the positive side, I now know with great precision what not to do.
+nate: That is almost reassuring.
+hector: Almost! Yes. You are learning.
 
-- Is what we're doing dangerous?
-# once
-nate: Is what we're doing dangerous?
-hector: Dangerous? No, no, no.
-hector: Well... perhaps mildly hazardous.
-hector: Possibly moderately perilous.
-hector: Let's just say the safety protocols are more like "safety suggestions."
-hector: But don't worry! I've only had to evacuate the lab twice this month.
+- What exactly am I supposed to be doing again?
+nate: Okay, just to confirm my objectives — I am looking for a replacement clock mechanism. And then what?
+hector: Find the clock, bring it back here, install it in the Temporal Synchronizer housing. It will click into place. Very satisfying.
+hector: Then we run the experiment, achieve stable dimensional resonance for the first time in recorded history, and science wins.
+hector: Simple. Elegant. Almost certainly not catastrophic.
+nate: Almost certainly.
+hector: I would put it at eighty percent. Which is extremely high for this kind of research.
 
-- What do you do for fun around here?
-# once
-nate: What do you do for fun around here in the middle of nowhere?
-hector: Fun? Nathaniel, I conduct SCIENCE.
-hector: Although... Earl and I do play dominoes on Thursdays.
-hector: He's surprisingly strategic for someone with such large fingers.
-hector: Last week he beat me three games in a row. I suspect foul play.
-
-- I should get back to work.
-nate: I should get back to work.
-hector: Excellent initiative, Nathaniel. The synchronizer won't fix itself!
+- Let me look around.
+# set: story.intro_complete
+nate: Alright. I'll see what I can find.
+hector: Excellent. I will be here, making calculations. Definitely not anxiously checking the readings every thirty seconds.
 > END

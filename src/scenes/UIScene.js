@@ -133,6 +133,13 @@ class UIScene extends Phaser.Scene {
             this.debugPanel.toggle();
         });
 
+        // If UIScene was launched after handleRoomIntro() already set introConversationActive,
+        // hide the UI now so it doesn't flash visible during the pre-conversation delay.
+        const roomScene = this.scene.get('RoomScene');
+        if (roomScene?.introConversationActive) {
+            this.setUIVisible(false);
+        }
+
         console.log('[UIScene] Created - cursors, buttons, and inventory panel initialized');
     }
 
@@ -326,7 +333,30 @@ class UIScene extends Phaser.Scene {
         }
     }
 
+    // Hide or show all interactive UI elements at once.
+    // Use this for scripted moments (intros, cutscenes) where the player
+    // shouldn't interact with anything.
+    // setUIVisible(false) → hide everything
+    // setUIVisible(true)  → restore cursor via syncCursorState; restore buttons if not in conversation
+    setUIVisible(visible) {
+        if (!visible) {
+            if (this.crosshairCursor) this.crosshairCursor.setVisible(false);
+            if (this.arrowCursor) this.arrowCursor.setVisible(false);
+            if (this.itemCursor) this.itemCursor.setVisible(false);
+            if (this.inventoryButton) this.inventoryButton.setVisible(false);
+            if (this.settingsButton) this.settingsButton.setVisible(false);
+            if (this.hotspotLabel) this.hotspotLabel.setVisible(false);
+        } else {
+            this.syncCursorState();
+            if (!TSH.State.getUIState('conversationActive')) {
+                if (this.inventoryButton) this.inventoryButton.setVisible(true);
+                if (this.settingsButton) this.settingsButton.setVisible(true);
+            }
+        }
+    }
+
     syncCursorState() {
+        if (TSH.State.getUIState('conversationIntroPlaying')) return;
         const selectedItemId = TSH.State.getSelectedItem();
 
         if (selectedItemId) {
@@ -994,6 +1024,13 @@ class UIScene extends Phaser.Scene {
                 this.itemCursor.setVisible(false);
             } else {
                 // Restore cursor state based on other UI state
+                this.syncCursorState();
+            }
+        } else if (key === 'conversationIntroPlaying') {
+            // Hide cursor while intro lines auto-play; restore when options appear
+            if (value) {
+                this.crosshairCursor.setVisible(false);
+            } else {
                 this.syncCursorState();
             }
         } else if (key === 'settingsOpen') {
