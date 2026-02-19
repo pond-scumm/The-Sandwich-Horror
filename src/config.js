@@ -14,7 +14,7 @@ const config = {
     // RoomScene first - loads 'interior' by default, uses data-driven layers
     // UIScene runs in parallel for persistent UI (cursors, inventory, etc.)
     // Legacy scenes removed: FrontOfHouseScene, InteriorScene, WoodsScene, BackyardScene, EarlsYardScene
-    scene: [RoomScene, UIScene, AlienRoomScene],
+    scene: [TitleScene, RoomScene, UIScene, AlienRoomScene],
     input: { activePointers: 1 }
 };
 
