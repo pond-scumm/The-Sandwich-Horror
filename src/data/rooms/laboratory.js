@@ -92,7 +92,7 @@
                 sprite: 'hector_idle',
                 dialogue: 'hector',
                 name: 'Hector',
-                heightRatio: 1.15,  // Hector's sprite (147x589) is narrower than Nate's (180x610); boost to match presence
+                heightRatio: 1.08,  // Hector's sprite (147x589) is narrower than Nate's (180x610); boost to match presence
                 lookResponse: "A composed man in a pristine lab coat. Slick dark hair, goggles on his forehead, a meticulous mustache. He's focused on the terminal, completely in his element."
             }
         ],
