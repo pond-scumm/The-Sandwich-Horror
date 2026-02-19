@@ -17,6 +17,7 @@ hector: The portal is not going to stabilize itself.
 
 - What's the Temporal Synchronizer?
 # id: asked_about_synchronizer
+# once
 nate: Before I go hunting for mystery components — what exactly is a Temporal Synchronizer? What does it look like?
 hector: Excellent question. The Temporal Synchronizer is a chrono-calibration module responsible for maintaining precise phase alignment across the dimensional resonance array.
 hector: Think of it as the heartbeat of the portal. Without it, the oscillation frequency drifts, the stabilization field collapses, and reality becomes... negotiable.
